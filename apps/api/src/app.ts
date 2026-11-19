@@ -65,7 +65,9 @@ export function buildApp(): FastifyInstance {
     'http://127.0.0.1:3000',
     'http://localhost:18531', // Local USB DSC agent
     'http://127.0.0.1:18531',
-  ];
+    process.env.APP_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  ].filter(Boolean) as string[];
 
   app.register(cors, {
     origin: (origin, cb) => {
@@ -73,7 +75,11 @@ export function buildApp(): FastifyInstance {
       if (!origin) {
         return cb(null, true);
       }
-      if (allowedOrigins.includes(origin)) {
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:'))
+      ) {
         return cb(null, true);
       }
       cb(new Error(`CORS error: Origin '${origin}' is not permitted by SynexTax security policy.`), false);

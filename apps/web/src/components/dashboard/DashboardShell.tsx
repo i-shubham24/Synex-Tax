@@ -166,21 +166,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className={`flex min-h-screen flex-col transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
-        <header className="pos-header sticky top-0 z-40 flex h-16 items-center gap-3 border-b px-5 lg:px-6">
-          <div className="hidden min-w-0 max-w-[260px] shrink xl:block">
-            <p className="truncate text-[clamp(15px,1.3vw,19px)] font-semibold tracking-[-0.02em] text-pos-ink">{snapshot.firm.name}</p>
+        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b px-5 lg:px-6">
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="hidden min-w-0 max-w-[200px] shrink xl:block">
+              <p className="truncate text-[14px] font-semibold tracking-[-0.02em] text-pos-ink">{snapshot.firm.name}</p>
+            </div>
+            <ClientPill />
           </div>
-          <ClientPill />
 
-          <button
-            type="button"
-            onClick={openCommandPalette}
-            className="mx-auto hidden h-10 w-full max-w-[340px] items-center gap-2.5 rounded-full border border-pos-line bg-pos-surface pl-4 pr-2 text-left text-[13px] text-pos-ink/45 transition-colors hover:border-pos-accent/60 md:flex"
-          >
-            <Search className="h-4 w-4" />
-            <span className="flex-1 truncate">Search or type a command</span>
-            <kbd className="rounded-full border border-pos-line px-2 py-0.5 text-[11px] text-pos-ink/50">Ctrl K</kbd>
-          </button>
+          <div className="hidden min-w-[240px] max-w-[340px] flex-1 px-3 md:block">
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="flex h-10 w-full items-center gap-2.5 rounded-full border border-pos-line bg-pos-surface pl-4 pr-2 text-left text-[13px] text-pos-ink/45 transition-colors hover:border-pos-accent/60"
+            >
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="flex-1 truncate">Search or type a command</span>
+              <kbd className="shrink-0 rounded-full border border-pos-line px-2 py-0.5 text-[11px] text-pos-ink/50">Ctrl K</kbd>
+            </button>
+          </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {source === 'sample' && (

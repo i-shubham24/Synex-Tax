@@ -5,14 +5,6 @@ const nextConfig = {
   transpilePackages: ['@synextax/tax-engine', '@synextax/shared-schemas'],
   async redirects() {
     return [
-      // Workspace routes follow the product spec (/clients, /gst/*, /tds/*, /audit, /settings).
-      // Old /dashboard/* paths keep working.
-      { source: '/dashboard/clients', destination: '/clients', permanent: false },
-      { source: '/dashboard/invoices', destination: '/gst', permanent: false },
-      { source: '/dashboard/recon', destination: '/gst/recon-2b', permanent: false },
-      { source: '/dashboard/tds', destination: '/tds', permanent: false },
-      { source: '/dashboard/audit', destination: '/audit', permanent: false },
-      { source: '/dashboard/settings', destination: '/settings', permanent: false },
       { source: '/invoices', destination: '/gst', permanent: false },
     ];
   },

@@ -38,7 +38,10 @@ interface WorkspaceValue {
 
 const WorkspaceContext = createContext<WorkspaceValue | null>(null);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' ? '' : 'http://localhost:4000');
 const WANT_API = process.env.NEXT_PUBLIC_DATA_SOURCE === 'api';
 const ACTIVE_KEY = 'synextax_active_client';
 
