@@ -1,0 +1,12 @@
+{
+  "name": "@synextax/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate:test": "node scripts/test-migrations.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.14"
+  }
+}

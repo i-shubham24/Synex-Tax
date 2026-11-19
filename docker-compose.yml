@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: synextax-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: synextax_dev
+      POSTGRES_USER: synextax_admin
+      POSTGRES_PASSWORD: synextax_local_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - ./packages/db/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synextax_admin -d synextax_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: synextax-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "synextax_local_redis_password"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "synextax_local_redis_password", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:

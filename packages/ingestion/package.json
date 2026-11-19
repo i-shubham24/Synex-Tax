@@ -1,0 +1,21 @@
+{
+  "name": "@synextax/ingestion",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/**/*.test.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@synextax/shared-schemas": "*",
+    "@synextax/tax-engine": "*",
+    "decimal.js": "^10.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}

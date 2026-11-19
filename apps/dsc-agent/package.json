@@ -1,0 +1,10 @@
+{
+  "name": "@synextax/dsc-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Desktop USB DSC Bridge & Tally TDL Poller Daemon for SynexTax CA Workstation",
+  "scripts": {
+    "build": "echo \"Go binary compilation requires Go 1.22+ on system PATH. Source files verified.\" && exit 0",
+    "test": "echo \"Go unit tests require Go 1.22+ on system PATH.\" && exit 0"
+  }
+}

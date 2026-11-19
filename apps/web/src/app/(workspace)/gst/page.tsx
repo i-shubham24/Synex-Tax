@@ -1,0 +1,569 @@
+'use client';
+
+import React, { useState } from 'react';
+import {
+  Receipt,
+  Search,
+  Filter,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  Play,
+  FileCheck2,
+  X,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Send,
+  Building,
+} from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+
+interface InvoiceRow {
+  id: string;
+  docNum: string;
+  docDate: string;
+  counterparty: string;
+  gstin: string;
+  pos: string;
+  taxableValue: number;
+  rate: string;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  status: 'FILED' | 'PENDING' | 'MISMATCH' | 'RECONCILED';
+  statusLabel: string;
+}
+
+const SAMPLE_INVOICES: InvoiceRow[] = [
+  {
+    id: 'row-1',
+    docNum: 'INV/26-27/084',
+    docDate: '2025-11-04',
+    counterparty: 'Jalandhar Forgings Ltd',
+    gstin: '03BBBBB9999B1Z1',
+    pos: 'Punjab (03)',
+    taxableValue: 150000.0,
+    rate: '18%',
+    cgst: 13500.0,
+    sgst: 13500.0,
+    igst: 0.0,
+    status: 'FILED',
+    statusLabel: 'Filed',
+  },
+  {
+    id: 'row-2',
+    docNum: 'INV/26-27/085',
+    docDate: '2025-11-06',
+    counterparty: 'Apex Cloud Solutions Delhi',
+    gstin: '07BBBPG4512D1ZR',
+    pos: 'Delhi (07)',
+    taxableValue: 250000.0,
+    rate: '18%',
+    cgst: 0.0,
+    sgst: 0.0,
+    igst: 45000.0,
+    status: 'RECONCILED',
+    statusLabel: 'Matched',
+  },
+  {
+    id: 'row-3',
+    docNum: 'INV/26-27/086',
+    docDate: '2025-11-08',
+    counterparty: 'Golden Temple Roadways Transport',
+    gstin: '03CCCPM8891B1Z2',
+    pos: 'Punjab (03)',
+    taxableValue: 95000.0,
+    rate: '12%',
+    cgst: 5700.0,
+    sgst: 5700.0,
+    igst: 0.0,
+    status: 'PENDING',
+    statusLabel: 'IMS Pending',
+  },
+  {
+    id: 'row-4',
+    docNum: 'CRN/26-27/012',
+    docDate: '2025-11-10',
+    counterparty: 'Amritsar Textile Mill Supplier',
+    gstin: '03AAACA1294F1Z3',
+    pos: 'Punjab (03)',
+    taxableValue: -20000.0,
+    rate: '18%',
+    cgst: -1800.0,
+    sgst: -1800.0,
+    igst: 0.0,
+    status: 'MISMATCH',
+    statusLabel: 'Mismatch',
+  },
+  {
+    id: 'row-5',
+    docNum: 'INV/26-27/087',
+    docDate: '2025-11-11',
+    counterparty: 'Ludhiana Machinery Spares',
+    gstin: '03AAECN9912A1ZX',
+    pos: 'Punjab (03)',
+    taxableValue: 85000.0,
+    rate: '18%',
+    cgst: 7650.0,
+    sgst: 7650.0,
+    igst: 0.0,
+    status: 'RECONCILED',
+    statusLabel: 'Matched',
+  },
+];
+
+export default function MasterInvoicesPage() {
+  const { user } = useAuth();
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedRowId, setSelectedRowId] = useState<string>('row-1');
+  const [showSignModal, setShowSignModal] = useState<boolean>(false);
+  const [auditNote, setAuditNote] = useState<string>('Pre-filing GSTR-3B reconciliation verified by Senior Partner.');
+  const [cashOffsetInput, setCashOffsetInput] = useState<string>('24150.00');
+  const [filingFeedback, setFilingFeedback] = useState<string | null>(null);
+
+  const selectedRow = SAMPLE_INVOICES.find((r) => r.id === selectedRowId) || SAMPLE_INVOICES[0];
+
+  const filteredRows = SAMPLE_INVOICES.filter((row) => {
+    if (filterStatus === 'PENDING' && row.status !== 'PENDING') return false;
+    if (filterStatus === 'RECONCILED' && row.status !== 'RECONCILED') return false;
+    if (filterStatus === 'FILED' && row.status !== 'FILED') return false;
+    if (filterStatus === 'MISMATCH' && row.status !== 'MISMATCH') return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        row.docNum.toLowerCase().includes(q) ||
+        row.counterparty.toLowerCase().includes(q) ||
+        row.gstin.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const handleExecuteSign = () => {
+    setShowSignModal(false);
+    setFilingFeedback('Successfully offset liability and cryptographically signed with Class 3 DSC.');
+    setTimeout(() => setFilingFeedback(null), 5000);
+  };
+
+  return (
+    <div className="space-y-4 max-w-[1600px] mx-auto font-sans">
+      
+      {/* 1. Filter Toolbar Row */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-[#17191C] p-3 sm:p-4 rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm">
+        
+        {/* Left Segmented Status Filter Buttons */}
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-mono">
+          {[
+            { id: 'ALL', label: 'All Returns' },
+            { id: 'PENDING', label: 'Draft / Pending' },
+            { id: 'RECONCILED', label: 'Reconciled' },
+            { id: 'FILED', label: 'Filed' },
+            { id: 'MISMATCH', label: 'Mismatched' },
+          ].map((tab) => {
+            const isActive = filterStatus === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilterStatus(tab.id)}
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#2F8AE0] text-white shadow-sm'
+                    : 'text-[#646A73] dark:text-[#9BA1AA] hover:bg-[#FAFAFB] dark:hover:bg-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Search Box & Filter Button */}
+        <div className="flex items-center gap-2.5 flex-1 max-w-sm justify-end">
+          <div className="relative w-full">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search GSTIN, vendor, invoice no..."
+              className="w-full bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] rounded-full pl-3.5 pr-8 py-1.5 text-xs font-sans text-[#0E0F10] dark:text-white focus:outline-none focus:border-[#2F8AE0]"
+            />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#E5E7EB] dark:border-[#24272B] bg-white dark:bg-[#17191C] hover:bg-[#FAFAFB] text-xs font-mono text-[#0E0F10] dark:text-white shrink-0"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Filter</span>
+          </button>
+        </div>
+
+      </div>
+
+      {filingFeedback && (
+        <div className="p-3.5 rounded-xl bg-[#DCFCE7] text-[#15803D] border border-[#16A34A]/30 font-mono text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{filingFeedback}</span>
+        </div>
+      )}
+
+      {/* 2. Main Split Area: 72% Left Master Table + 28% Right Floating Inspector Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Master Table (8.5 cols ~ 72%) */}
+        <div className="lg:col-span-8 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
+          
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left text-xs border-collapse font-sans">
+              
+              {/* Solid Obsidian Header Bar (#141619) with Crisp White Bold Text */}
+              <thead>
+                <tr className="bg-[#141619] text-white font-mono text-[11px] uppercase tracking-wider">
+                  <th className="py-3 px-4 rounded-tl-xl">
+                    <div className="flex items-center gap-1 cursor-pointer">
+                      <span>Doc Ref</span>
+                      <span className="text-slate-400 text-[10px]">↕</span>
+                    </div>
+                  </th>
+                  <th className="py-3 px-4">
+                    <div className="flex items-center gap-1 cursor-pointer">
+                      <span>Customer & GSTIN</span>
+                      <span className="text-slate-400 text-[10px]">↕</span>
+                    </div>
+                  </th>
+                  <th className="py-3 px-3">POS</th>
+                  <th className="py-3 px-4 text-right">
+                    <div className="flex items-center justify-end gap-1 cursor-pointer">
+                      <span>Taxable (₹)</span>
+                      <span className="text-slate-400 text-[10px]">↕</span>
+                    </div>
+                  </th>
+                  <th className="py-3 px-3 text-center">Rate</th>
+                  <th className="py-3 px-4 text-right">Tax (₹)</th>
+                  <th className="py-3 px-4 text-center rounded-tr-xl">Status</th>
+                </tr>
+              </thead>
+
+              {/* Rows with Zebra Tinting and Ultra-Soft Sky Blue Selected Highlight */}
+              <tbody className="divide-y divide-[#E5E7EB] dark:divide-[#24272B]">
+                {filteredRows.map((row, idx) => {
+                  const isSelected = row.id === selectedRowId;
+                  const zebraBg = idx % 2 === 0 ? 'bg-white dark:bg-[#17191C]' : 'bg-[#F9FAFB] dark:bg-[#121417]';
+                  const rowBg = isSelected ? 'bg-[#ECF4FD] dark:bg-[#2F8AE0]/15' : zebraBg;
+
+                  let statusPill = 'bg-[#DCFCE7] text-[#15803D]';
+                  if (row.status === 'PENDING') statusPill = 'bg-[#FEF3C7] text-[#B45309]';
+                  if (row.status === 'MISMATCH') statusPill = 'bg-[#FEE2E2] text-[#B91C1C]';
+                  if (row.status === 'RECONCILED') statusPill = 'bg-[#ECF4FD] text-[#2F8AE0]';
+
+                  const totalTax = row.cgst + row.sgst + row.igst;
+
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => setSelectedRowId(row.id)}
+                      className={`cursor-pointer transition-colors h-12 ${rowBg} hover:bg-[#ECF4FD]/70`}
+                    >
+                      <td className="py-3 px-4 font-mono font-bold text-[#0E0F10] dark:text-white">
+                        <div>{row.docNum}</div>
+                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA] font-normal">{row.docDate}</div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-[#0E0F10] dark:text-white text-xs">{row.counterparty}</div>
+                        <div className="font-mono text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{row.gstin}</div>
+                      </td>
+
+                      <td className="py-3 px-3 font-mono text-[11px] text-[#646A73] dark:text-[#9BA1AA]">
+                        {row.pos}
+                      </td>
+
+                      <td className="py-3 px-4 text-right font-mono font-bold text-[#0E0F10] dark:text-white tabular-nums">
+                        ₹ {row.taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+
+                      <td className="py-3 px-3 text-center font-mono text-[11px]">
+                        <span className="px-1.5 py-0.5 rounded bg-[#F1F5F9] dark:bg-slate-800 text-[#0E0F10] dark:text-white">
+                          {row.rate}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 text-right font-mono font-bold text-[#16A34A] tabular-nums">
+                        ₹ {totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${statusPill}`}>
+                          {row.statusLabel}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Bottom Pagination Bar */}
+          <div className="p-3.5 bg-white dark:bg-[#17191C] border-t border-[#E5E7EB] dark:border-[#24272B] flex items-center justify-between text-xs font-mono text-[#646A73] dark:text-[#9BA1AA]">
+            <span>Showing 1 to {filteredRows.length} of {SAMPLE_INVOICES.length} invoices</span>
+
+            <div className="flex items-center gap-1.5">
+              <button className="px-2 py-1 rounded border border-[#E5E7EB] dark:border-[#24272B] hover:bg-slate-100 dark:hover:bg-slate-800">
+                « Previous
+              </button>
+              <button className="w-6 h-6 rounded bg-[#141619] text-white font-bold flex items-center justify-center">
+                1
+              </button>
+              <button className="w-6 h-6 rounded border border-[#E5E7EB] dark:border-[#24272B] hover:bg-slate-100 flex items-center justify-center">
+                2
+              </button>
+              <button className="px-2 py-1 rounded border border-[#E5E7EB] dark:border-[#24272B] hover:bg-slate-100 dark:hover:bg-slate-800">
+                Next »
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Elevated Floating Inspector Card (4 cols ~ 28%) */}
+        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-xl overflow-hidden space-y-4">
+          
+          {/* Solid Sky Cobalt Header Bar with Doc Ref & Expand Arrow */}
+          <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between font-mono">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/80 block">Active Selection Inspector</span>
+              <span className="text-sm font-black text-white">{selectedRow.docNum}</span>
+            </div>
+            <button
+              onClick={() => setShowSignModal(true)}
+              aria-label="Expand Document Verification"
+              className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+            </button>
+          </div>
+
+          <div className="p-4 space-y-4">
+            
+            {/* Metadata Pill Row */}
+            <div className="p-3 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-1">
+              <div className="text-[10px] font-mono text-[#646A73] dark:text-[#9BA1AA] uppercase">
+                Customer / Vendor Context
+              </div>
+              <div className="font-bold text-xs text-[#0E0F10] dark:text-white">{selectedRow.counterparty}</div>
+              <div className="text-[11px] font-mono text-[#2F8AE0] font-semibold">{selectedRow.gstin}</div>
+            </div>
+
+            {/* Mini Solid Obsidian Breakdown Table */}
+            <div className="rounded-xl overflow-hidden border border-[#24272B] text-xs font-mono">
+              <div className="bg-[#141619] text-white p-2.5 flex justify-between font-bold text-[11px] uppercase">
+                <span>Tax Head</span>
+                <span>Rate</span>
+                <span>Amount (₹)</span>
+              </div>
+              <div className="p-3 bg-white dark:bg-[#17191C] space-y-1.5 text-slate-700 dark:text-slate-300">
+                <div className="flex justify-between">
+                  <span>Central Tax (CGST):</span>
+                  <span>9%</span>
+                  <span className="font-bold tabular-nums">₹ {selectedRow.cgst.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>State Tax (SGST):</span>
+                  <span>9%</span>
+                  <span className="font-bold tabular-nums">₹ {selectedRow.sgst.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Integrated Tax (IGST):</span>
+                  <span>18%</span>
+                  <span className="font-bold tabular-nums">₹ {selectedRow.igst.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Full-Width Solid Obsidian Total Bar */}
+            <div className="bg-[#141619] text-white p-3.5 rounded-xl flex items-center justify-between font-mono">
+              <span className="text-xs uppercase font-bold text-slate-300">Net Tax Value:</span>
+              <span className="text-base font-black text-[#13A83C] tabular-nums">
+                ₹ {(selectedRow.cgst + selectedRow.sgst + selectedRow.igst).toLocaleString('en-IN', {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+
+            {/* Two Equal-Width Bottom Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => alert('Voucher held for clarification.')}
+                className="py-2.5 rounded-xl bg-[#141619] hover:bg-[#0E0F10] text-white font-mono text-xs font-bold transition-all text-center"
+              >
+                Mark Pending
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowSignModal(true)}
+                className="py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-mono text-xs font-bold transition-all text-center shadow-md shadow-[#16A34A]/20"
+              >
+                Approve & File
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 3. Screen C: Pre-Filing Reconciliation & Sign-Off Modal */}
+      {showSignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#17191C] border border-[#E5E7EB] dark:border-[#24272B] rounded-2xl max-w-[620px] w-full p-6 text-[#0E0F10] dark:text-white space-y-5 shadow-2xl relative">
+            
+            {/* Header Row */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] dark:border-[#24272B]">
+              <div>
+                <h3 className="text-lg font-black tracking-tight font-sans">
+                  GSTR-3B Pre-Filing Reconciliation
+                </h3>
+                <span className="text-[11px] font-mono text-[#646A73] dark:text-[#9BA1AA]">
+                  November 2025 Return Cycle
+                </span>
+              </div>
+
+              <div className="text-right font-mono">
+                <span className="text-xs font-bold text-[#2F8AE0]">186 Invoices</span>
+                <div className="text-sm font-black tabular-nums">₹ 8,56,000.00</div>
+              </div>
+            </div>
+
+            {/* Ledger Breakdown Blocks */}
+            <div className="space-y-3 font-mono text-xs">
+              
+              {/* Credit Ledger Block */}
+              <div className="p-3.5 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-2">
+                <div className="text-[10px] uppercase text-[#646A73] dark:text-[#9BA1AA] font-bold">
+                  Electronic Credit Ledger (ITC Utilization)
+                </div>
+                <div className="flex justify-between">
+                  <span>Available GSTR-2B ITC:</span>
+                  <span className="font-bold tabular-nums">₹ 1,48,920.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Section 17(5) Ineligible Blocked Credit:</span>
+                  <span className="text-[#DC2626] font-bold tabular-nums">-₹ 0.00</span>
+                </div>
+                <div className="flex justify-between border-t border-[#E5E7EB] dark:border-[#24272B] pt-1">
+                  <span>Net ITC Available:</span>
+                  <span className="text-[#16A34A] font-bold tabular-nums">₹ 1,48,920.00</span>
+                </div>
+              </div>
+
+              {/* Cash Ledger Block */}
+              <div className="p-3.5 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-2">
+                <div className="text-[10px] uppercase text-[#646A73] dark:text-[#9BA1AA] font-bold">
+                  Electronic Cash Ledger (RCM & Cash Floor)
+                </div>
+                <div className="flex justify-between">
+                  <span>Rule 86B Mandatory Cash (1%):</span>
+                  <span className="font-bold tabular-nums">₹ 8,560.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Reverse Charge (RCM 9(3)):</span>
+                  <span className="font-bold tabular-nums">₹ 15,590.00</span>
+                </div>
+                <div className="flex justify-between border-t border-[#E5E7EB] dark:border-[#24272B] pt-1">
+                  <span>Net Cash Required:</span>
+                  <span className="text-[#DC2626] font-bold tabular-nums">₹ 24,150.00</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Verification Inputs */}
+            <div className="space-y-3 font-mono text-xs">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#646A73] dark:text-[#9BA1AA] mb-1">
+                  Cash Offset Amount (₹)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={cashOffsetInput}
+                    onChange={(e) => setCashOffsetInput(e.target.value)}
+                    className="w-full bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] rounded-lg px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2F8AE0]"
+                  />
+                  {cashOffsetInput && (
+                    <button
+                      onClick={() => setCashOffsetInput('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-[#646A73] dark:text-[#9BA1AA] mb-1">
+                  Filing Audit Note (Stored in MCA Rule 3 Immutable Logs)
+                </label>
+                <textarea
+                  rows={2}
+                  value={auditNote}
+                  onChange={(e) => setAuditNote(e.target.value)}
+                  className="w-full bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] rounded-lg p-2.5 text-xs font-sans focus:outline-none focus:border-[#2F8AE0]"
+                />
+              </div>
+            </div>
+
+            {/* Split Footer Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#E5E7EB] dark:border-[#24272B]">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSignModal(false)}
+                  className="px-4 py-2 rounded-xl bg-[#141619] text-white hover:bg-[#0E0F10] text-xs font-mono font-semibold transition-colors"
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteSign}
+                  className="px-5 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-mono font-bold transition-all shadow-md shadow-[#16A34A]/25"
+                >
+                  Offset & Sign via DSC
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => alert('Exporting Draft GSTR-3B JSON...')}
+                  className="px-3 py-1.5 rounded-lg border border-[#2F8AE0]/40 text-[#2F8AE0] hover:bg-[#ECF4FD] text-xs font-mono"
+                >
+                  Preview JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => alert('4-Pass 2B Recompute Triggered.')}
+                  className="px-3 py-1.5 rounded-lg border border-[#2F8AE0]/40 text-[#2F8AE0] hover:bg-[#ECF4FD] text-xs font-mono"
+                >
+                  Recompute 2B
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

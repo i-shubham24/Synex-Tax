@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "@synextax/web"],
+      "port": 3000
+    },
+    {
+      "name": "web-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "-w", "@synextax/web", "--", "-p", "3001"],
+      "port": 3001
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "@synextax/api"],
+      "port": 4000
+    }
+  ]
+}

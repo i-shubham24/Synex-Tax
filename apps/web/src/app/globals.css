@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Landing: TaxMate palette */
+  --ink: #141416;
+  --ink-soft: #55565c;
+  --paper: #ffffff;
+  --mist: #f4f5f7;
+  --hairline: #e7e8ec;
+  --mint: #5fe88a;
+  --mint-pale: #a8f2c0;
+  --sky: #52b0f8;
+  --night: #1b1b1d;
+  --night-2: #232326;
+
+  /* Hero: Legite palette */
+  --hero-backdrop: #dedee4;
+  --hero-canvas: #f7f7fa;
+  --hero-indigo: #5a50f2;
+  --hero-gold: #f2b53a;
+
+  /* Dashboard: POS layout in the site palette (RGB channels so Tailwind opacity works) */
+  --pos-surface: 255 255 255;
+  --pos-muted: 245 247 250;
+  --pos-tint: 236 244 253;
+  --pos-line: 222 232 243;
+  --pos-accent: 47 138 224;
+  --pos-accent-deep: 31 115 196;
+  --pos-ink: 20 20 22;
+  --pos-head: 27 27 29;
+  --pos-green: 20 164 77;
+  --pos-red: 226 59 59;
+  --pos-grey: 150 152 160;
+
+  /* Legacy tokens still referenced by dashboard sub-pages */
+  --background: #ffffff;
+  --foreground: #141416;
+  --card: #f7f8fa;
+  --card-foreground: #141416;
+  --border: #e5e7eb;
+  --muted: #646a73;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Guard: nothing decorative may ever widen the page (clip does not create a scroll container). */
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--mint);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Site base: plain white behind the few rounded sections ---------- */
+.site-base {
+  background-color: #ffffff;
+}
+/* Light rounded sections: the soft blue-to-mint wash from the TaxMate boards, never grey */
+.round-light {
+  background: linear-gradient(135deg, #edf3fd 0%, #f5f8fb 48%, #eaf8f0 100%);
+  box-shadow: inset 0 0 0 1px rgba(20, 20, 22, 0.05);
+}
+.round-light .border-hairline,
+.round-light.border-hairline {
+  border-color: rgba(20, 20, 22, 0.07);
+}
+
+/* Footer only: a very faint square grid on white, as in the reference footer */
+.site-grid {
+  background-color: #ffffff;
+  background-image: linear-gradient(to right, rgba(20, 20, 22, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 20, 22, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: center top;
+}
+
+/* ---------- Pixel texture used on TaxMate stepped blocks ---------- */
+.pixel-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.pixel-field i {
+  position: absolute;
+  display: block;
+  background: currentColor;
+  transition: opacity 600ms ease;
+}
+.pixel-host:hover .pixel-field i[data-twinkle='1'] {
+  opacity: 0.05 !important;
+}
+
+/* ---------- Dashboard (POS layout, site palette) ---------- */
+.pos-root.dark {
+  --pos-surface: 30 30 33;
+  --pos-muted: 39 39 43;
+  --pos-tint: 30 42 58;
+  --pos-line: 52 56 64;
+  --pos-accent: 110 186 250;
+  --pos-accent-deep: 150 205 252;
+  --pos-ink: 236 236 240;
+  --pos-head: 46 46 51;
+  --pos-green: 95 232 138;
+  --pos-red: 255 118 118;
+  --pos-grey: 125 127 135;
+  color-scheme: dark;
+}
+.pos-root,
+.pos-root .font-sans {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
+.pos-root {
+  background: rgb(var(--pos-surface));
+  color: rgb(var(--pos-ink));
+}
+.pos-header {
+  background: linear-gradient(90deg, #edf3fd 0%, #f3f8fb 55%, #eaf8f0 100%);
+  border-color: rgb(var(--pos-line));
+}
+.pos-root.dark .pos-header {
+  background: linear-gradient(90deg, #1d2430 0%, #1e1f24 55%, #1b2621 100%);
+}
+.pos-card {
+  background: rgb(var(--pos-surface));
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgb(var(--pos-accent) / 0.08), 0 10px 30px -14px rgb(var(--pos-accent) / 0.3);
+}
+/* In dark mode the accent is a light sky, so text on accent fills switches to ink. */
+.pos-root.dark .bg-pos-accent.text-white,
+.pos-root.dark .bg-pos-accent .text-white {
+  color: #141416;
+}
+.pos-root.dark .pos-card {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06), 0 14px 34px -18px rgb(0 0 0 / 0.8);
+}
+/* POS uses one rounded geometric face; monospace is kept only for statutory identifiers (.ident). */
+.pos-root .font-mono:not(.ident) {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+/* Every data table gets the POS dark header row */
+.pos-root main table thead th {
+  background: rgb(var(--pos-head)) !important;
+  color: #fff !important;
+  font-weight: 500;
+}
+.pos-root main table thead th:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+.pos-root main table thead th:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+/* Legacy bordered cards pick up the soft sky glow */
+.pos-root main .rounded-2xl.border,
+.pos-root main .rounded-xl.border.shadow-sm {
+  border-color: rgb(var(--pos-accent) / 0.12) !important;
+  box-shadow: 0 10px 30px -16px rgb(var(--pos-accent) / 0.3) !important;
+}
+.pos-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.pos-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--pos-accent) / 0.35);
+  border-radius: 8px;
+}
+
+/* Keyboard-first grid cell focus */
+.grid-cell:focus {
+  outline: 2px solid rgb(var(--pos-accent));
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
