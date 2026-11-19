@@ -45,19 +45,19 @@ Confirmed and safe to build: 2-year TDS correction window (s.397(3)(f), from the
 
 | Feature | Phase | UI | API/Data |
 |---|---|---|---|
-| Role-aware rail, 72/220px collapsible with labels | P1 | Partial (icon rail, not role-aware, not expandable) | Roles exist in DB |
-| Firm + active client context pill | P1 | Missing | Missing |
-| Cmd+K command bar (search + `> file 3b` actions) | P1 | Partial (static search box) | Missing |
-| Portal health pill with latency | P1 | Partial (static dots) | Partial (`/compliance/portal-health`) |
-| Local DSC agent live pill (polls 127.0.0.1) | P1 | Missing | Agent `/health` exists |
-| Trial / plan meter badge | P1 | Missing | Partial (subscriptions table) |
-| Categorised notification centre | P1 | Partial (static list) | Missing |
-| Theme toggle, profile, role badge, MFA status, session lock | P1 | Partial (no MFA status, no lock) | Partial |
-| Rush-day support widget | P1 | Missing | Missing |
-| Control Tower period pills + staff/group/category chips | P1 | Partial (period pills only) | Missing |
-| Bento: tax donut, 2x2 KPIs linking to queues, ITC vs cash bars, velocity spline, at-risk list | P1 | Partial (mock data, KPIs not linked) | Missing |
-| Risk Radar strip (3-year cliff, pre-14 IMS, token watch, DSC/FIPS expiry, TDS correction + ISD) | P1 | Missing | Partial (expiry + ISD views, pre-14 route) |
-| Filing Matrix view, Partner approval queue, staff workload bars | P1 | Missing | Missing |
+| Role-aware rail, 72/220px collapsible with labels | P1 | **Done** (M1) | Roles exist in DB |
+| Firm + active client context pill | P1 | **Done** (M1, session-persisted) | Missing |
+| Cmd+K command bar (search + `> file 3b` actions) | P1 | **Done** (M1, client-side search) | Server search: Missing |
+| Portal health pill with latency | P1 | Partial (GSTN, NIC IRP, TRACES, ITD with latency; static values) | Partial (`/compliance/portal-health`) |
+| Local DSC agent live pill (polls 127.0.0.1) | P1 | **Done** (M1, polls `/health` every 15 s) | Agent `/health` exists |
+| Trial / plan meter badge | P1 | **Done** (M1) | Partial (subscriptions table) |
+| Categorised notification centre | P1 | **Done** (M1, sample events) | Missing |
+| Theme toggle, profile, role badge, MFA status, session lock | P1 | **Done** (M1; unlock checks code format until the API verifies TOTP) | Partial |
+| Rush-day support widget | P1 | **Done** (M1, drafts kept locally until the desk API exists) | Missing |
+| Control Tower period pills + staff/group/category chips | P1 | **Done** (M1) | Missing |
+| Bento: tax donut, 2x2 KPIs linking to queues, ITC vs cash bars, velocity spline, at-risk list | P1 | **Done** (M1, sample data) | Missing |
+| Risk Radar strip (3-year cliff, pre-14 IMS, token watch, DSC/FIPS expiry, TDS correction + ISD) | P1 | **Done** (M1) | Rules **Done** in `tax-engine/compliance` (unit-tested) |
+| Filing Matrix view, Partner approval queue, staff workload bars | P1 | **Done** (M1, sample data) | Missing |
 | Client list + floating inspector, masked PAN with audited reveal | P1 | Partial (list + inspector, reveal not wired) | Partial (CRUD, reveal route) |
 | Entity 360 with six tabs | P1 | Missing | Partial (tables exist) |
 | GSTN API access manager + WhatsApp setup card | P1 | Missing | Missing (no session table) |
@@ -107,7 +107,12 @@ Confirmed and safe to build: 2-year TDS correction window (s.397(3)(f), from the
 | Audit: edit log viewer with diffs, signing trail, PII reveal log, Rule 3(6) PDF, DPDP + legal hold vault, offboarding export | P1 | Partial (audit page, reveal gate) | Partial (audit tables, `/audit/logs`) |
 | Settings: profile, team RBAC + maker-checker, integrations + flags view, MFA + passkeys + sessions, subscription + e-mandate + GST invoices | P1 | Partial (settings page) | Partial |
 
-## 3. Build order
+## 3. Progress log
+
+- **19 Nov 2026, Milestones 0 and 1 (front end):** spec route map under a `(workspace)` route group with redirects from `/dashboard/*`; workspace store (active client, filters, error log); typed sample firm + live adapter for `/client-master/tree` (`NEXT_PUBLIC_DATA_SOURCE=api`); statutory calendar and radar rules in `packages/tax-engine/src/compliance` with 11 unit tests; full Milestone 1 shell and Control Tower.
+- **Still open from Milestone 0:** the API has no login endpoint and its client-master routes keep data in memory, so live data needs: dev Postgres (PGlite socket server), migrations + seed, a login endpoint issuing JWTs, and the routes moved onto the database.
+
+## 4. Build order
 
 Each milestone ships UI, API and data together, against the `MockGspAdapter`, so screens stop being mock-only as they are built.
 

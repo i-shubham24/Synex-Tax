@@ -82,7 +82,7 @@ export interface ImsRecord {
  * no action are deemed accepted then. Alerts open 48 hours before that cut-off.
  * @param period YYYY-MM of the inward-supply period
  */
-export function pre14ImsGuard(records: ImsRecord[], period: string, nowMs: number, threshold = 25_000) {
+export function pre14ImsGuard<T extends ImsRecord>(records: T[], period: string, nowMs: number, threshold = 25_000) {
   const y = Number(period.slice(0, 4));
   const m = Number(period.slice(5, 7));
   const cutoff = makeDate(y, m + 1, 14);
