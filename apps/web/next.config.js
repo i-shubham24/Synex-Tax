@@ -9,10 +9,12 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    const rawApiUrl = process.env.API_URL;
+    const apiUrl = rawApiUrl ? rawApiUrl.replace(/\/+$/, '') : 'http://127.0.0.1:4000';
     return [
       {
         source: '/api/:path*',
-        destination: process.env.API_URL || 'http://127.0.0.1:4000/api/:path*',
+        destination: apiUrl.endsWith('/api') ? `${apiUrl}/:path*` : `${apiUrl}/api/:path*`,
       },
     ];
   },
