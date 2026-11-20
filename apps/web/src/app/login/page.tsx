@@ -46,7 +46,7 @@ export default function LoginPage() {
     setTotpError(undefined);
     setBusy(true);
     try {
-      const ok = await login(email, password, role);
+      const ok = await login(email, password, role, totp);
       if (ok) router.push('/dashboard');
       else setError('That email and password do not match an account. Check them and try again.');
     } catch {

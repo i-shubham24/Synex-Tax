@@ -114,8 +114,8 @@ CREATE FUNCTION app.capture_audit_event() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, public, app, audit AS $$
 DECLARE
+  v_ctx       record;
   v_firm_id   uuid;
-  v_user_id   uuid;
   v_actor     public.actor_kind;
   v_ip        inet;
   v_req_id    text;
@@ -125,69 +125,57 @@ DECLARE
   v_new       jsonb;
   v_diff      jsonb;
 BEGIN
-  v_firm_id := app.ctx_firm_id();
-  v_user_id := app.ctx_user_id();
-  v_actor   := COALESCE(app.ctx_actor_kind()::public.actor_kind, 'USER'::public.actor_kind);
-  v_ip      := app.ctx_ip();
-  v_req_id  := app.ctx_request_id();
-  v_ua      := app.ctx_user_agent();
+  -- Actor comes only from the HMAC-verified context (app.verified_context), never from raw settings.
+  SELECT * INTO v_ctx FROM app.verified_context();
+  IF v_ctx.firm_id IS NOT NULL THEN
+    v_actor  := v_ctx.actor_kind::public.actor_kind;
+    v_ip     := app.ctx_ip();
+    v_req_id := app.ctx_request_id();
+    v_ua     := app.ctx_user_agent();
+  ELSE
+    -- No signed context: platform provisioning, migrations or an unsigned worker.
+    v_actor := 'SYSTEM_JOB';
+  END IF;
 
-  IF TG_OP = 'DELETE' THEN
-    v_rec_id := OLD.id;
+  IF TG_OP IN ('UPDATE', 'DELETE') THEN
     v_old := to_jsonb(OLD);
-    -- Safe jsonb extraction for firm_id fallback
-    IF v_firm_id IS NULL AND (v_old ? 'firm_id') THEN
-      v_firm_id := NULLIF(v_old ->> 'firm_id', '')::uuid;
-    END IF;
-    -- Strip ciphertext and hash keys
+  END IF;
+  IF TG_OP IN ('INSERT', 'UPDATE') THEN
+    v_new := to_jsonb(NEW);
+  END IF;
+  v_rec_id := NULLIF(COALESCE(v_new, v_old) ->> 'id', '')::uuid;
+
+  -- Tenant comes from the row itself (a firm row is its own tenant), then the verified context.
+  v_firm_id := NULLIF(COALESCE(v_new, v_old) ->> 'firm_id', '')::uuid;
+  IF v_firm_id IS NULL AND TG_TABLE_SCHEMA = 'public' AND TG_TABLE_NAME = 'firms' THEN
+    v_firm_id := v_rec_id;
+  END IF;
+  v_firm_id := COALESCE(v_firm_id, v_ctx.firm_id);
+
+  -- Strip ciphertext and hash keys so credentials never reach the audit trail.
+  IF v_old IS NOT NULL THEN
     SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb) INTO v_old
     FROM jsonb_each(v_old)
-    WHERE key NOT LIKE '%_ciphertext' AND key NOT LIKE '%_hash';
-
-  ELSIF TG_OP = 'INSERT' THEN
-    v_rec_id := NEW.id;
-    v_new := to_jsonb(NEW);
-    -- Safe jsonb extraction for firm_id fallback
-    IF v_firm_id IS NULL AND (v_new ? 'firm_id') THEN
-      v_firm_id := NULLIF(v_new ->> 'firm_id', '')::uuid;
-    END IF;
-    -- Strip ciphertext and hash keys
+    WHERE key NOT LIKE '%\_ciphertext' AND key NOT LIKE '%\_hash';
+  END IF;
+  IF v_new IS NOT NULL THEN
     SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb) INTO v_new
     FROM jsonb_each(v_new)
-    WHERE key NOT LIKE '%_ciphertext' AND key NOT LIKE '%_hash';
+    WHERE key NOT LIKE '%\_ciphertext' AND key NOT LIKE '%\_hash';
+  END IF;
 
-  ELSIF TG_OP = 'UPDATE' THEN
-    v_rec_id := NEW.id;
-    v_old := to_jsonb(OLD);
-    v_new := to_jsonb(NEW);
-
-    -- Safe jsonb extraction for firm_id fallback
-    IF v_firm_id IS NULL AND (v_new ? 'firm_id') THEN
-      v_firm_id := NULLIF(v_new ->> 'firm_id', '')::uuid;
-    END IF;
-
-    -- Strip sensitive keys from old and new
-    SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb) INTO v_old
-    FROM jsonb_each(v_old)
-    WHERE key NOT LIKE '%_ciphertext' AND key NOT LIKE '%_hash';
-
-    SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb) INTO v_new
-    FROM jsonb_each(v_new)
-    WHERE key NOT LIKE '%_ciphertext' AND key NOT LIKE '%_hash';
-
-    -- Calculate jsonb diff of altered keys
+  IF TG_OP = 'UPDATE' THEN
     SELECT jsonb_object_agg(key, jsonb_build_object('old', v_old -> key, 'new', v_new -> key))
     INTO v_diff
     FROM jsonb_each(v_new)
     WHERE v_new -> key IS DISTINCT FROM v_old -> key;
 
-    -- Skip audit log if nothing actually changed
+    -- Skip the audit row if nothing that is logged actually changed.
     IF v_diff IS NULL OR v_diff = '{}'::jsonb THEN
       RETURN NEW;
     END IF;
   END IF;
 
-  -- Insert directly into immutable_audit_logs
   INSERT INTO audit.immutable_audit_logs (
     firm_id, table_schema, table_name, record_id, action,
     old_data, new_data, diff, actor_id, actor_kind,
@@ -195,7 +183,7 @@ BEGIN
   ) VALUES (
     COALESCE(v_firm_id, '00000000-0000-0000-0000-000000000000'::uuid),
     TG_TABLE_SCHEMA, TG_TABLE_NAME, v_rec_id, TG_OP,
-    v_old, v_new, v_diff, v_user_id, v_actor,
+    v_old, v_new, v_diff, v_ctx.user_id, v_actor,
     v_ip, v_ua, v_req_id, now()
   );
 
@@ -234,17 +222,24 @@ CREATE FUNCTION audit.log_signing_event(
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, public, app, audit AS $$
 DECLARE
-  v_log_id uuid;
+  v_log_id uuid := gen_random_uuid();
 BEGIN
+  -- Only for the caller's own, HMAC-verified firm.
+  IF p_firm_id IS NULL OR p_firm_id IS DISTINCT FROM app.current_firm_id() THEN
+    RAISE EXCEPTION 'AUDIT_CONTEXT_MISMATCH: signing events can only be logged for the verified firm.'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  -- Explicit id instead of RETURNING: the writer role may append but never read audit rows.
   INSERT INTO audit.signing_audit_logs (
-    firm_id, entity_id, dsc_id, cert_serial_hex, holder_pan, holder_name,
+    id, firm_id, entity_id, dsc_id, cert_serial_hex, holder_pan, holder_name,
     operation, payload_hash, signature_nonce, token_profile,
     ip_addr, client_user_agent, status, error_code, error_message, signed_at
   ) VALUES (
-    p_firm_id, p_entity_id, p_dsc_id, p_cert_serial_hex, p_holder_pan, p_holder_name,
+    v_log_id, p_firm_id, p_entity_id, p_dsc_id, p_cert_serial_hex, p_holder_pan, p_holder_name,
     p_operation, p_payload_hash, p_signature_nonce, p_token_profile,
     app.ctx_ip(), app.ctx_user_agent(), p_status, p_error_code, p_error_message, now()
-  ) RETURNING id INTO v_log_id;
+  );
 
   RETURN v_log_id;
 END;
@@ -264,15 +259,28 @@ CREATE FUNCTION audit.log_pii_access(
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, public, app, audit AS $$
 DECLARE
-  v_log_id bigint;
+  v_user_id uuid := app.current_user_id();
+  v_log_id  bigint;
 BEGIN
+  -- A reveal is always logged against the signed user and their own firm.
+  IF p_firm_id IS NULL OR p_firm_id IS DISTINCT FROM app.current_firm_id() OR v_user_id IS NULL THEN
+    RAISE EXCEPTION 'AUDIT_CONTEXT_MISMATCH: PII reveals can only be logged by a verified user for their own firm.'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF length(btrim(COALESCE(p_access_reason, ''))) < 5 THEN
+    RAISE EXCEPTION 'PII_REASON_REQUIRED: State why the full value is needed.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- Explicit id instead of RETURNING: the writer role may append but never read audit rows.
+  v_log_id := nextval(pg_get_serial_sequence('audit.pii_access_logs', 'id'));
   INSERT INTO audit.pii_access_logs (
-    firm_id, entity_id, user_id, target_table, target_column,
+    id, firm_id, entity_id, user_id, target_table, target_column,
     record_id, access_reason, ip_addr, request_id, accessed_at
   ) VALUES (
-    p_firm_id, p_entity_id, app.ctx_user_id(), p_target_table, p_target_column,
+    v_log_id, p_firm_id, p_entity_id, v_user_id, p_target_table, p_target_column,
     p_record_id, p_access_reason, app.ctx_ip(), app.ctx_request_id(), now()
-  ) RETURNING id INTO v_log_id;
+  );
 
   RETURN v_log_id;
 END;
@@ -285,6 +293,24 @@ SET ROLE synextax_audit_writer;
 GRANT EXECUTE ON FUNCTION audit.log_signing_event(uuid,uuid,uuid,varchar,varchar,varchar,varchar,char,uuid,varchar,varchar,varchar,text) TO synextax_owner, synextax_app;
 GRANT EXECUTE ON FUNCTION audit.log_pii_access(uuid,uuid,varchar,varchar,uuid,text) TO synextax_owner, synextax_app;
 SET ROLE synextax_owner;
+
+-- ---------------------------------------------------------------------
+-- 4b. Audit the Client Master and governance tables (MCA Rule 3(1) edit log).
+-- GST and TDS tables attach the same trigger in 0006 and 0007.
+-- ---------------------------------------------------------------------
+CREATE TRIGGER trg_audit_firms        AFTER INSERT OR UPDATE OR DELETE ON public.firms                   FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_users        AFTER INSERT OR UPDATE OR DELETE ON public.users                   FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_assignments  AFTER INSERT OR UPDATE OR DELETE ON public.user_client_assignments FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_groups       AFTER INSERT OR UPDATE OR DELETE ON public.client_groups           FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_entities     AFTER INSERT OR UPDATE OR DELETE ON public.entities                FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_contacts     AFTER INSERT OR UPDATE OR DELETE ON public.entity_contacts         FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_banks        AFTER INSERT OR UPDATE OR DELETE ON public.entity_bank_accounts    FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_gst_regs     AFTER INSERT OR UPDATE OR DELETE ON public.gst_registrations       FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_tan_regs     AFTER INSERT OR UPDATE OR DELETE ON public.tan_registrations       FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_dsc          AFTER INSERT OR UPDATE OR DELETE ON public.dsc_inventory           FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_dsc_portal   AFTER INSERT OR UPDATE OR DELETE ON public.dsc_portal_registrations FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_consents     AFTER INSERT OR UPDATE OR DELETE ON public.dpdp_consent_records    FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_legal_holds  AFTER INSERT OR UPDATE OR DELETE ON public.statutory_legal_holds   FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
 
 -- ---------------------------------------------------------------------
 -- 5. Permissions Lockdown

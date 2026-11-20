@@ -111,6 +111,15 @@ Confirmed and safe to build: 2-year TDS correction window (s.397(3)(f), from the
 
 - **19 Nov 2026, Milestones 0 and 1 (front end):** spec route map under a `(workspace)` route group with redirects from `/dashboard/*`; workspace store (active client, filters, error log); typed sample firm + live adapter for `/client-master/tree` (`NEXT_PUBLIC_DATA_SOURCE=api`); statutory calendar and radar rules in `packages/tax-engine/src/compliance` with 11 unit tests; full Milestone 1 shell and Control Tower.
 - **Still open from Milestone 0:** the API has no login endpoint and its client-master routes keep data in memory, so live data needs: dev Postgres (PGlite socket server), migrations + seed, a login endpoint issuing JWTs, and the routes moved onto the database.
+- **20 Nov 2026, Master Engineering spec Checkpoint 1 (database):** source of truth is now `docs/product/master-engineering-source.md`. Most Section 2A fixes were already in `packages/db/migrations`. Closed the rest and fixed what the new suite exposed:
+  - HMAC context could be bypassed three ways: a NULL signature or NULL expiry passed the check, and `current_firm_id()` trusted a `context_verified` setting that any role can write with `set_config`. Context is now re-verified on every read (`app.verified_context()`); tampering with any setting voids the whole context.
+  - Audit capture took the actor from raw settings and could never insert (FORCE RLS with no writer policy). Now: tenant from the row, actor from the verified context, append-only writer policies, Client Master and governance tables audited, PII/signing writers refuse other firms.
+  - `is_entity_visible` saw no users under RLS, so staff and managers saw nothing. Helper read policies added.
+  - Maker-checker referenced a non-existent `PARTNER_SIGNED` status and `created_by` column, and failed open with no role. Rewritten: FILED needs a PARTNER or delegated MANAGER (or a signed job with a recorded checker), maker is fixed at insert, signer must not be maker.
+  - Period locks now cover INSERT. GSTR-7 return type, Form 144 remittance code registry (empty until loaded from the official utility), global tables re-revoked after the blanket grant, billing guard uses the signed actor.
+  - Verification: `npm run migrate:test -w @synextax/db` on PGlite 0.4.6 = PostgreSQL 17.5 with real pgcrypto, 35/35 passing. Log in `packages/db/reports/checkpoint1-verification.log`.
+  - Pins: Go 1.27 / toolchain go1.27.4, Node `22.x` + `.nvmrc`, Next `~16.4.6`, Postgres 17 compose (already). API refuses the dev HMAC secret in production.
+- **20 Nov 2026, Checkpoint 2 (live site):** space restored in "clarity and compliance so your team can breathe easy"; `/privacy` (DPDP Act), `/terms` and `/contact` pages added; nav and footer links work from every page; pricing already server-rendered. Tax-engine unit tests for Sec 170, Sec 516, Rule 269, 88A/86B, Advisory 643 and validators already existed. Company emails, Grievance Officer and courts clause in `apps/web/src/lib/legal.ts` need confirming before launch.
 
 ## 4. Build order
 

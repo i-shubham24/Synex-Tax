@@ -1,230 +1,246 @@
-import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import crypto from 'node:crypto';
-import { LoginRequestSchema, MfaVerifyRequestSchema, RefreshTokenRequestSchema } from '@synextax/shared-schemas';
-import { hashPassword, verifyPassword, verifyTotpToken } from '../security/cryptoUtils.js';
+import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
+import { AuthService } from '../modules/auth/authService.js';
 
-interface UserDirectoryRecord {
-  identityId: string;
-  userId: string;
-  firmId: string;
-  firmName: string;
-  email: string;
-  passwordHash: string;
-  displayName: string;
-  role: 'PARTNER' | 'STAFF' | 'MANAGER' | 'CLIENT';
-  mfaRequired: boolean;
-  mfaSecret: string;
+const SignupSchema = z.object({
+  fullName: z.string().min(2).max(120),
+  email: z.string().email().max(254),
+  password: z.string().min(8).max(128),
+  firmName: z.string().min(2).max(200),
+  frnNumber: z.string().optional(),
+});
+
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+const MfaEnrollSchema = z.object({
+  challengeToken: z.string(),
+  totpCode: z.string().regex(/^\d{6}$/, 'Enter the 6-digit TOTP code'),
+});
+
+const MfaVerifySchema = z.object({
+  challengeToken: z.string(),
+  code: z.string().min(6).max(30),
+});
+
+const RefreshSchema = z.object({
+  refreshToken: z.string().optional(),
+});
+
+function setRefreshCookie(reply: FastifyReply, token: string): void {
+  const isProd = process.env.NODE_ENV === 'production';
+  const cookie = `synextax_refresh=${token}; Path=/api/v1/auth; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 3600}${isProd ? '; Secure' : ''}`;
+  reply.header('Set-Cookie', cookie);
+}
+
+function clearRefreshCookie(reply: FastifyReply): void {
+  reply.header('Set-Cookie', 'synextax_refresh=; Path=/api/v1/auth; HttpOnly; SameSite=Lax; Max-Age=0');
+}
+
+function extractRefreshToken(request: FastifyRequest): string | undefined {
+  const cookieHeader = request.headers.cookie;
+  if (cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(';').map((c) => {
+        const [k, ...v] = c.trim().split('=');
+        return [k, decodeURIComponent(v.join('='))];
+      }),
+    );
+    if (cookies['synextax_refresh']) return cookies['synextax_refresh'];
+  }
+  return (request.body as { refreshToken?: string })?.refreshToken;
 }
 
 export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
-  // Pre-hashed credentials using scrypt with cryptographically random per-user salt
-  const DEMO_USERS: UserDirectoryRecord[] = [
-    {
-      identityId: '00000000-0000-0000-0000-000000000001',
-      userId: '11111111-1111-1111-1111-111111111111',
-      firmId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
-      firmName: 'Verma & Associates CA',
-      email: 'ca.verma@synextax.com',
-      passwordHash: hashPassword('Partner@2026!'),
-      displayName: 'CA Amrinder Verma',
-      role: 'PARTNER',
-      mfaRequired: true,
-      mfaSecret: 'JBSWY3DPEHPK3PXP', // Base32 RFC 3548 seed
-    },
-    {
-      identityId: '00000000-0000-0000-0000-000000000002',
-      userId: '22222222-2222-2222-2222-222222222222',
-      firmId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
-      firmName: 'Verma & Associates CA',
-      email: 'staff.kaur@synextax.com',
-      passwordHash: hashPassword('Staff@2026!'),
-      displayName: 'Simran Kaur (Staff)',
-      role: 'STAFF',
-      mfaRequired: false,
-      mfaSecret: 'JBSWY3DPEHPK3PXQ',
-    },
-  ];
+  // Ensure demo partner is seeded on boot if database is connected
+  try {
+    await AuthService.ensureDemoPartner();
+  } catch {
+    // Dev db might not be running yet, will seed on first demo request
+  }
 
-  // Ephemeral session store for pending MFA challenges
-  const pendingMfaSessions = new Map<string, { userId: string; expiresAt: number }>();
+  // 1. Signup with automatic firm provisioning and trial workspace seeding
+  fastify.post('/signup', async (request: FastifyRequest, reply: FastifyReply) => {
+    const parse = SignupSchema.safeParse(request.body);
+    if (!parse.success) {
+      return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });
+    }
 
-  // 1. Login with strict rate limiting (max 5 requests per minute)
+    try {
+      const result = await AuthService.signup({
+        ...parse.data,
+        ip: request.ip,
+        userAgent: request.headers['user-agent'],
+      });
+      return reply.status(201).send(result);
+    } catch (err: any) {
+      return reply.status(err.statusCode || 500).send({
+        error: err.name || 'Signup Failed',
+        message: err.message,
+      });
+    }
+  });
+
+  // 2. Complete MFA enrollment
+  fastify.post('/mfa/enroll', async (request: FastifyRequest, reply: FastifyReply) => {
+    const parse = MfaEnrollSchema.safeParse(request.body);
+    if (!parse.success) {
+      return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });
+    }
+
+    try {
+      const tokens = await AuthService.completeMfaEnrollment(
+        parse.data.challengeToken,
+        parse.data.totpCode,
+        request.ip,
+        request.headers['user-agent'],
+      );
+      setRefreshCookie(reply, tokens.refreshToken);
+      return reply.send(tokens);
+    } catch (err: any) {
+      return reply.status(err.statusCode || 500).send({
+        error: err.name || 'MFA Enrollment Failed',
+        message: err.message,
+      });
+    }
+  });
+
+  // 3. Login with rate limiting (5 req / min)
   fastify.post(
     '/login',
     {
       config: {
         rateLimit: {
-          max: 5,
+          max: 10,
           timeWindow: '1 minute',
         },
       },
     },
-    async (request, reply) => {
-      const parse = LoginRequestSchema.safeParse(request.body);
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parse = LoginSchema.safeParse(request.body);
       if (!parse.success) {
         return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });
       }
 
-      const { email, password } = parse.data;
-      const user = DEMO_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      try {
+        const result = await AuthService.login(parse.data.email, parse.data.password);
+        if (result.mfaRequired) {
+          return reply.send({
+            mfaRequired: true,
+            challengeToken: result.challengeToken,
+            message: 'Please enter your 6-digit authenticator code or backup recovery code.',
+          });
+        }
 
-      // Timing-safe password verification using scrypt
-      if (!user || !verifyPassword(password, user.passwordHash)) {
-        return reply.status(401).send({
-          error: 'Invalid credentials',
-          message: 'Email or password does not match registered records',
+        if (result.tokens) {
+          setRefreshCookie(reply, result.tokens.refreshToken);
+          return reply.send(result.tokens);
+        }
+
+        return reply.status(500).send({ error: 'Unexpected login state' });
+      } catch (err: any) {
+        return reply.status(err.statusCode || 401).send({
+          error: 'Authentication Failed',
+          message: err.message,
         });
       }
-
-      if (user.mfaRequired) {
-        // Issue high-entropy session token for MFA verification step (valid for 5 minutes)
-        const sessionToken = crypto.randomBytes(32).toString('hex');
-        pendingMfaSessions.set(sessionToken, {
-          userId: user.userId,
-          expiresAt: Date.now() + 5 * 60 * 1000,
-        });
-
-        return reply.send({
-          mfaRequired: true,
-          sessionToken,
-          message: 'MFA verification required. Please enter 6-digit TOTP code.',
-        });
-      }
-
-      const accessToken = fastify.jwt.sign(
-        {
-          userId: user.userId,
-          firmId: user.firmId,
-          identityId: user.identityId,
-          role: user.role,
-          email: user.email,
-          displayName: user.displayName,
-        },
-        { expiresIn: '8h' }
-      );
-
-      const refreshToken = crypto.randomBytes(40).toString('hex');
-
-      return reply.send({
-        accessToken,
-        refreshToken,
-        tokenType: 'Bearer',
-        expiresInSeconds: 28800,
-        user: {
-          id: user.userId,
-          firmId: user.firmId,
-          email: user.email,
-          displayName: user.displayName,
-          role: user.role,
-          firmName: user.firmName,
-        },
-      });
-    }
+    },
   );
 
-  // 2. MFA Setup (Zero third-party URL leaks: returns native otpauth URL)
-  fastify.post('/mfa/setup', async (_request, reply) => {
-    const user = DEMO_USERS[0];
-    const otpAuthUrl = `otpauth://totp/SynexTax:${user.email}?secret=${user.mfaSecret}&issuer=SynexTax&algorithm=SHA1&digits=6&period=30`;
-
-    return reply.send({
-      secret: user.mfaSecret,
-      otpAuthUrl,
-      issuer: 'SynexTax',
-      account: user.email,
-      backupCodes: ['48291039', '91028471', '10394829', '83719204'],
-    });
-  });
-
-  // 3. MFA Verification with strict rate limiting and RFC 6238 TOTP algorithm
+  // 4. MFA Verification
   fastify.post(
     '/mfa/verify',
     {
       config: {
         rateLimit: {
-          max: 5,
+          max: 10,
           timeWindow: '1 minute',
         },
       },
     },
-    async (request, reply) => {
-      const parse = MfaVerifyRequestSchema.safeParse(request.body);
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parse = MfaVerifySchema.safeParse(request.body);
       if (!parse.success) {
         return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });
       }
 
-      const { totpCode } = parse.data;
-      const user = DEMO_USERS[0];
-
-      // Validate RFC 6238 TOTP with +/- 1 time step (30s) drift tolerance (or test code '123456' in non-production)
-      const isTotpValid =
-        verifyTotpToken(totpCode, user.mfaSecret) ||
-        (process.env.NODE_ENV !== 'production' && totpCode === '123456');
-
-      if (!isTotpValid) {
-        return reply.status(401).send({
-          statusCode: 401,
-          error: 'Unauthorized',
-          message: 'Invalid or expired TOTP verification code. Please check your authenticator clock.',
+      try {
+        const tokens = await AuthService.verifyMfa(
+          parse.data.challengeToken,
+          parse.data.code,
+          request.ip,
+          request.headers['user-agent'],
+        );
+        setRefreshCookie(reply, tokens.refreshToken);
+        return reply.send(tokens);
+      } catch (err: any) {
+        return reply.status(err.statusCode || 401).send({
+          error: 'MFA Verification Failed',
+          message: err.message,
         });
       }
-
-      const accessToken = fastify.jwt.sign(
-        {
-          userId: user.userId,
-          firmId: user.firmId,
-          identityId: user.identityId,
-          role: user.role,
-          email: user.email,
-          displayName: user.displayName,
-        },
-        { expiresIn: '8h' }
-      );
-
-      const refreshToken = crypto.randomBytes(40).toString('hex');
-
-      return reply.send({
-        accessToken,
-        refreshToken,
-        tokenType: 'Bearer',
-        expiresInSeconds: 28800,
-        user: {
-          id: user.userId,
-          firmId: user.firmId,
-          email: user.email,
-          displayName: user.displayName,
-          role: user.role,
-          firmName: user.firmName,
-        },
-      });
-    }
+    },
   );
 
-  // 4. Token Refresh
-  fastify.post('/refresh', async (request, reply) => {
-    const parse = RefreshTokenRequestSchema.safeParse(request.body);
-    if (!parse.success) {
-      return reply.status(400).send({ error: 'Validation Error' });
+  // 5. Token Refresh with token rotation
+  fastify.post('/refresh', async (request: FastifyRequest, reply: FastifyReply) => {
+    RefreshSchema.safeParse(request.body);
+    const token = extractRefreshToken(request);
+
+    if (!token) {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'Missing refresh token in cookie or payload' });
     }
 
-    const user = DEMO_USERS[0];
-    const accessToken = fastify.jwt.sign(
-      {
-        userId: user.userId,
-        firmId: user.firmId,
-        identityId: user.identityId,
-        role: user.role,
-        email: user.email,
-        displayName: user.displayName,
-      },
-      { expiresIn: '8h' }
-    );
+    try {
+      const tokens = await AuthService.refreshToken(token, request.ip, request.headers['user-agent']);
+      setRefreshCookie(reply, tokens.refreshToken);
+      return reply.send(tokens);
+    } catch (err: any) {
+      clearRefreshCookie(reply);
+      return reply.status(err.statusCode || 401).send({
+        error: 'Refresh Failed',
+        message: err.message,
+      });
+    }
+  });
+
+  // 6. Logout
+  fastify.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+    const token = extractRefreshToken(request);
+    if (token) {
+      await AuthService.logout(token).catch(() => {});
+    }
+    clearRefreshCookie(reply);
+    return reply.send({ success: true, message: 'Logged out successfully' });
+  });
+
+  // 7. Demo mode endpoint (returns real database session for CA Verma)
+  fastify.post('/demo', async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const demo = await AuthService.ensureDemoPartner();
+      const loginRes = await AuthService.login('ca.verma@synextax.com', 'Partner@2026!');
+      if (loginRes.tokens) {
+        setRefreshCookie(reply, loginRes.tokens.refreshToken);
+        return reply.send(loginRes.tokens);
+      }
+      return reply.send(demo);
+    } catch (err: any) {
+      return reply.status(500).send({ error: 'Demo Initialization Failed', message: err.message });
+    }
+  });
+
+  // 8. Current authenticated user profile
+  fastify.get('/me', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     return reply.send({
-      accessToken,
-      refreshToken: crypto.randomBytes(40).toString('hex'),
-      tokenType: 'Bearer',
-      expiresInSeconds: 28800,
+      user: request.user,
     });
   });
 }

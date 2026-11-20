@@ -81,8 +81,8 @@ export function WhySwitch() {
           </div>
           <div className="p-6 sm:p-9">
             <h2 id="why-title" className="max-w-[34rem] text-[clamp(28px,2.9vw,42px)] font-normal leading-[1.18] tracking-[-0.035em] text-ink">
-              We connect clarity and compliance
-              <Toggle on={cloud} onChange={setCloud} />
+              We connect clarity and compliance{' '}
+              <Toggle on={cloud} onChange={setCloud} />{' '}
               so your team can breathe easy
               <span className="ml-2 inline-flex translate-y-[0.08em] items-center align-middle">
                 <span className="h-[0.8em] w-[0.8em] rounded-full bg-ink" />

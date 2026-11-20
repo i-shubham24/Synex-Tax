@@ -58,3 +58,20 @@ ehthumbs.db
 # Temporary / Scratch
 tmp/
 temp/
+
+# Local dev database (PGlite)
+packages/db/.pgdata/
+
+# Next.js agent rules file
+AGENTS.md
+apps/*/AGENTS.md
+
+# Python virtual environment & cache
+.venv/
+*/.venv/
+services/*/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/

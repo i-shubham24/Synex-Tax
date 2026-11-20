@@ -142,7 +142,7 @@ END;
 $$;
 
 CREATE TRIGGER trg_lock_sales_mutation
-  BEFORE UPDATE OR DELETE ON public.gst_invoices_sales
+  BEFORE INSERT OR UPDATE OR DELETE ON public.gst_invoices_sales
   FOR EACH ROW EXECUTE FUNCTION app.prevent_sales_mutation_on_locked_period();
 
 -- Purchase Register Immutability Guard (locked strictly when GSTR-3B is locked)
@@ -184,7 +184,7 @@ END;
 $$;
 
 CREATE TRIGGER trg_lock_purchase_mutation
-  BEFORE UPDATE OR DELETE ON public.gst_invoices_purchase
+  BEFORE INSERT OR UPDATE OR DELETE ON public.gst_invoices_purchase
   FOR EACH ROW EXECUTE FUNCTION app.prevent_purchase_mutation_on_locked_period();
 
 -- TDS Deductees Immutability Guard (locked when matching tds_return is in PORTAL_SAVED, FILED, CLOSED)
@@ -229,7 +229,7 @@ END;
 $$;
 
 CREATE TRIGGER trg_lock_tds_deductees_mutation
-  BEFORE UPDATE OR DELETE ON public.tds_deductees
+  BEFORE INSERT OR UPDATE OR DELETE ON public.tds_deductees
   FOR EACH ROW EXECUTE FUNCTION app.prevent_tds_deductee_mutation_on_locked_quarter();
 
 -- TDS Challans Immutability Guard
@@ -274,7 +274,7 @@ END;
 $$;
 
 CREATE TRIGGER trg_lock_tds_challans_mutation
-  BEFORE UPDATE OR DELETE ON public.tds_challans
+  BEFORE INSERT OR UPDATE OR DELETE ON public.tds_challans
   FOR EACH ROW EXECUTE FUNCTION app.prevent_tds_challan_mutation_on_locked_quarter();
 
 -- ---------------------------------------------------------------------

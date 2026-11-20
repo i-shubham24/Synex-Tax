@@ -252,7 +252,7 @@ CREATE TABLE public.gst_filings (
   gst_registration_id         uuid NOT NULL,
   return_period               varchar(7) NOT NULL CHECK (return_period ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
   return_type                 varchar(12) NOT NULL
-                              CHECK (return_type IN ('GSTR1','GSTR1A','GSTR3B','IFF','CMP08','GSTR4','GSTR6','GSTR9','GSTR9C')),
+                              CHECK (return_type IN ('GSTR1','GSTR1A','GSTR3B','IFF','CMP08','GSTR4','GSTR6','GSTR7','GSTR9','GSTR9C')),
   workflow_status             public.filing_workflow_status NOT NULL DEFAULT 'DRAFT',
   statutory_due_date          date NOT NULL,
 
@@ -280,11 +280,13 @@ CREATE TABLE public.gst_filings (
   submission_payload          jsonb,
   gstn_ack_payload            jsonb,
   version                     integer NOT NULL DEFAULT 1,
+  created_by                  uuid,          -- maker; set from the verified context, immutable
   created_at                  timestamptz NOT NULL DEFAULT now(),
   updated_at                  timestamptz NOT NULL DEFAULT now(),
 
   UNIQUE (firm_id, id),
   UNIQUE (firm_id, gst_registration_id, return_period, return_type),
+  FOREIGN KEY (firm_id, created_by) REFERENCES public.users (firm_id, id),
   FOREIGN KEY (firm_id, entity_id) REFERENCES public.entities (firm_id, id),
   FOREIGN KEY (firm_id, gst_registration_id) REFERENCES public.gst_registrations (firm_id, id),
   FOREIGN KEY (firm_id, signed_by_user_id) REFERENCES public.users (firm_id, id),
@@ -312,7 +314,9 @@ CREATE FUNCTION app.validate_gstr3b_filing_guards() RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog, public, app, audit AS $$
 BEGIN
-  IF NEW.return_type = 'GSTR3B' AND NEW.workflow_status IN ('PARTNER_SIGNED','FILED') THEN
+  -- Checked when a GSTR-3B moves into PORTAL_SAVED or FILED, not on later edits of a filed row (ack payloads).
+  IF NEW.return_type = 'GSTR3B' AND NEW.workflow_status IN ('PORTAL_SAVED','FILED')
+     AND (TG_OP = 'INSERT' OR OLD.workflow_status IS DISTINCT FROM NEW.workflow_status) THEN
     -- Check 3-year cliff dynamically
     IF current_date > NEW.expiry_date_3yr THEN
       RAISE EXCEPTION 'PORTAL_LOCK_EXPIRED: Cannot file GSTR-3B for % as 3 years have elapsed since statutory due date %.', NEW.return_period, NEW.statutory_due_date
@@ -344,5 +348,6 @@ CREATE TRIGGER trg_touch BEFORE UPDATE ON public.gst_filings           FOR EACH 
 CREATE TRIGGER trg_audit_sales    AFTER INSERT OR UPDATE OR DELETE ON public.gst_invoices_sales    FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
 CREATE TRIGGER trg_audit_purchase AFTER INSERT OR UPDATE OR DELETE ON public.gst_invoices_purchase FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
 CREATE TRIGGER trg_audit_filings  AFTER INSERT OR UPDATE OR DELETE ON public.gst_filings           FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_ims      AFTER INSERT OR UPDATE OR DELETE ON public.ims_action_queue      FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
 
 RESET ROLE;

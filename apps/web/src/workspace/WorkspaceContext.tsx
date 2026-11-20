@@ -100,10 +100,8 @@ export function WorkspaceProvider({ token, children }: { token: string | null; c
   }, []);
 
   useEffect(() => {
-    if (!WANT_API) return;
-    // A real session token is a JWT (three dot-separated parts); demo sessions are not.
+    // A real session token is a JWT (three dot-separated parts); demo local sessions are not.
     if (!token || token.split('.').length !== 3) {
-      setSourceNote('Sign in with an API account to load live data');
       return;
     }
     let cancelled = false;

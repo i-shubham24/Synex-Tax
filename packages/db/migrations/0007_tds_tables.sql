@@ -192,11 +192,13 @@ CREATE TABLE public.tds_returns (
   signed_by_user_id               uuid,
   filed_at                        timestamptz,
   version                         integer NOT NULL DEFAULT 1,
+  created_by                      uuid,          -- maker; set from the verified context, immutable
   created_at                      timestamptz NOT NULL DEFAULT now(),
   updated_at                      timestamptz NOT NULL DEFAULT now(),
 
   UNIQUE (firm_id, id),
   UNIQUE (firm_id, tan_registration_id, statutory_regime, tax_year, quarter, form_code, return_type, correction_no),
+  FOREIGN KEY (firm_id, created_by) REFERENCES public.users (firm_id, id),
   FOREIGN KEY (firm_id, entity_id) REFERENCES public.entities (firm_id, id),
   FOREIGN KEY (firm_id, tan_registration_id) REFERENCES public.tan_registrations (firm_id, id),
   FOREIGN KEY (firm_id, signed_by_user_id) REFERENCES public.users (firm_id, id)
@@ -279,5 +281,30 @@ CREATE TRIGGER trg_touch BEFORE UPDATE ON public.tds_fvu_jobs                   
 
 CREATE TRIGGER trg_audit_challans AFTER INSERT OR UPDATE OR DELETE ON public.tds_challans FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
 CREATE TRIGGER trg_audit_returns  AFTER INSERT OR UPDATE OR DELETE ON public.tds_returns  FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_deductees   AFTER INSERT OR UPDATE OR DELETE ON public.tds_deductees                  FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+CREATE TRIGGER trg_audit_allocations AFTER INSERT OR UPDATE OR DELETE ON public.tds_challan_section_allocations FOR EACH ROW EXECUTE FUNCTION app.capture_audit_event();
+
+-- ---------------------------------------------------------------------
+-- Form 144 (non-resident payments, Income-tax Act 2025) remittance code
+-- registry. Global, read-only reference data. Rows are loaded from the
+-- official Protean / ITD return utility for each FVU release; nothing is
+-- seeded here so no unverified code can reach a statement.
+-- ---------------------------------------------------------------------
+CREATE TABLE public.tds_remittance_tax_codes (
+  regime            public.statutory_regime NOT NULL,
+  form_code         varchar(8)  NOT NULL,
+  code              varchar(8)  NOT NULL,
+  description       text        NOT NULL,
+  legacy_code_1961  varchar(8),            -- Form 27Q nature-of-remittance code it replaces, when one maps
+  section_ref       varchar(32),
+  fvu_version       varchar(8),
+  effective_from    date,
+  effective_to      date,
+  source_ref        text,                  -- utility / notification the row was taken from
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (regime, form_code, code),
+  CHECK (effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from)
+);
+GRANT SELECT ON public.tds_remittance_tax_codes TO synextax_app;
 
 RESET ROLE;

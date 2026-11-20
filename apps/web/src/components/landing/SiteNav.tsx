@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { PillButton, Wordmark } from './primitives';
 
@@ -20,6 +21,8 @@ type Theme = 'light' | 'dark';
  */
 export function SiteNav() {
   const headerRef = useRef<HTMLElement>(null);
+  // Section links scroll on the home page and navigate back to it from any other page.
+  const base = usePathname() === '/' ? '' : '/';
   const [theme, setTheme] = useState<Theme>('light');
   const [active, setActive] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -105,7 +108,7 @@ export function SiteNav() {
               return (
                 <li key={l.id}>
                   <a
-                    href={`#${l.id}`}
+                    href={`${base}#${l.id}`}
                     aria-current={current ? 'true' : undefined}
                     className={`relative block rounded-full px-4 py-2 transition-colors duration-500 ${
                       dark
@@ -164,7 +167,7 @@ export function SiteNav() {
           <ul className="space-y-1 font-display text-[18px] font-medium tracking-[-0.02em]">
             {LINKS.map((l) => (
               <li key={l.id}>
-                <a href={`#${l.id}`} onClick={() => setOpen(false)} className="block rounded-2xl px-3 py-2.5 text-ink/80 hover:bg-ink/[0.04]">
+                <a href={`${base}#${l.id}`} onClick={() => setOpen(false)} className="block rounded-2xl px-3 py-2.5 text-ink/80 hover:bg-ink/[0.04]">
                   {l.label}
                 </a>
               </li>
