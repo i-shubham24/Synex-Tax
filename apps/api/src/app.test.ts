@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, verifyTotpToken, generateTotpCode } from 
 import { validateSafeOutboundUrl } from './security/ssrfGuard.js';
 import { verifyWebhookSignature } from './security/webhookSecurity.js';
 import { CircuitBreaker, retryWithBackoff } from './resilience/circuitBreaker.js';
+import { validateUploadedFile, sanitizeFilename } from './security/fileUploadValidator.js';
 
 test('Fastify API: Health check & Kubernetes Liveness / Readiness probes', async () => {
   const app = buildApp();
@@ -335,4 +336,45 @@ test('Resilience Module: Retry with backoff retries transient errors', async () 
 
   assert.equal(result, 'SUCCESS');
   assert.equal(attempts, 3);
+});
+
+test('Security Module: Secure File Upload Validation & Path Traversal Guards', () => {
+  // 1. Path traversal sanitization
+  const dangerousName = '../../../../etc/passwd.json';
+  const cleanName = sanitizeFilename(dangerousName);
+  assert.equal(cleanName.includes('..'), false);
+  assert.equal(cleanName.includes('/'), false);
+
+  // 2. Reject binary executables disguised as JSON or CSV
+  const mzExecutableBuffer = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00]);
+  const execValidation = validateUploadedFile(mzExecutableBuffer, 'statement.csv', {
+    allowedExtensions: ['.csv', '.json'],
+  });
+  assert.equal(execValidation.valid, false);
+  assert.match(execValidation.error || '', /binary executable/);
+
+  // 3. Reject embedded script tags in text uploads
+  const maliciousScriptBuffer = Buffer.from('{"name": "Client", "notes": "<script>alert(1)</script>"}', 'utf8');
+  const scriptValidation = validateUploadedFile(maliciousScriptBuffer, 'client.json', {
+    allowedExtensions: ['.json'],
+    expectedType: 'JSON',
+  });
+  assert.equal(scriptValidation.valid, false);
+  assert.match(scriptValidation.error || '', /Malicious embedded HTML or JavaScript/);
+
+  // 4. Reject unpermitted extensions
+  const validJsonBuffer = Buffer.from('{"status": "OK", "records": [1, 2, 3]}', 'utf8');
+  const extValidation = validateUploadedFile(validJsonBuffer, 'payload.exe', {
+    allowedExtensions: ['.json', '.xlsx'],
+  });
+  assert.equal(extValidation.valid, false);
+  assert.match(extValidation.error || '', /not permitted/);
+
+  // 5. Accept valid JSON
+  const successValidation = validateUploadedFile(validJsonBuffer, 'gstr2b_oct2025.json', {
+    allowedExtensions: ['.json'],
+    expectedType: 'JSON',
+  });
+  assert.equal(successValidation.valid, true);
+  assert.equal(successValidation.detectedType, 'JSON');
 });
