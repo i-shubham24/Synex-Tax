@@ -47,13 +47,18 @@ class DatabaseManager {
   }
 
   private makePool(url: string): pg.Pool {
-    return new Pool({
+    const p = new Pool({
       connectionString: url,
       // PGlite (local dev) is a single session: POSTGRES_POOL_MAX=1 keeps transactions apart.
       max: Number(process.env.POSTGRES_POOL_MAX || 25),
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     });
+    p.on('error', (err) => {
+      // Log and safely absorb idle client network/disconnect events
+      console.warn('PostgreSQL idle client event notice:', err.message);
+    });
+    return p;
   }
 
   public isConfigured(): boolean {

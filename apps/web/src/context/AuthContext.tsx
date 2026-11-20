@@ -110,13 +110,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Check sessionStorage cache for offline/demo tab restore
-        const cached = sessionStorage.getItem('synextax_session');
-        if (cached && mounted) {
-          const parsed = JSON.parse(cached) as UserSession;
+        const cachedToken = sessionStorage.getItem('synextax_token');
+        const cachedUser = sessionStorage.getItem('synextax_session');
+        if (cachedToken && cachedUser && mounted) {
+          const parsed = JSON.parse(cachedUser) as UserSession;
           setUser(parsed);
-          setToken(`mem_session_${parsed.id}_${Date.now()}`);
-        } else if (mounted) {
-          // Default to demo partner in sandbox preview
+          setToken(cachedToken);
+          return;
+        }
+
+        // Try demo login to establish real signed JWT session
+        try {
+          let csrfToken = '';
+          const csrfRes = await fetch('/api/v1/auth/csrf');
+          if (csrfRes.ok) {
+            const cData = await csrfRes.json();
+            csrfToken = cData.csrfToken || '';
+          }
+
+          const demoHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (csrfToken) demoHeaders['x-csrf-token'] = csrfToken;
+
+          const demoRes = await fetch('/api/v1/auth/demo', {
+            method: 'POST',
+            headers: demoHeaders,
+            body: JSON.stringify({ role: 'PARTNER' }),
+          });
+
+          if (demoRes.ok && mounted) {
+            const dData = await demoRes.json();
+            setToken(dData.accessToken);
+            const u: UserSession = {
+              id: dData.user.id,
+              firmId: dData.user.firmId,
+              firmName: dData.user.firmName,
+              email: dData.user.email,
+              fullName: dData.user.displayName,
+              role: 'PARTNER',
+              frnNumber: dData.user.frnNumber || '014289N',
+              mfaVerified: true,
+              plan: 'TRIAL',
+              trialDaysRemaining: dData.user.trialDaysRemaining ?? 14,
+              activeClientsCount: 2,
+              maxTrialClients: 3,
+            };
+            setUser(u);
+            sessionStorage.setItem('synextax_session', JSON.stringify(u));
+            sessionStorage.setItem('synextax_token', dData.accessToken);
+            return;
+          }
+        } catch {
+          // Dev offline fallback
+        }
+
+        if (mounted) {
           setUser(DEMO_PARTNER);
           setToken(`mem_session_${DEMO_PARTNER.id}_${Date.now()}`);
         }
@@ -338,9 +385,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginDemo = useCallback(async (role: 'PARTNER' | 'STAFF' = 'PARTNER'): Promise<void> => {
     setIsLoading(true);
     try {
+      let csrfToken = '';
+      try {
+        const csrfRes = await fetch('/api/v1/auth/csrf');
+        if (csrfRes.ok) {
+          const cData = await csrfRes.json();
+          csrfToken = cData.csrfToken || '';
+        }
+      } catch {}
+
+      const demoHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) demoHeaders['x-csrf-token'] = csrfToken;
+
       const res = await fetch('/api/v1/auth/demo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: demoHeaders,
+        body: JSON.stringify({ role }),
       });
 
       if (res.ok) {
@@ -362,6 +422,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(u);
         sessionStorage.setItem('synextax_session', JSON.stringify(u));
+        sessionStorage.setItem('synextax_token', data.accessToken);
         setIsLoading(false);
         return;
       }

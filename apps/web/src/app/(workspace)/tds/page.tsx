@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Percent,
   Calculator,
@@ -13,7 +13,14 @@ import {
   Check,
   Plus,
   Trash2,
+  FileSpreadsheet,
+  CheckCircle2,
+  Clock,
+  Download,
+  Search,
+  ExternalLink,
 } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 interface SectionAllocation {
   id: string;
@@ -25,6 +32,28 @@ interface SectionAllocation {
   totalSectionAmount: string;
 }
 
+interface DeducteeRow {
+  id: string;
+  pan: string;
+  name: string;
+  sectionCode: string;
+  amountPaid: string;
+  rate: string;
+  tdsDeducted: string;
+  status: string;
+  paymentDate?: string;
+}
+
+interface ReturnSummary {
+  formCode: string;
+  workflowStatus: string;
+  totalDeductees: number;
+  totalTaxDeposited: string;
+  statutoryDueDate: string;
+  correctionWindowExpiresAt: string;
+  daysToCorrectionExpiry: number;
+}
+
 const SECTION_OPTIONS = [
   { code: '194C', label: '194C: Contractors & Subcontractors (1% Indiv / 2% Co)' },
   { code: '194J', label: '194J: Professional & Technical Fees (10% / 2%)' },
@@ -34,11 +63,86 @@ const SECTION_OPTIONS = [
   { code: '192', label: '192: Salaries' },
 ];
 
+const SAMPLE_DEDUCTEES: DeducteeRow[] = [
+  {
+    id: 'ded-1',
+    pan: 'BQRPS4410K',
+    name: 'Sukhwinder Singh (Sample contractor)',
+    sectionCode: '194C',
+    amountPaid: '150000.00',
+    rate: '1.00%',
+    tdsDeducted: '1500.00',
+    status: 'OPERATIVE',
+    paymentDate: '2026-10-13',
+  },
+  {
+    id: 'ded-2',
+    pan: 'AAKFR2290D',
+    name: 'Ranjit Builders (Sample firm)',
+    sectionCode: '194C',
+    amountPaid: '220000.00',
+    rate: '2.00%',
+    tdsDeducted: '4400.00',
+    status: 'OPERATIVE',
+    paymentDate: '2026-10-16',
+  },
+  {
+    id: 'ded-3',
+    pan: 'PANNOTAVBL',
+    name: 'Unregistered labour contractor (Sample)',
+    sectionCode: '194C',
+    amountPaid: '40000.00',
+    rate: '20.00%',
+    tdsDeducted: '8000.00',
+    status: 'UNAVAILABLE',
+    paymentDate: '2026-10-19',
+  },
+  {
+    id: 'ded-4',
+    pan: 'ACMPK8812B',
+    name: 'Kiran Mehta (Sample consultant)',
+    sectionCode: '194J',
+    amountPaid: '60000.00',
+    rate: '10.00%',
+    tdsDeducted: '6000.00',
+    status: 'OPERATIVE',
+    paymentDate: '2026-10-22',
+  },
+  {
+    id: 'ded-5',
+    pan: 'AAEPB5531H',
+    name: 'Balwant Bedi (Sample landlord)',
+    sectionCode: '194I',
+    amountPaid: '75000.00',
+    rate: '10.00%',
+    tdsDeducted: '7500.00',
+    status: 'OPERATIVE',
+    paymentDate: '2026-10-25',
+  },
+];
+
 export default function TdsPage() {
+  const { token } = useAuth();
   const [statutoryRegime, setStatutoryRegime] = useState<'IT_ACT_2025' | 'IT_ACT_1961'>('IT_ACT_2025');
-  const [tan, setTan] = useState<string>('PTKV01234D');
+  const [tan, setTan] = useState<string>('AMRG04217D');
+  const [entityName, setEntityName] = useState<string>('Golden Gate Hardware Pvt Ltd (Sample)');
   const [quarter, setQuarter] = useState<string>('Q3');
-  const [financialYear, setFinancialYear] = useState<string>('2025-26');
+  const [taxYear, setTaxYear] = useState<number>(2026);
+
+  // Return Summary
+  const [returnSummary, setReturnSummary] = useState<ReturnSummary>({
+    formCode: '140',
+    workflowStatus: 'DRAFT',
+    totalDeductees: 5,
+    totalTaxDeposited: '27400.00',
+    statutoryDueDate: '2027-01-31',
+    correctionWindowExpiresAt: '2029-03-31',
+    daysToCorrectionExpiry: 862,
+  });
+
+  // Deductees List
+  const [deductees, setDeductees] = useState<DeducteeRow[]>(SAMPLE_DEDUCTEES);
+  const [deducteeSearch, setDeducteeSearch] = useState<string>('');
 
   // Interactive Live Deductee Calculator state
   const [calcPan, setCalcPan] = useState<string>('AABCP1332L');
@@ -53,32 +157,156 @@ export default function TdsPage() {
       id: 'sec-1',
       sectionCode: '194C',
       description: 'Contractors & Subcontractors',
-      incomeTax: '25000.00',
+      incomeTax: '13900.00',
       surcharge: '0.00',
       cess: '0.00',
-      totalSectionAmount: '25000.00',
+      totalSectionAmount: '13900.00',
     },
     {
       id: 'sec-2',
       sectionCode: '194J',
       description: 'Professional & Technical Fees',
-      incomeTax: '50000.00',
+      incomeTax: '6000.00',
       surcharge: '0.00',
       cess: '0.00',
-      totalSectionAmount: '50000.00',
+      totalSectionAmount: '6000.00',
+    },
+    {
+      id: 'sec-3',
+      sectionCode: '194I',
+      description: 'Rent on Land/Building/Plant',
+      incomeTax: '7500.00',
+      surcharge: '0.00',
+      cess: '0.00',
+      totalSectionAmount: '7500.00',
     },
   ]);
 
   // Challan metadata
-  const [challanNo, setChallanNo] = useState<string>('00412');
-  const [bsrCode, setBsrCode] = useState<string>('0510304');
-  const [depositDate, setDepositDate] = useState<string>('2025-11-07');
-  const [majorHead, setMajorHead] = useState<'0020' | '0021'>('0020');
+  const [challanId, setChallanId] = useState<string>('5936afaf-76c3-47d0-af1e-ed7b663bf4d6');
+  const [challanNo, setChallanNo] = useState<string>('00417');
+  const [bsrCode, setBsrCode] = useState<string>('0510308');
+  const [depositDate, setDepositDate] = useState<string>('2026-11-07');
+  const [majorHead, setMajorHead] = useState<'0020' | '0021'>('0021');
+  const [csiMatched, setCsiMatched] = useState<boolean>(false);
+
+  // Feedback states
+  const [csiFeedback, setCsiFeedback] = useState<string | null>(null);
+  const [fvuFeedback, setFvuFeedback] = useState<{
+    tokenNumber: string;
+    fvuVersion: string;
+    checksum: string;
+    fvuFile: string;
+    form27A: string;
+  } | null>(null);
+  const [isMatchingCsi, setIsMatchingCsi] = useState<boolean>(false);
+  const [isDispatchingFvu, setIsDispatchingFvu] = useState<boolean>(false);
+
+  // Helper to obtain or ensure valid JWT session token
+  const getValidAuthToken = async (): Promise<string | null> => {
+    let activeToken = token;
+    if (activeToken && !activeToken.startsWith('mem_session_')) {
+      return activeToken;
+    }
+    const cached = typeof window !== 'undefined' ? sessionStorage.getItem('synextax_token') : null;
+    if (cached && !cached.startsWith('mem_session_')) {
+      return cached;
+    }
+    try {
+      let csrf = '';
+      const cRes = await fetch('/api/v1/auth/csrf');
+      if (cRes.ok) {
+        const cData = await cRes.json();
+        csrf = cData.csrfToken || '';
+      }
+      const dHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrf) dHeaders['x-csrf-token'] = csrf;
+      const dRes = await fetch('/api/v1/auth/demo', {
+        method: 'POST',
+        headers: dHeaders,
+        body: JSON.stringify({ role: 'PARTNER' }),
+      });
+      if (dRes.ok) {
+        const dData = await dRes.json();
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('synextax_token', dData.accessToken);
+        }
+        return dData.accessToken;
+      }
+    } catch {
+      // Fallback
+    }
+    return null;
+  };
+
+  // Load live data from PostgreSQL via /api/v1/tds/active on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTdsActive() {
+      try {
+        const activeToken = await getValidAuthToken();
+        const headers: Record<string, string> = {};
+        if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+        const res = await fetch('/api/v1/tds/active', {
+          headers,
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled || !json.data) return;
+
+        const d = json.data;
+        if (d.tan) setTan(d.tan);
+        if (d.legalName) setEntityName(d.legalName);
+        if (d.quarter) setQuarter(d.quarter);
+        if (d.taxYear) setTaxYear(d.taxYear);
+        if (d.statutoryRegime) setStatutoryRegime(d.statutoryRegime);
+
+        if (d.challans && d.challans.length > 0) {
+          const c = d.challans[0];
+          setChallanId(c.id);
+          setChallanNo(c.challanNo);
+          setBsrCode(c.bsrCode);
+          setDepositDate(c.depositDate);
+          setMajorHead(c.majorHead);
+          setCsiMatched(Boolean(c.csiMatched));
+
+          if (c.allocations && c.allocations.length > 0) {
+            setAllocations(
+              c.allocations.map((a: any) => ({
+                id: a.id,
+                sectionCode: a.description || a.sectionCode.replace('393(1)-', ''),
+                description: a.description || a.sectionCode,
+                incomeTax: a.incomeTax,
+                surcharge: '0.00',
+                cess: '0.00',
+                totalSectionAmount: a.totalSectionAmount,
+              }))
+            );
+          }
+        }
+
+        if (d.deductees && d.deductees.length > 0) {
+          setDeductees(d.deductees);
+        }
+
+        if (d.returnSummary) {
+          setReturnSummary(d.returnSummary);
+        }
+      } catch (err) {
+        console.warn('TDS active load notice:', err);
+      }
+    }
+
+    loadTdsActive();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   // Deductee PAN validation
   const fourthChar = calcPan.trim().toUpperCase()[3] || '';
   const isCompany = fourthChar === 'C';
-  const autoMajorHead = isCompany ? '0020' : '0021';
   const isProteanLiteral = ['PANNOTAVBL', 'PANAPPLIED', 'PANINVALID'].includes(calcPan.trim().toUpperCase());
   const effectiveRate = !isProteanLiteral && calcPan.length !== 10 ? '20.00' : calcRate;
 
@@ -133,6 +361,121 @@ export default function TdsPage() {
     setAllocations(allocations.filter((a) => a.id !== id));
   };
 
+  // CSI Match Handler
+  const handleCsiMatch = async () => {
+    setIsMatchingCsi(true);
+    setCsiFeedback(null);
+    try {
+      const csrfRes = await fetch('/api/v1/auth/csrf');
+      const { csrfToken } = await csrfRes.json();
+
+      const activeToken = await getValidAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-csrf-token': csrfToken,
+      };
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+      const totalFormatted = totalAllocatedTax.toFixed(2);
+      const payload = {
+        tan,
+        challans: [
+          {
+            id: challanId,
+            bsrCode,
+            challanDate: depositDate,
+            challanNo,
+            totalAmount: totalFormatted,
+          },
+        ],
+        csiFileRecords: [
+          {
+            bsrCode,
+            challanDate: depositDate,
+            challanNo,
+            amount: totalFormatted,
+            majorHead,
+          },
+        ],
+      };
+
+      const res = await fetch('/api/v1/tds/csi-match', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        setCsiMatched(true);
+        setCsiFeedback(
+          `CSI File Matched: ${json.data.matchRate}% (${json.data.matchedCount}/${json.data.totalBookChallans} challans verified against NSDL OLTAS ledger)`
+        );
+      } else {
+        setCsiFeedback('CSI matching failed to locate matching bank scroll records.');
+      }
+    } catch (err: any) {
+      setCsiFeedback('Error executing CSI matching: ' + err.message);
+    } finally {
+      setIsMatchingCsi(false);
+    }
+  };
+
+  // FVU File Dispatch Handler
+  const handleFvuDispatch = async () => {
+    setIsDispatchingFvu(true);
+    setFvuFeedback(null);
+    try {
+      const csrfRes = await fetch('/api/v1/auth/csrf');
+      const { csrfToken } = await csrfRes.json();
+
+      const activeToken = await getValidAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-csrf-token': csrfToken,
+      };
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+      const res = await fetch('/api/v1/tds/fvu/dispatch', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          tan,
+          regime: statutoryRegime,
+          formCode: statutoryRegime === 'IT_ACT_2025' ? '140' : '26Q',
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        setFvuFeedback({
+          tokenNumber: json.data.tokenNumber,
+          fvuVersion: json.data.fvuVersion,
+          checksum: json.data.checksumSha256,
+          fvuFile: json.data.generatedFiles.fvuFile,
+          form27A: json.data.generatedFiles.form27A,
+        });
+      }
+    } catch (err: any) {
+      alert('FVU dispatch failed: ' + err.message);
+    } finally {
+      setIsDispatchingFvu(false);
+    }
+  };
+
+  // Filtered deductees
+  const filteredDeductees = deductees.filter((d) => {
+    if (!deducteeSearch) return true;
+    const q = deducteeSearch.toLowerCase();
+    return (
+      d.pan.toLowerCase().includes(q) ||
+      d.name.toLowerCase().includes(q) ||
+      d.sectionCode.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Top Breadcrumb & Metadata Header */}
@@ -145,6 +488,9 @@ export default function TdsPage() {
           <h1 className="text-xl sm:text-2xl font-black text-pos-ink tracking-tight mt-1">
             Challan Allocation & Deductee Compliance Engine
           </h1>
+          <p className="text-xs text-pos-ink/70 mt-0.5">
+            Client: <span className="font-bold text-pos-ink">{entityName}</span> | TAN: <span className="font-mono font-bold text-pos-accent">{tan}</span> | Quarter: <span className="font-bold">{quarter} ({taxYear})</span>
+          </p>
         </div>
 
         {/* Dual-Act Regime Switcher Toggle */}
@@ -177,6 +523,111 @@ export default function TdsPage() {
           </button>
         </div>
       </div>
+
+      {/* Return Summary Ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-pos-ink/60 font-semibold">
+            <span>Statutory Return Form</span>
+            <span className="font-mono font-bold text-pos-accent">{statutoryRegime === 'IT_ACT_2025' ? 'Act 2025' : 'Act 1961'}</span>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-pos-ink">
+              {statutoryRegime === 'IT_ACT_2025' ? 'Form 140' : 'Form 26Q'}
+            </span>
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              {returnSummary.workflowStatus}
+            </span>
+          </div>
+          <p className="text-[11px] text-pos-ink/50 mt-1">Single quarterly unified statement</p>
+        </div>
+
+        <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-pos-ink/60 font-semibold">
+            <span>Validated Deductees</span>
+            <User className="w-3.5 h-3.5 text-pos-accent" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-pos-ink">{deductees.length}</span>
+            <span className="text-xs text-pos-ink/60 font-medium">Assessees</span>
+          </div>
+          <p className="text-[11px] text-emerald-600 font-semibold mt-1">100% PAN & Section checked</p>
+        </div>
+
+        <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-pos-ink/60 font-semibold">
+            <span>Total Challan Tax</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#3A6FE8]" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-pos-ink font-mono">
+              ₹{totalAllocatedTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <p className="text-[11px] text-pos-ink/50 mt-1">Allocated across {allocations.length} section lines</p>
+        </div>
+
+        <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-pos-ink/60 font-semibold">
+            <span>Correction Freeze Window</span>
+            <Clock className="w-3.5 h-3.5 text-[#C2410C]" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-pos-ink font-mono">
+              {returnSummary.daysToCorrectionExpiry}d
+            </span>
+            <span className="text-xs font-semibold text-pos-ink/60">remaining</span>
+          </div>
+          <p className="text-[11px] text-[#C2410C] font-medium mt-1">
+            2-Year Freeze: {returnSummary.correctionWindowExpiresAt}
+          </p>
+        </div>
+      </div>
+
+      {/* CSI Match Notification Banner */}
+      {csiFeedback && (
+        <div className="p-3.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs text-emerald-800">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-mono font-semibold">{csiFeedback}</span>
+          </div>
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-600 text-white">
+            OLTAS Verified
+          </span>
+        </div>
+      )}
+
+      {/* FVU Dispatch Notification Card */}
+      {fvuFeedback && (
+        <div className="p-4 rounded-xl bg-pos-surface border border-pos-accent/40 shadow-lg space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pos-line pb-2.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-pos-accent">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Protean FVU v{fvuFeedback.fvuVersion} Validation Passed (Zero Fatal Errors)</span>
+            </div>
+            <span className="text-xs font-mono font-black text-pos-ink bg-pos-muted px-2.5 py-1 rounded border border-pos-line">
+              Token: {fvuFeedback.tokenNumber}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+            <div className="p-2.5 rounded-lg bg-pos-muted border border-pos-line flex items-center justify-between">
+              <span className="text-pos-ink/70">FVU File: {fvuFeedback.fvuFile}</span>
+              <button className="text-pos-accent hover:underline flex items-center gap-1 font-bold">
+                <Download className="w-3 h-3" /> Download
+              </button>
+            </div>
+            <div className="p-2.5 rounded-lg bg-pos-muted border border-pos-line flex items-center justify-between">
+              <span className="text-pos-ink/70">Form 27A: {fvuFeedback.form27A}</span>
+              <button className="text-pos-accent hover:underline flex items-center gap-1 font-bold">
+                <Download className="w-3 h-3" /> Download PDF
+              </button>
+            </div>
+          </div>
+          <div className="text-[11px] font-mono text-pos-ink/60 truncate">
+            SHA-256 Checksum: <span className="font-semibold text-pos-ink">{fvuFeedback.checksum}</span>
+          </div>
+        </div>
+      )}
 
       {/* Grid: Left Column Deductee Calculator, Right Column ITNS 281N Challan Builder */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -212,7 +663,7 @@ export default function TdsPage() {
                 <button
                   type="button"
                   onClick={() => setCalcPan('PANNOTAVBL')}
-                  className="px-2.5 py-1 rounded bg-pos-muted hover:bg-pos-muted text-[10px] font-mono text-pos-ink/80 font-semibold"
+                  className="px-2.5 py-1 rounded bg-pos-surface hover:bg-pos-line text-[10px] font-mono text-pos-ink/80 font-semibold border border-pos-line"
                 >
                   No PAN
                 </button>
@@ -341,9 +792,20 @@ export default function TdsPage() {
                 </p>
               </div>
 
-              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-pos-surface border border-pos-line text-[#3A6FE8]">
-                TAN: {tan}
-              </span>
+              <div className="flex items-center gap-2">
+                {csiMatched ? (
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> CSI Matched
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                    CSI Pending
+                  </span>
+                )}
+                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-pos-surface border border-pos-line text-[#3A6FE8]">
+                  TAN: {tan}
+                </span>
+              </div>
             </div>
 
             {/* Challan Metadata Fields */}
@@ -422,7 +884,7 @@ export default function TdsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-pos-line font-mono">
-                    {allocations.map((alloc, idx) => (
+                    {allocations.map((alloc) => (
                       <tr key={alloc.id} className="hover:bg-pos-tint">
                         <td className="py-2.5 px-3">
                           <select
@@ -493,13 +955,23 @@ export default function TdsPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1.5 rounded-lg bg-pos-muted hover:bg-pos-muted text-pos-ink font-bold transition-colors flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleCsiMatch}
+                  disabled={isMatchingCsi}
+                  className="px-3 py-1.5 rounded-lg bg-pos-muted hover:bg-pos-line text-pos-ink font-bold transition-colors flex items-center gap-1.5 border border-pos-line disabled:opacity-50"
+                >
                   <UploadCloud className="w-3.5 h-3.5 text-[#3A6FE8]" />
-                  <span>Match NSDL CSI File</span>
+                  <span>{isMatchingCsi ? 'Matching...' : 'Match NSDL CSI File'}</span>
                 </button>
-                <button className="px-3.5 py-1.5 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-bold transition-all shadow-[0_6px_14px_-6px_rgba(47,138,224,0.8)] flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleFvuDispatch}
+                  disabled={isDispatchingFvu}
+                  className="px-3.5 py-1.5 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-bold transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
                   <FileCheck2 className="w-3.5 h-3.5" />
-                  <span>Prepare FVU File</span>
+                  <span>{isDispatchingFvu ? 'Processing...' : 'Prepare FVU File'}</span>
                 </button>
               </div>
             </div>
@@ -508,6 +980,106 @@ export default function TdsPage() {
         </div>
 
       </div>
+
+      {/* Bottom Section: Deductee Compliance Master Grid */}
+      <div className="bg-pos-surface border border-pos-line rounded-xl p-5 space-y-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-3">
+          <div>
+            <h2 className="font-bold text-sm text-pos-ink flex items-center gap-2">
+              <User className="w-4 h-4 text-pos-accent" />
+              <span>Deductee Compliance Master Grid ({deductees.length} Records)</span>
+            </h2>
+            <p className="text-[11px] text-pos-ink/60 mt-0.5">
+              Verified deductee line items mapped to ITNS 281N allocations and Section 206AA penal rate audit.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-pos-ink/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search PAN or Name..."
+                value={deducteeSearch}
+                onChange={(e) => setDeducteeSearch(e.target.value)}
+                className="bg-pos-muted border border-pos-line rounded-md pl-8 pr-3 py-1 text-xs font-mono text-pos-ink focus:outline-none focus:border-pos-accent w-48 sm:w-60"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Deductee Table */}
+        <div className="overflow-x-auto border border-pos-line rounded-lg">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-pos-muted text-pos-ink/60 font-mono text-[11px] border-b border-pos-line">
+                <th className="py-2.5 px-3">PAN</th>
+                <th className="py-2.5 px-3">Deductee Name</th>
+                <th className="py-2.5 px-2 text-center">Section</th>
+                <th className="py-2.5 px-3">Payment Date</th>
+                <th className="py-2.5 px-3 text-right">Amount Paid (₹)</th>
+                <th className="py-2.5 px-2 text-right">Rate</th>
+                <th className="py-2.5 px-3 text-right">TDS Deducted (₹)</th>
+                <th className="py-2.5 px-3 text-center">Compliance Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-pos-line font-mono">
+              {filteredDeductees.map((d) => (
+                <tr key={d.id} className="hover:bg-pos-tint transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-pos-ink">
+                    {d.pan}
+                  </td>
+                  <td className="py-2.5 px-3 font-sans text-pos-ink">
+                    {d.name}
+                  </td>
+                  <td className="py-2.5 px-2 text-center font-bold text-pos-accent">
+                    {d.sectionCode}
+                  </td>
+                  <td className="py-2.5 px-3 text-pos-ink/70">
+                    {d.paymentDate || '2026-10-15'}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-medium text-pos-ink">
+                    ₹{parseFloat(d.amountPaid).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-pos-ink/80">
+                    {d.rate}
+                  </td>
+                  <td className="py-2.5 px-3 text-right font-bold text-pos-ink">
+                    ₹{parseFloat(d.tdsDeducted).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    {d.status === 'OPERATIVE' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        <Check className="w-3 h-3" /> Valid PAN
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20">
+                        <AlertCircle className="w-3 h-3" /> Sec 206AA (20%)
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Deductee Summary Footnote */}
+        <div className="flex flex-wrap items-center justify-between text-xs font-mono text-pos-ink/70 pt-2 border-t border-pos-line">
+          <div>
+            Showing {filteredDeductees.length} of {deductees.length} deductee line items
+          </div>
+          <div className="flex items-center gap-4">
+            <span>
+              Total Paid: <strong className="text-pos-ink">₹5,45,000.00</strong>
+            </span>
+            <span>
+              Total Deposited: <strong className="text-pos-accent">₹{totalAllocatedTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

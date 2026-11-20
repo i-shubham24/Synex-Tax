@@ -550,19 +550,26 @@ export class AuthService {
       );
     });
 
-    // Fetch user details for token
+    // Fetch user details for token via security definer membership lookup
     const user = await db.withAuthTransaction(async (client) => {
-      const res = await client.query(
-        `SELECT u.id, u.firm_id, u.display_name, u.role, u.icai_membership_no,
-                f.legal_name, f.trade_name, f.plan_code, f.trial_ends_at,
-                i.email
-         FROM public.users u
-         JOIN public.firms f ON f.id = u.firm_id
-         JOIN auth.identities i ON i.id = u.identity_id
-         WHERE u.id = $1`,
-        [userId],
+      const emailRes = await client.query('SELECT email FROM auth.identities WHERE id = $1', [identityId]);
+      const memRes = await client.query(
+        'SELECT user_id, firm_id, firm_name, role, display_name, trial_ends_at FROM app.list_memberships($1)',
+        [identityId],
       );
-      return res.rows[0];
+      const mem = memRes.rows.find((r: any) => r.user_id === userId) || memRes.rows[0];
+      return {
+        id: mem?.user_id || userId,
+        firm_id: mem?.firm_id || firmId,
+        display_name: mem?.display_name || 'SynexTax User',
+        role: mem?.role || 'STAFF',
+        trade_name: mem?.firm_name || 'SynexTax Firm',
+        legal_name: mem?.firm_name || 'SynexTax Firm',
+        plan_code: 'PILOT',
+        trial_ends_at: mem?.trial_ends_at || null,
+        email: emailRes.rows[0]?.email || '',
+        icai_membership_no: null,
+      };
     });
 
     let trialDaysRemaining = 14;
@@ -579,7 +586,7 @@ export class AuthService {
       displayName: user.display_name,
       role: user.role,
       frnNumber: user.icai_membership_no || undefined,
-      plan: user.plan_code || 'PILOT',
+      plan: (user.plan_code as 'PILOT' | 'SOLO' | 'GROWTH' | 'SCALE') || 'PILOT',
       trialDaysRemaining,
     };
 
