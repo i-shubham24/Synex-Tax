@@ -6,11 +6,11 @@ import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { PillButton, Wordmark } from './primitives';
 
-const LINKS = [
+const LINKS: Array<{ label: string; id: string; page?: string }> = [
   { label: 'Product', id: 'product' },
   { label: 'Modules', id: 'modules' },
   { label: 'Pricing', id: 'pricing' },
-  { label: 'Pilot', id: 'pilot' },
+  { label: 'Free tools', id: 'tools', page: '/tools' },
 ];
 
 type Theme = 'light' | 'dark';
@@ -22,7 +22,8 @@ type Theme = 'light' | 'dark';
 export function SiteNav() {
   const headerRef = useRef<HTMLElement>(null);
   // Section links scroll on the home page and navigate back to it from any other page.
-  const base = usePathname() === '/' ? '' : '/';
+  const pathname = usePathname();
+  const base = pathname === '/' ? '' : '/';
   const [theme, setTheme] = useState<Theme>('light');
   const [active, setActive] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -104,11 +105,11 @@ export function SiteNav() {
         <nav aria-label="Primary" className="hidden md:block">
           <ul className="flex items-center gap-1 font-display text-[16px] font-medium tracking-[-0.015em]">
             {LINKS.map((l) => {
-              const current = active === l.id;
+              const current = l.page ? pathname === l.page : active === l.id;
               return (
                 <li key={l.id}>
                   <a
-                    href={`${base}#${l.id}`}
+                    href={l.page ?? `${base}#${l.id}`}
                     aria-current={current ? 'true' : undefined}
                     className={`relative block rounded-full px-4 py-2 transition-colors duration-500 ${
                       dark
@@ -167,7 +168,7 @@ export function SiteNav() {
           <ul className="space-y-1 font-display text-[18px] font-medium tracking-[-0.02em]">
             {LINKS.map((l) => (
               <li key={l.id}>
-                <a href={`${base}#${l.id}`} onClick={() => setOpen(false)} className="block rounded-2xl px-3 py-2.5 text-ink/80 hover:bg-ink/[0.04]">
+                <a href={l.page ?? `${base}#${l.id}`} onClick={() => setOpen(false)} className="block rounded-2xl px-3 py-2.5 text-ink/80 hover:bg-ink/[0.04]">
                   {l.label}
                 </a>
               </li>

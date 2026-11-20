@@ -1,6 +1,46 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+
+/**
+ * The page-load session restore, shared: React development mode runs effects twice, and two
+ * parallel refreshes would race on the rotating refresh token and sign the user out.
+ */
+let restorePromise: Promise<{ ok: boolean; data?: any }> | null = null;
+function restoreOnce(): Promise<{ ok: boolean; data?: any }> {
+  if (!restorePromise) {
+    restorePromise = (async () => {
+      try {
+        const res = await fetch('/api/v1/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
+          credentials: 'include',
+          body: JSON.stringify({}),
+        });
+        return res.ok ? { ok: true, data: await res.json() } : { ok: false };
+      } catch {
+        return { ok: false };
+      } finally {
+        setTimeout(() => {
+          restorePromise = null;
+        }, 2000);
+      }
+    })();
+  }
+  return restorePromise;
+}
+
+/** The API's CSRF header for cookie-authenticated calls (refresh, logout). */
+async function csrfHeader(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch('/api/v1/auth/csrf', { credentials: 'include' });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.csrfToken ? { 'x-csrf-token': data.csrfToken } : {};
+  } catch {
+    return {};
+  }
+}
 
 export interface UserSession {
   id: string;
@@ -44,6 +84,8 @@ interface AuthContextType {
   loginDemo: (role?: 'PARTNER' | 'STAFF') => Promise<void>;
   logout: () => Promise<void>;
   upgradePlan: (plan: 'SOLO' | 'GROWTH' | 'SCALE') => void;
+  /** fetch with the session's bearer token; on a 401 it refreshes once and retries. */
+  authFetch: (input: string, init?: RequestInit) => Promise<Response>;
 }
 
 const DEMO_PARTNER: UserSession = {
@@ -76,19 +118,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function restoreSession() {
       try {
         if (typeof window === 'undefined') return;
-
-        // Purge any legacy storage tokens
+        // Tokens never live in web storage: the access token is kept in memory and the refresh
+        // token in an httpOnly cookie. Clear anything older code left behind.
         localStorage.removeItem('synextax_token');
         localStorage.removeItem('synextax_user');
+        sessionStorage.removeItem('synextax_token');
 
-        const res = await fetch('/api/v1/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        });
+        const restored = await restoreOnce();
 
-        if (res.ok && mounted) {
-          const data = await res.json();
+        if (restored.ok && mounted) {
+          const data = restored.data;
           setToken(data.accessToken);
           const u: UserSession = {
             id: data.user.id,
@@ -109,68 +148,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Check sessionStorage cache for offline/demo tab restore
-        const cachedToken = sessionStorage.getItem('synextax_token');
+        // An offline demo chosen on the login page (sample data, no API) survives a reload in this tab.
         const cachedUser = sessionStorage.getItem('synextax_session');
-        if (cachedToken && cachedUser && mounted) {
-          const parsed = JSON.parse(cachedUser) as UserSession;
-          setUser(parsed);
-          setToken(cachedToken);
+        if (cachedUser && sessionStorage.getItem('synextax_offline_demo') === '1' && mounted) {
+          setUser(JSON.parse(cachedUser) as UserSession);
+          setToken(`mem_session_${DEMO_PARTNER.id}`);
           return;
         }
 
-        // Try demo login to establish real signed JWT session
-        try {
-          let csrfToken = '';
-          const csrfRes = await fetch('/api/v1/auth/csrf');
-          if (csrfRes.ok) {
-            const cData = await csrfRes.json();
-            csrfToken = cData.csrfToken || '';
-          }
-
-          const demoHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (csrfToken) demoHeaders['x-csrf-token'] = csrfToken;
-
-          const demoRes = await fetch('/api/v1/auth/demo', {
-            method: 'POST',
-            headers: demoHeaders,
-            body: JSON.stringify({ role: 'PARTNER' }),
-          });
-
-          if (demoRes.ok && mounted) {
-            const dData = await demoRes.json();
-            setToken(dData.accessToken);
-            const u: UserSession = {
-              id: dData.user.id,
-              firmId: dData.user.firmId,
-              firmName: dData.user.firmName,
-              email: dData.user.email,
-              fullName: dData.user.displayName,
-              role: 'PARTNER',
-              frnNumber: dData.user.frnNumber || '014289N',
-              mfaVerified: true,
-              plan: 'TRIAL',
-              trialDaysRemaining: dData.user.trialDaysRemaining ?? 14,
-              activeClientsCount: 2,
-              maxTrialClients: 3,
-            };
-            setUser(u);
-            sessionStorage.setItem('synextax_session', JSON.stringify(u));
-            sessionStorage.setItem('synextax_token', dData.accessToken);
-            return;
-          }
-        } catch {
-          // Dev offline fallback
-        }
-
+        // No session: the workspace gate sends the visitor to sign in.
+        sessionStorage.removeItem('synextax_session');
+        sessionStorage.removeItem('synextax_offline_demo');
         if (mounted) {
-          setUser(DEMO_PARTNER);
-          setToken(`mem_session_${DEMO_PARTNER.id}_${Date.now()}`);
+          setUser(null);
+          setToken(null);
         }
       } catch {
         if (mounted) {
-          setUser(DEMO_PARTNER);
-          setToken(`mem_session_${DEMO_PARTNER.id}_${Date.now()}`);
+          setUser(null);
+          setToken(null);
         }
       } finally {
         if (mounted) setIsLoading(false);
@@ -400,6 +396,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/v1/auth/demo', {
         method: 'POST',
         headers: demoHeaders,
+        credentials: 'include',
         body: JSON.stringify({ role }),
       });
 
@@ -422,26 +419,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(u);
         sessionStorage.setItem('synextax_session', JSON.stringify(u));
-        sessionStorage.setItem('synextax_token', data.accessToken);
+        sessionStorage.removeItem('synextax_offline_demo');
         setIsLoading(false);
         return;
       }
-    } catch {
-      // Fall back to offline demo session
+      // The API answered with an error: report it rather than pretending to be signed in.
+      setIsLoading(false);
+      throw new Error('The demo workspace could not be opened. Try again in a moment.');
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith('The demo workspace')) throw err;
+      // Network failure only: fall through to the offline demo below.
     }
 
+    // API unreachable (a static preview): sample data only, clearly offline.
     const fallback = { ...DEMO_PARTNER, role };
     setUser(fallback);
-    setToken(`mem_session_${fallback.id}_${Date.now()}`);
+    setToken(`mem_session_${fallback.id}`);
     sessionStorage.setItem('synextax_session', JSON.stringify(fallback));
+    sessionStorage.setItem('synextax_offline_demo', '1');
     setIsLoading(false);
   }, []);
+
+  // Read synchronously at render so a child's first request already sees the latest token.
+  const tokenRef = useRef<string | null>(null);
+  tokenRef.current = token;
+  const refreshInFlight = useRef<Promise<string | null> | null>(null);
+
+  const doRefresh = async (): Promise<string | null> => {
+    try {
+      const res = await fetch('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      setToken(data.accessToken);
+      tokenRef.current = data.accessToken;
+      return data.accessToken as string;
+    } catch {
+      return null;
+    }
+  };
+
+  const refreshAccessToken = useCallback((): Promise<string | null> => {
+    // One refresh at a time: the refresh token rotates, so parallel calls would invalidate each other.
+    if (!refreshInFlight.current) {
+      refreshInFlight.current = doRefresh().finally(() => {
+        refreshInFlight.current = null;
+      });
+    }
+    return refreshInFlight.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const authFetch = useCallback(
+    async (input: string, init: RequestInit = {}) => {
+      const send = (t: string | null) =>
+        fetch(input, {
+          ...init,
+          credentials: 'include',
+          headers: { ...(init.headers as Record<string, string> | undefined), ...(t && !t.startsWith('mem_session_') ? { Authorization: `Bearer ${t}` } : {}) },
+        });
+      let res = await send(tokenRef.current);
+      if (res.status === 401) {
+        const fresh = await refreshAccessToken();
+        if (fresh) res = await send(fresh);
+      }
+      return res;
+    },
+    [refreshAccessToken],
+  );
 
   const logout = useCallback(async () => {
     try {
       await fetch('/api/v1/auth/logout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
+        credentials: 'include',
       });
     } catch {
       // Network ignore
@@ -449,6 +505,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setToken(null);
     sessionStorage.removeItem('synextax_session');
+    sessionStorage.removeItem('synextax_offline_demo');
   }, []);
 
   const upgradePlan = useCallback((plan: 'SOLO' | 'GROWTH' | 'SCALE') => {
@@ -469,6 +526,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginDemo,
         logout,
         upgradePlan,
+        authFetch,
       }}
     >
       {children}

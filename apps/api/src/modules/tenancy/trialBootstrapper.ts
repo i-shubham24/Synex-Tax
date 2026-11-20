@@ -16,8 +16,6 @@ import {
  *     draft Form 140 for Q3 of tax year 2026-27 (Income-tax Act, 2025).
  *
  * Runs inside the signed SYSTEM_JOB transaction that created the firm, so RLS and audit apply.
- * Section codes for the 2025 Act are written as "393(1)-<1961 section>" until the official FVU 1.2
- * code list is loaded; they are sample data only.
  */
 
 function gstin(state: string, pan: string): string {
@@ -175,11 +173,13 @@ export async function bootstrapTrialWorkspace(client: pg.PoolClient, { firmId, p
   const quarter = (pm >= 4 && pm <= 6 ? 1 : pm >= 7 && pm <= 9 ? 2 : pm >= 10 ? 3 : 4) as 1 | 2 | 3 | 4;
   const depositDate = pm === 12 ? `${py + 1}-01-07` : `${py}-${String(pm + 1).padStart(2, '0')}-07`;
 
+  // Official Form 140 section codes (Protean file format 1.2, Annexure 2; see tax-engine form140Codes).
   const sections: Array<{ code: string; deductees: Array<[string, string, string, string]> }> = [
     // pan, name, amount paid, rate
-    { code: '393(1)-194C', deductees: [['BQRPS4410K', 'Sukhwinder Singh (Sample contractor)', '150000.00', '0.0100'], ['AAKFR2290D', 'Ranjit Builders (Sample firm)', '220000.00', '0.0200'], ['PANNOTAVBL', 'Unregistered labour contractor (Sample)', '40000.00', '0.2000']] },
-    { code: '393(1)-194J', deductees: [['ACMPK8812B', 'Kiran Mehta (Sample consultant)', '60000.00', '0.1000']] },
-    { code: '393(1)-194I', deductees: [['AAEPB5531H', 'Balwant Bedi (Sample landlord)', '75000.00', '0.1000']] },
+    { code: '1023', deductees: [['BQRPS4410K', 'Sukhwinder Singh (Sample contractor)', '150000.00', '0.0100'], ['PANNOTAVBL', 'Unregistered labour contractor (Sample)', '40000.00', '0.2000']] },
+    { code: '1024', deductees: [['AAKFR2290D', 'Ranjit Builders (Sample firm)', '220000.00', '0.0200']] },
+    { code: '1027', deductees: [['ACMPK8812B', 'Kiran Mehta (Sample consultant)', '60000.00', '0.1000']] },
+    { code: '1009', deductees: [['AAEPB5531H', 'Balwant Bedi (Sample landlord)', '75000.00', '0.1000']] },
   ];
   const tdsOf = (amount: string, rate: string) => (Math.round(Number(amount) * Number(rate) * 100) / 100).toFixed(2);
   const challanTotal = sections.flatMap((s) => s.deductees).reduce((sum, [, , a, r]) => sum + Number(tdsOf(a, r)), 0).toFixed(2);

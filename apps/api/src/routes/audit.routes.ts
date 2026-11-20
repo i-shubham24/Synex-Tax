@@ -256,41 +256,47 @@ export async function auditRoutes(fastify: FastifyInstance, _opts: FastifyPlugin
     }
 
     const { targetTable, targetColumn, recordId, accessReason } = parse.data;
-    let loggedRecordId: string | number = 1;
 
-    if (db.isConfigured()) {
-      try {
-        await db.withTenantTransaction(getCtx(request), async (client: any) => {
-          const res = await client.query(
-            `INSERT INTO audit.pii_access_logs (
-              firm_id, user_id, target_table, target_column, record_id,
-              access_reason, ip_addr, request_id, accessed_at
-            ) VALUES (
-              app.current_firm_id(),
-              app.current_user_id(),
-              $1, $2, $3::uuid, $4, $5::inet, $6, now()
-            ) RETURNING id`,
-            [targetTable, targetColumn, recordId, accessReason, request.ip || '127.0.0.1', request.id],
-          );
-          if (res.rows[0]?.id) loggedRecordId = res.rows[0].id;
-        });
-      } catch (err: any) {
-        request.log.warn({ err }, 'PII access db log notice');
-      }
+    // Only these masked fields can be revealed. Each query runs under RLS, so staff can reveal
+    // values only for clients assigned to them.
+    const REVEALABLE: Record<string, Record<string, string>> = {
+      entities: { pan: 'SELECT id AS entity_id, pan AS value FROM public.entities WHERE id = $1' },
+      entity_contacts: {
+        mobile_e164: 'SELECT entity_id, mobile_e164 AS value FROM public.entity_contacts WHERE id = $1',
+        email: 'SELECT entity_id, email AS value FROM public.entity_contacts WHERE id = $1',
+      },
+    };
+    const sql = REVEALABLE[targetTable]?.[targetColumn];
+    if (!sql) {
+      return reply.status(400).send({ error: 'NOT_REVEALABLE', message: 'This field cannot be revealed here.' });
     }
 
-    return reply.send({
-      success: true,
-      unmaskedValue: '98140-12345 (Aadhaar Verified Signatory: CA Amrinder Verma)',
-      loggedAuditRecord: {
-        id: loggedRecordId,
-        targetTable,
-        targetColumn,
-        recordId,
-        accessReason,
-        accessedAt: new Date().toISOString(),
-      },
-      message: 'PII access logged with statutory justification under DPDP Act 2023.',
-    });
+    try {
+      const revealed = await db.withTenantTransaction(getCtx(request), async (client: any) => {
+        const row = (await client.query(sql, [recordId])).rows[0];
+        if (!row) return null;
+        // Logged before the value leaves the database; if logging fails the transaction fails.
+        const log = await client.query(
+          'SELECT audit.log_pii_access(app.current_firm_id(), $1, $2, $3, $4, $5) AS id',
+          [row.entity_id, targetTable, targetColumn, recordId, accessReason],
+        );
+        return { value: row.value as string | null, logId: log.rows[0].id };
+      });
+      if (!revealed) {
+        return reply.status(404).send({ error: 'NOT_FOUND', message: 'No such record in your firm.' });
+      }
+      return reply.send({
+        success: true,
+        unmaskedValue: revealed.value,
+        loggedAuditRecord: { id: revealed.logId, targetTable, targetColumn, recordId, accessReason, accessedAt: new Date().toISOString() },
+        message: 'Reveal recorded in the PII access log.',
+      });
+    } catch (err: any) {
+      if (/PII_REASON_REQUIRED/.test(err.message)) {
+        return reply.status(400).send({ error: 'REASON_REQUIRED', message: 'State why the full value is needed (at least 5 characters).' });
+      }
+      request.log.error({ err: err.code ?? err.message }, 'PII reveal failed');
+      return reply.status(503).send({ error: 'REVEAL_NOT_LOGGED', message: 'The reveal could not be logged, so the value was not shown.' });
+    }
   });
 }

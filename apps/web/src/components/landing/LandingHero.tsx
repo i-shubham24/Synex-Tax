@@ -83,6 +83,12 @@ export function LandingHero() {
 
         {/* Copy (the nav lives in the fixed SiteNav) */}
         <div className="relative z-10 order-1 flex flex-1 flex-col px-6 pt-12 sm:px-10 lg:w-[54%] lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
+          <p
+            className={`mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/70 py-1.5 pl-1.5 pr-3.5 text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-ink">2025 Act</span>
+            Built for both Income-tax Acts, routed by date
+          </p>
           <h1
             id="hero-title"
             className={`font-display text-[clamp(50px,6.5vw,104px)] font-semibold leading-[1.02] tracking-hero transition-colors duration-[1200ms] ease-out-expo ${ink}`}
@@ -106,8 +112,8 @@ export function LandingHero() {
               <PillButton href="/signup" size="lg">
                 Book a free demo
               </PillButton>
-              <Link href="#modules" className="font-display text-[16px] font-medium tracking-[-0.015em] text-ink/70 transition-colors hover:text-ink">
-                See the modules
+              <Link href="/switch" className="font-display text-[16px] font-medium tracking-[-0.015em] text-ink/70 transition-colors hover:text-ink">
+                Switching from desktop software?
               </Link>
             </div>
           </div>

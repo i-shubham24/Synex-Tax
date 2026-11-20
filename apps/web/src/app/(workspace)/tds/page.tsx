@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import React, { useState, useEffect } from 'react';
 import {
   Percent,
@@ -193,13 +195,7 @@ export default function TdsPage() {
 
   // Feedback states
   const [csiFeedback, setCsiFeedback] = useState<string | null>(null);
-  const [fvuFeedback, setFvuFeedback] = useState<{
-    tokenNumber: string;
-    fvuVersion: string;
-    checksum: string;
-    fvuFile: string;
-    form27A: string;
-  } | null>(null);
+  const [fvuFeedback, setFvuFeedback] = useState<{ fvuVersion: string; message: string } | null>(null);
   const [isMatchingCsi, setIsMatchingCsi] = useState<boolean>(false);
   const [isDispatchingFvu, setIsDispatchingFvu] = useState<boolean>(false);
 
@@ -451,13 +447,9 @@ export default function TdsPage() {
 
       const json = await res.json();
       if (json.success && json.data) {
-        setFvuFeedback({
-          tokenNumber: json.data.tokenNumber,
-          fvuVersion: json.data.fvuVersion,
-          checksum: json.data.checksumSha256,
-          fvuFile: json.data.generatedFiles.fvuFile,
-          form27A: json.data.generatedFiles.form27A,
-        });
+        setFvuFeedback({ fvuVersion: json.data.fvuVersion, message: json.data.message });
+      } else {
+        alert(json.message || 'The statement could not be queued.');
       }
     } catch (err: any) {
       alert('FVU dispatch failed: ' + err.message);
@@ -492,6 +484,9 @@ export default function TdsPage() {
           <p className="text-xs text-pos-ink/70 mt-0.5">
             Client: <span className="font-bold text-pos-ink">{entityName}</span> | TAN: <span className="font-mono font-bold text-pos-accent">{tan}</span> | Quarter: <span className="font-bold">{quarter} ({taxYear})</span>
           </p>
+          <Link href="/tds/health" className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-pos-line px-3 py-1 text-xs font-semibold text-pos-accent hover:bg-pos-tint">
+            TDS health and past statements
+          </Link>
         </div>
 
         {/* Dual-Act Regime Switcher Toggle */}
@@ -600,33 +595,12 @@ export default function TdsPage() {
 
       {/* FVU Dispatch Notification Card */}
       {fvuFeedback && (
-        <div className="p-4 rounded-xl bg-pos-surface border border-pos-accent/40 shadow-lg space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-pos-line pb-2.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-pos-accent">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Protean FVU v{fvuFeedback.fvuVersion} Validation Passed (Zero Fatal Errors)</span>
-            </div>
-            <span className="text-xs font-mono font-black text-pos-ink bg-pos-muted px-2.5 py-1 rounded border border-pos-line">
-              Token: {fvuFeedback.tokenNumber}
-            </span>
+        <div role="status" className="p-4 rounded-xl bg-pos-surface border border-amber-500/40 shadow-lg">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-600">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Queued for Protean FVU {fvuFeedback.fvuVersion}, not validated yet</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-            <div className="p-2.5 rounded-lg bg-pos-muted border border-pos-line flex items-center justify-between">
-              <span className="text-pos-ink/70">FVU File: {fvuFeedback.fvuFile}</span>
-              <button className="text-pos-accent hover:underline flex items-center gap-1 font-bold">
-                <Download className="w-3 h-3" /> Download
-              </button>
-            </div>
-            <div className="p-2.5 rounded-lg bg-pos-muted border border-pos-line flex items-center justify-between">
-              <span className="text-pos-ink/70">Form 27A: {fvuFeedback.form27A}</span>
-              <button className="text-pos-accent hover:underline flex items-center gap-1 font-bold">
-                <Download className="w-3 h-3" /> Download PDF
-              </button>
-            </div>
-          </div>
-          <div className="text-[11px] font-mono text-pos-ink/60 truncate">
-            SHA-256 Checksum: <span className="font-semibold text-pos-ink">{fvuFeedback.checksum}</span>
-          </div>
+          <p className="mt-2 text-xs text-pos-ink/70">{fvuFeedback.message}</p>
         </div>
       )}
 

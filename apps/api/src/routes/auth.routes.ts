@@ -53,12 +53,19 @@ function extractRefreshToken(request: FastifyRequest): string | undefined {
   return (request.body as { refreshToken?: string })?.refreshToken;
 }
 
+export function demoWorkspaceEnabled(): boolean {
+  return process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_WORKSPACE === 'true';
+}
+
 export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
-  // Ensure demo partner is seeded on boot if database is connected
-  try {
-    await AuthService.ensureDemoPartner();
-  } catch {
-    // Dev db might not be running yet, will seed on first demo request
+  // The demo workspace has a fixed password and no MFA, so it exists only in development
+  // or where it is switched on explicitly (ENABLE_DEMO_WORKSPACE=true on a demo deployment).
+  if (demoWorkspaceEnabled()) {
+    try {
+      await AuthService.ensureDemoPartner();
+    } catch {
+      // Dev db might not be running yet, will seed on first demo request
+    }
   }
 
   // 1. Signup with automatic firm provisioning and trial workspace seeding
@@ -218,6 +225,9 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
 
   // 7. Demo mode endpoint (returns real database session for CA Verma)
   fastify.post('/demo', async (_request: FastifyRequest, reply: FastifyReply) => {
+    if (!demoWorkspaceEnabled()) {
+      return reply.status(404).send({ error: 'Not Found' });
+    }
     try {
       const demo = await AuthService.ensureDemoPartner();
       const loginRes = await AuthService.login('ca.verma@synextax.com', 'Partner@2026!');

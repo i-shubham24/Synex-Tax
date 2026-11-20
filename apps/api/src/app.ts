@@ -7,6 +7,9 @@ import { registerCsrfProtection, createCsrfHook } from './plugins/csrfProtection
 import { db } from './db/pool.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { clientMasterRoutes } from './routes/clientMaster.routes.js';
+import { clientImportRoutes } from './routes/clientImport.routes.js';
+import { tdsInsightsRoutes } from './routes/tdsInsights.routes.js';
+import { practiceRoutes } from './routes/practice.routes.js';
 import { complianceRoutes } from './routes/compliance.routes.js';
 import { auditRoutes } from './routes/audit.routes.js';
 import { reconRoutes } from './routes/recon.routes.js';
@@ -152,10 +155,13 @@ export function buildApp(): FastifyInstance {
   // ---------------------------------------------------------------------
   app.register(authRoutes, { prefix: '/api/v1/auth' });
   app.register(clientMasterRoutes, { prefix: '/api/v1/client-master' });
+  app.register(clientImportRoutes, { prefix: '/api/v1/client-master/import' });
   app.register(complianceRoutes, { prefix: '/api/v1/compliance' });
   app.register(auditRoutes, { prefix: '/api/v1/audit' });
   app.register(reconRoutes, { prefix: '/api/v1/recon' });
   app.register(tdsRoutes, { prefix: '/api/v1/tds' });
+  app.register(tdsInsightsRoutes, { prefix: '/api/v1/tds' });
+  app.register(practiceRoutes, { prefix: '/api/v1/practice' });
   app.register(dscRoutes, { prefix: '/api/v1/dsc' });
   app.register(workspaceRoutes, { prefix: '/api/v1/workspace' });
   app.register(gstRoutes, { prefix: '/api/v1/gst' });

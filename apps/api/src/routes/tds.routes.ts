@@ -250,46 +250,51 @@ export async function tdsRoutes(app: FastifyInstance) {
   });
 
   // POST /api/v1/tds/fvu/dispatch: Orchestrate isolated Protean FVU Validation
+  // Queues the open statement for FVU validation. The isolated FVU runner (workers/fvu-v1-2 and
+  // fvu-v9-5) is not connected yet, so nothing is validated here and no file or token is produced.
+  // Token numbers come only from the portal after filing.
   app.post('/fvu/dispatch', async (req: FastifyRequest, reply: FastifyReply) => {
-    const user = req.user as { firmId: string; userId: string; role: string };
     const body = req.body as { tan?: string; regime?: string; formCode?: string };
-    const regime = body.regime || 'IT_ACT_2025';
+    const regime = body.regime === 'IT_ACT_1961' ? 'IT_ACT_1961' : 'IT_ACT_2025';
     const fvuVersion = regime === 'IT_ACT_2025' ? '1.2' : '9.5';
-    const tokenNumber = 'TOK' + Date.now().toString().slice(-10);
-
-    if (db.isConfigured()) {
-      try {
-        await db.withTenantTransaction(getCtx(req), async (client) => {
-          await client.query(
-            `INSERT INTO public.tds_fvu_jobs (firm_id, entity_id, return_id, fvu_version, docker_image, input_file_s3, output_fvu_s3, status, error_summary, execution_duration_ms, completed_at)
-             SELECT r.firm_id, r.entity_id, r.id, $1, 'synextax/fvu-worker:1.2', '/s3/input.txt', '/s3/output.fvu', 'SUCCESS', '{"fatalErrors":0,"warnings":0,"message":"Validation clean"}'::jsonb, 120, now()
-             FROM public.tds_returns r
-             WHERE r.firm_id = app.current_firm_id()
-             LIMIT 1`,
-            [fvuVersion],
-          );
-        });
-      } catch (err: any) {
-        req.log.warn({ err }, 'FVU job record notice');
-      }
+    if (!body.tan || !/^[A-Z]{4}\d{5}[A-Z]$/.test(body.tan) || !body.formCode) {
+      return reply.status(400).send({ success: false, error: 'TAN_AND_FORM_REQUIRED' });
     }
-
-    return reply.send({
-      success: true,
-      data: {
-        fvuVersion,
-        regime,
-        validationStatus: 'VALIDATED',
-        fvuExitCode: 0,
-        tokenNumber,
-        checksumSha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
-        generatedFiles: {
-          fvuFile: `${body.tan || 'AMRG04217D'}_Q3_${regime}.fvu`,
-          form27A: `${body.tan || 'AMRG04217D'}_Q3_Form27A.pdf`,
+    try {
+      const job = await db.withTenantTransaction(getCtx(req), async (client) => {
+        const ret = await client.query(
+          `SELECT r.id, r.entity_id FROM public.tds_returns r
+           JOIN public.tan_registrations t ON t.id = r.tan_registration_id
+           WHERE t.tan = $1 AND r.form_code = $2 AND r.statutory_regime = $3
+             AND r.workflow_status NOT IN ('FILED','CLOSED')
+           ORDER BY r.tax_year DESC, r.quarter DESC LIMIT 1`,
+          [body.tan, body.formCode, regime],
+        );
+        if (!ret.rows[0]) return null;
+        const inserted = await client.query(
+          `INSERT INTO public.tds_fvu_jobs (firm_id, entity_id, return_id, fvu_version, docker_image, input_file_s3, status)
+           VALUES (app.current_firm_id(), $1, $2, $3, $4, '', 'QUEUED') RETURNING id`,
+          [ret.rows[0].entity_id, ret.rows[0].id, fvuVersion, `synextax/fvu-v${fvuVersion}`],
+        );
+        return { jobId: inserted.rows[0].id, returnId: ret.rows[0].id };
+      });
+      if (!job) {
+        return reply.status(404).send({ success: false, error: 'NO_OPEN_RETURN', message: 'No open statement for this TAN and form.' });
+      }
+      return reply.status(202).send({
+        success: true,
+        data: {
+          ...job,
+          fvuVersion,
+          regime,
+          validationStatus: 'QUEUED',
+          message: `Queued for Protean FVU ${fvuVersion}. The FVU runner is not connected yet, so this statement has not been validated.`,
         },
-        message: `Protean FVU v${fvuVersion} validation successful. Zero errors detected. Upload file ready.`,
-      },
-    });
+      });
+    } catch (err: any) {
+      req.log.error({ err: err.code ?? err.message }, 'FVU queue failed');
+      return reply.status(500).send({ success: false, error: 'FVU_QUEUE_FAILED', message: 'Could not queue the statement. Try again.' });
+    }
   });
 
   // Line item TDS calculation with Section 516 & Rule 269 rounding

@@ -90,6 +90,25 @@ export async function dscRoutes(app: FastifyInstance) {
   });
 
   // Generate single-use cryptographic challenge for desktop USB DSC bridge
+  // Open returns in this firm that can be sent for signing (RLS limits staff to their clients).
+  app.get('/signable', async (req: FastifyRequest, reply: FastifyReply) => {
+    const rows = await db.withTenantTransaction(getCtx(req), async (client: any) => {
+      const res = await client.query(
+        `SELECT f.id, f.return_type AS form, f.return_period AS period, e.legal_name AS client
+         FROM public.gst_filings f JOIN public.entities e ON e.id = f.entity_id
+         WHERE f.workflow_status NOT IN ('FILED','CLOSED')
+         UNION ALL
+         SELECT r.id, 'FORM_' || r.form_code, r.quarter || ' TY ' || r.tax_year, e.legal_name
+         FROM public.tds_returns r JOIN public.entities e ON e.id = r.entity_id
+         WHERE r.workflow_status NOT IN ('FILED','CLOSED')
+         ORDER BY 3 DESC
+         LIMIT 50`,
+      );
+      return res.rows;
+    });
+    return reply.send({ success: true, data: rows });
+  });
+
   app.post('/challenge', async (req: FastifyRequest, reply: FastifyReply) => {
     const parsed = DscChallengeRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -200,40 +219,68 @@ export async function dscRoutes(app: FastifyInstance) {
     // Invalidate single-use nonce
     activeChallenges.delete(challengeNonce);
 
-    // Record immutable digital signing event in PostgreSQL 17
-    if (db.isConfigured()) {
-      try {
-        await db.withTenantTransaction(getCtx(req), async (client: any) => {
-          await client.query(
-            `INSERT INTO audit.signing_audit_logs (
-              firm_id, entity_id, cert_serial_hex, holder_pan, holder_name,
-              operation, payload_hash, signature_nonce, token_profile,
-              ip_addr, client_user_agent, status, signed_at
-            ) VALUES (
-              app.current_firm_id(),
-              COALESCE((SELECT id FROM public.entities WHERE firm_id = app.current_firm_id() LIMIT 1), '00000000-0000-0000-0000-000000000000'::uuid),
-              $1, $2, $3, 'GST_RETFILE_PKCS7', $4, gen_random_uuid(), 'FIPS_140_3',
-              $5::inet, $6, 'SUCCESS', now()
-            )`,
-            [
-              certificateSerialNumber,
-              challenge.signatoryPan,
-              certificateSubject.split(',')[0].replace('CN=', ''),
-              challenge.digestSha256,
-              req.ip || '127.0.0.1',
-              req.headers['user-agent'] || 'SynexTax DSC Agent 0.1.0',
-            ],
-          );
-        });
-      } catch (err: any) {
-        req.log.warn({ err }, 'DSC signing audit log notice');
+    // The local agent does not yet sign on a hardware token (it returns a simulated value and no
+    // certificate), so the server cannot verify the signature. Never let that reach a live filing.
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SIMULATED_DSC !== 'true') {
+      return reply.status(503).send({
+        error: 'DSC_SIGNING_UNAVAILABLE',
+        message: 'Hardware DSC signing is not available yet. Use EVC, or sign on the portal.',
+      });
+    }
+
+    // Every signing attempt is written to the append-only signing trail through the audit writer
+    // function, against the filing's own entity. If it cannot be recorded, the signing fails.
+    try {
+      await db.withTenantTransaction(getCtx(req), async (client: any) => {
+        const filing = await client.query(
+          `SELECT entity_id FROM public.gst_filings WHERE id = $1
+           UNION ALL
+           SELECT entity_id FROM public.tds_returns WHERE id = $1
+           LIMIT 1`,
+          [filingId],
+        );
+        if (!filing.rows[0]) {
+          const err: any = new Error('FILING_NOT_FOUND');
+          err.statusCode = 404;
+          throw err;
+        }
+        // The 32-byte challenge nonce is stored as a UUID-shaped value (first 16 bytes).
+        const n = challengeNonce;
+        const nonceUuid = `${n.slice(0, 8)}-${n.slice(8, 12)}-${n.slice(12, 16)}-${n.slice(16, 20)}-${n.slice(20, 32)}`;
+        await client.query(
+          `SELECT audit.log_signing_event(app.current_firm_id(), $1, NULL, $2, $3, $4, $5, $6, $7::uuid, $8, $9, NULL, NULL)`,
+          [
+            filing.rows[0].entity_id,
+            certificateSerialNumber.slice(0, 64),
+            challenge.signatoryPan,
+            (certificateSubject.split(',')[0] ?? '').replace('CN=', '').slice(0, 150),
+            /130|131|133|16/.test(challenge.formType)
+              ? 'FORM_130_131_PADES'
+              : /^(GSTR|GST)/i.test(challenge.formType)
+                ? 'GST_RETFILE_PKCS7'
+                : 'TRACES_BATCH_PADES',
+            challenge.digestSha256,
+            nonceUuid,
+            'UNKNOWN',
+            'UNVERIFIED',
+          ],
+        );
+      });
+    } catch (err: any) {
+      if (err.statusCode === 404) {
+        return reply.status(404).send({ error: 'FILING_NOT_FOUND', message: 'This filing does not exist in your firm.' });
       }
+      req.log.error({ err: err.code ?? err.message }, 'DSC signing audit write failed');
+      return reply.status(503).send({
+        error: 'AUDIT_UNAVAILABLE',
+        message: 'The signing could not be recorded in the audit trail, so it was not accepted. Try again.',
+      });
     }
 
     return reply.status(200).send({
       success: true,
       data: {
-        status: 'VERIFIED_AND_SIGNED',
+        status: 'SIGNED_UNVERIFIED',
         filingId,
         formType: challenge.formType,
         certificate: {
@@ -242,10 +289,10 @@ export async function dscRoutes(app: FastifyInstance) {
           issuer: certificateIssuer,
           signatoryPan: challenge.signatoryPan,
         },
-        signatureVerified: true,
+        // No certificate or CMS structure is sent yet, so the server cannot check the signature.
+        signatureVerified: false,
         signingTimestamp,
         auditRecorded: true,
-        statutoryStandards: 'CCA India Class 3 / e-Mudhra / SafeScrypt / FIPS 140-2 Level 3 compliant',
       },
     });
   });

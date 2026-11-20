@@ -56,9 +56,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemo = (r: Role) => {
-    loginDemo(r);
-    router.push('/dashboard');
+  const handleDemo = async (r: Role) => {
+    setError(null);
+    try {
+      await loginDemo(r);
+      router.push('/dashboard');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'The demo workspace could not be opened.');
+    }
   };
 
   return (

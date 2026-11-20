@@ -515,3 +515,30 @@ test('Provisioning: staff cannot add users; a user-signed context is not a syste
     /row-level security|permission denied/,
   );
 });
+
+// ---------------------------------------------------------------------------
+// 0014: document checklists
+test('Checklists: staff work on their assigned clients only, and every change is audited', async () => {
+  const checklistId = id();
+  await asApp(ctx(F.A, U.sA), async (tx) => {
+    await tx.query(
+      `INSERT INTO public.doc_checklists (id, firm_id, entity_id, service, period_label, due_date) VALUES ($1, $2, $3, 'GST_MONTHLY', 'Oct 2026', '2026-11-05')`,
+      [checklistId, F.A, E.A1],
+    );
+    await tx.query(
+      `INSERT INTO public.doc_checklist_items (firm_id, entity_id, checklist_id, position, label) VALUES ($1, $2, $3, 1, 'Sales invoices')`,
+      [F.A, E.A1, checklistId],
+    );
+  });
+  // E.A2 is not assigned to this staff member.
+  await assert.rejects(
+    asApp(ctx(F.A, U.sA), (tx) =>
+      tx.query(`INSERT INTO public.doc_checklists (firm_id, entity_id, service, period_label, due_date) VALUES ($1, $2, 'GST_MONTHLY', 'Oct 2026', '2026-11-05')`, [F.A, E.A2]),
+    ),
+    /row-level security/,
+  );
+  const otherFirm = await asApp(ctx(F.B, U.pB), async (tx) => (await tx.query('SELECT count(*)::int AS n FROM public.doc_checklist_items')).rows[0].n);
+  assert.equal(otherFirm, 0);
+  const audited = (await db.query(`SELECT count(*)::int AS n FROM audit.immutable_audit_logs WHERE table_name IN ('doc_checklists','doc_checklist_items') AND firm_id = $1`, [F.A])).rows[0].n;
+  assert.ok(audited >= 2);
+});

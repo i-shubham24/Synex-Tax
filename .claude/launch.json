@@ -4,19 +4,59 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@synextax/web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@synextax/web"
+      ],
       "port": 3000
     },
     {
       "name": "web-prod",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "start", "-w", "@synextax/web", "--", "-p", "3001"],
+      "runtimeArgs": [
+        "run",
+        "start",
+        "-w",
+        "@synextax/web",
+        "--",
+        "-p",
+        "3001"
+      ],
       "port": 3001
     },
     {
       "name": "api",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "@synextax/api"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@synextax/api"
+      ],
+      "port": 4000
+    },
+    {
+      "name": "db",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "db:dev",
+        "-w",
+        "@synextax/db"
+      ],
+      "port": 54329
+    },
+    {
+      "name": "api-local",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:local",
+        "-w",
+        "@synextax/api"
+      ],
       "port": 4000
     }
   ]

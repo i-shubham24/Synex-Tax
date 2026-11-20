@@ -42,7 +42,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <button
                 key={d.role}
                 type="button"
-                onClick={() => loginDemo(d.role)}
+                onClick={() => loginDemo(d.role).catch((e: Error) => alert(e.message))}
                 className="group flex w-full items-center justify-between rounded-[10px] border border-[#ececee] bg-white p-3.5 text-left transition-colors hover:border-pos-accent/50 hover:bg-pos-tint"
               >
                 <span>

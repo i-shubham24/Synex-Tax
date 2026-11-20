@@ -33,13 +33,15 @@ const SOCIAL = [
 ];
 
 const PRODUCT: Array<[string, string]> = [
-  ['Modules', '/#modules'],
-  ['Why switch', '/#why'],
+  ['GST and IMS', '/features/gst'],
+  ['Dual-Act TDS', '/features/tds'],
   ['Pricing', '/#pricing'],
-  ['Pilot', '/#pilot'],
+  ['Free tools', '/tools'],
+  ["What's new", '/whats-new'],
 ];
 const COMPANY: Array<[string, string]> = [
-  ['Book a demo', '/signup'],
+  ['Switch to SynexTax', '/switch'],
+  ['Security', '/security'],
   ['Contact', '/contact'],
   ['Privacy', '/privacy'],
   ['Terms', '/terms'],

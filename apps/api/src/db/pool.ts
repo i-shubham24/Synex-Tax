@@ -3,6 +3,10 @@ import crypto from 'node:crypto';
 
 const { Pool } = pg;
 
+// DATE columns are calendar dates, not instants: keep them as 'YYYY-MM-DD'. The default parser makes
+// a local-midnight Date, which shifts a day when serialised from an IST server.
+pg.types.setTypeParser(1082, (value: string) => value);
+
 export interface TenantContext {
   firmId: string;
   userId?: string | null;
@@ -15,6 +19,26 @@ export interface TenantContext {
 export interface ContextKeyConfig {
   kid: string;
   secret: Buffer;
+}
+
+const CONNECTION_CODES = new Set(['ECONNRESET', 'EPIPE', 'ETIMEDOUT', 'ECONNREFUSED', '57P01', '57P03']);
+
+/** True for a lost or refused connection, false for ordinary SQL or application errors. */
+export function isConnectionError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: string; message?: string };
+  return (e.code !== undefined && CONNECTION_CODES.has(e.code)) || /Connection terminated|socket hang up/i.test(e.message ?? '');
+}
+
+/** Checks out a connection, retrying once if a fresh one is reset while opening. */
+async function connectWithRetry(pool: pg.Pool): Promise<pg.PoolClient> {
+  try {
+    return await pool.connect();
+  } catch (err) {
+    if (!isConnectionError(err)) throw err;
+    await new Promise((r) => setTimeout(r, 150));
+    return pool.connect();
+  }
 }
 
 /** Database roles each kind of work runs as (see packages/db/migrations/0001). */
@@ -114,7 +138,8 @@ class DatabaseManager {
    * PostgreSQL RLS then limits every query to the firm (and, for staff, their assigned clients).
    */
   public async withTenantTransaction<T>(context: TenantContext, callback: (client: pg.PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.getPool().connect();
+    const client = await connectWithRetry(this.getPool());
+    let failed: unknown;
     try {
       await client.query('BEGIN');
       await client.query(`SET LOCAL ROLE ${APP_ROLE}`);
@@ -132,10 +157,12 @@ class DatabaseManager {
       await client.query('COMMIT');
       return result;
     } catch (err) {
+      failed = err;
       await client.query('ROLLBACK').catch(() => {});
       throw err;
     } finally {
-      client.release();
+      // A broken socket is destroyed instead of being handed to the next request.
+      client.release(isConnectionError(failed) ? (failed as Error) : undefined);
     }
   }
 
@@ -146,7 +173,8 @@ class DatabaseManager {
 
   /** Credentials, MFA factors and sessions, as the auth role. No tenant tables are reachable. */
   public async withAuthTransaction<T>(callback: (client: pg.PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.getAuthPool().connect();
+    const client = await connectWithRetry(this.getAuthPool());
+    let failed: unknown;
     try {
       await client.query('BEGIN');
       await client.query(`SET LOCAL ROLE ${AUTH_ROLE}`);
@@ -154,10 +182,12 @@ class DatabaseManager {
       await client.query('COMMIT');
       return result;
     } catch (err) {
+      failed = err;
       await client.query('ROLLBACK').catch(() => {});
       throw err;
     } finally {
-      client.release();
+      // A broken socket is destroyed instead of being handed to the next request.
+      client.release(isConnectionError(failed) ? (failed as Error) : undefined);
     }
   }
 

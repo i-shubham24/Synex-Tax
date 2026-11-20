@@ -19,6 +19,7 @@ import {
   Edit2,
   MoreVertical,
 } from 'lucide-react';
+import { maskPan } from '@synextax/tax-engine';
 import { useAuth } from '../../../context/AuthContext';
 
 interface ClientItem {
@@ -138,13 +139,13 @@ export default function ClientsMasterPage() {
             <span>Open Invoices Register</span>
           </Link>
 
-          <button
-            onClick={() => alert('New Client Registration Modal opened.')}
+          <Link
+            href="/clients/import"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-mono text-xs font-bold transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Client [F1]</span>
-          </button>
+            <span>Add or import clients</span>
+          </Link>
         </div>
       </div>
 
@@ -241,7 +242,7 @@ export default function ClientsMasterPage() {
                       </td>
 
                       <td className="py-3 px-3">
-                        <div className="font-mono font-bold text-[#0E0F10] dark:text-white">{cl.pan}</div>
+                        <div className="font-mono font-bold text-[#0E0F10] dark:text-white">{maskPan(cl.pan)}</div>
                         <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{cl.constitution}</div>
                       </td>
 
@@ -304,7 +305,7 @@ export default function ClientsMasterPage() {
               </div>
               <div className="flex justify-between text-[#646A73] dark:text-[#9BA1AA]">
                 <span>Permanent PAN:</span>
-                <span className="text-[#0E0F10] dark:text-white font-bold">{selectedClient.pan}</span>
+                <span className="text-[#0E0F10] dark:text-white font-bold">{maskPan(selectedClient.pan)}</span>
               </div>
               <div className="flex justify-between text-[#646A73] dark:text-[#9BA1AA]">
                 <span>Accounting Stack:</span>

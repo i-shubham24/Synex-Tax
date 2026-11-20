@@ -238,14 +238,21 @@ export default function AuditRadarPage() {
       };
       if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
+      // Reveal the PAN of the first client this user can see; the server logs it before returning it.
+      const entRes = await fetch('/api/v1/client-master/entities', { headers, credentials: 'include' });
+      const entities = entRes.ok ? ((await entRes.json()) as Array<{ id: string }>) : [];
+      if (!entities[0]) {
+        setPiiError('There is no client to reveal a PAN for yet.');
+        return;
+      }
       const res = await fetch('/api/v1/audit/reveal-pii', {
         method: 'POST',
         headers,
         credentials: 'include',
         body: JSON.stringify({
           targetTable: 'entities',
-          targetColumn: 'signatory_aadhaar',
-          recordId: 'c0000000-0000-0000-0000-000000000001',
+          targetColumn: 'pan',
+          recordId: entities[0].id,
           accessReason: justification.trim(),
         }),
       });
@@ -256,7 +263,7 @@ export default function AuditRadarPage() {
         // Refresh logs to show new PII reveal entry
         refreshLogs();
       } else {
-        setPiiError('Decryption denied by PostgreSQL statutory gate.');
+        setPiiError(json.message || 'The value was not revealed.');
       }
     } catch (err: any) {
       setPiiError('Error executing DPDP decryption: ' + err.message);
@@ -280,15 +287,24 @@ export default function AuditRadarPage() {
       };
       if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
-      // Step 1: Request single-use challenge from backend
+      // Step 1: Pick a real open return in this firm, then request a single-use challenge
+      const signableRes = await fetch('/api/v1/dsc/signable', { headers, credentials: 'include' });
+      const signable = ((await signableRes.json()).data ?? []) as Array<{ id: string; form: string; period: string; client: string }>;
+      const wantGst = selectedFilingForSign.includes('GSTR');
+      const target = signable.find((f) => f.form.startsWith('GSTR') === wantGst) ?? signable[0];
+      if (!target) {
+        alert('There is no open return to sign in this firm.');
+        setIsSigningDsc(false);
+        return;
+      }
       const challengeRes = await fetch('/api/v1/dsc/challenge', {
         method: 'POST',
         headers,
         credentials: 'include',
         body: JSON.stringify({
-          filingId: 'b0000000-0000-0000-0000-000000000001',
+          filingId: target.id,
           signatoryPan: dscToken?.certificate.holderPan || 'AAAPV8912K',
-          formType: selectedFilingForSign.includes('GSTR-3B') ? 'GSTR-3B' : 'FORM_140',
+          formType: target.form,
           digestSha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
         }),
       });
@@ -313,7 +329,7 @@ export default function AuditRadarPage() {
         credentials: 'include',
         body: JSON.stringify({
           challengeNonce: nonce,
-          filingId: 'b0000000-0000-0000-0000-000000000001',
+          filingId: target.id,
           certificateSubject: dscToken?.certificate.subject || 'CN=CA Amrinder Verma, SERIALNUMBER=014289N, OID.2.5.4.45=AAAPV8912K',
           certificateSerialNumber: dscToken?.certificate.serialNumberHex || '3A4B892F10E401',
           certificateIssuer: dscToken?.certificate.issuer || 'e-Mudhra Sub-CA for Class 3 Individual 2024',
@@ -325,12 +341,12 @@ export default function AuditRadarPage() {
       const verifyJson = await verifyRes.json();
       if (verifyJson.success) {
         setSigningReceipt({
-          status: 'VERIFIED_AND_SIGNED',
+          status: verifyJson.data?.status ?? 'SIGNED_UNVERIFIED',
           signatureHex: mockSignature,
           timestamp,
           certSubject: dscToken?.certificate.subject || 'CN=CA Amrinder Verma',
           tokenModel: dscToken?.tokenModel || 'ePass2003 Auto / mToken CryptoID',
-          statutoryStandards: verifyJson.data?.statutoryStandards || 'CCA India Class 3 / FIPS 140-3 Level 3 compliant',
+          statutoryStandards: `${target.form} ${target.period}, ${target.client}. Test signing: the local signer is a simulator, so this return is not DSC-signed and must not be filed with it.`,
         });
         // Refresh logs to show new DSC signing entry
         refreshLogs();
@@ -653,21 +669,21 @@ export default function AuditRadarPage() {
                       className="px-4 py-2 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
                     >
                       <KeyRound className="w-4 h-4" />
-                      <span>{isSigningDsc ? 'Communicating with USB Token...' : 'Sign with Hardware DSC Token'}</span>
+                      <span>{isSigningDsc ? 'Recording test signing...' : 'Test signing (simulated token)'}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Signing Receipt Card */}
                 {signingReceipt && (
-                  <div className="p-4 rounded-xl bg-pos-surface border border-emerald-500/40 shadow-lg space-y-2.5 font-mono text-xs">
+                  <div className="p-4 rounded-xl bg-pos-surface border border-amber-500/40 shadow-lg space-y-2.5 font-mono text-xs">
                     <div className="flex items-center justify-between border-b border-pos-line pb-2">
-                      <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                      <div className="flex items-center gap-1.5 text-amber-600 font-bold">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Filing Digitally Signed & Sealed</span>
+                        <span>Test signing recorded, signature not verified</span>
                       </div>
                       <span className="text-[10px] font-bold text-pos-accent px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
-                        MCA Rule 3 Logged
+                        Signing trail logged
                       </span>
                     </div>
 
@@ -696,22 +712,22 @@ export default function AuditRadarPage() {
                 <h2 className="font-bold text-sm text-pos-ink">DPDP Act 2023 PII Access Gate</h2>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-bold border border-pos-line">
-                Section 6 & 138 Compliant
+                Every reveal logged
               </span>
             </div>
 
             <p className="text-xs text-pos-ink/60 leading-relaxed">
               Under the Digital Personal Data Protection Act 2023 and CERT-In VAPT guidelines, direct PII access
-              (Aadhaar, Bank Account, Mobile) is masked and encrypted. Decryption requires explicit statutory purpose
+              (PAN, bank account, mobile) is masked. Decryption requires explicit statutory purpose
               logging and Partner-level authorization recorded in the immutable audit schema.
             </p>
 
             <div className="bg-pos-surface border border-pos-line rounded-lg p-4 space-y-3 font-mono text-xs">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-pos-ink/60 block text-[11px]">Authorized Signatory Aadhaar Number:</span>
+                  <span className="text-pos-ink/60 block text-[11px]">Client PAN:</span>
                   <span className="text-pos-ink font-bold text-sm">
-                    {revealedValue || 'enc:aadhaar_aes256_gcm_ciphertext_9918'}
+                    {revealedValue || 'XXXXX####X'}
                   </span>
                 </div>
                 {!revealedValue && (

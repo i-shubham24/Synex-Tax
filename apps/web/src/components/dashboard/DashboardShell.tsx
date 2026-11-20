@@ -17,12 +17,14 @@ import {
   Settings,
   Sun,
   Users,
+  FolderCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../workspace/WorkspaceContext';
 import { ClientPill } from './shell/ClientPill';
 import { CommandPalette, openCommandPalette } from './shell/CommandPalette';
 import { DscAgentPill } from './shell/DscAgentPill';
+import { KeyboardShortcuts } from './shell/KeyboardShortcuts';
 import { NotificationCenter } from './shell/NotificationCenter';
 import { PlanMeter } from './shell/PlanMeter';
 import { ProfileMenu } from './shell/ProfileMenu';
@@ -46,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'gst', label: 'GST and IMS', href: '/gst', icon: ReceiptText },
   { id: 'recon', label: '2B reconciliation', href: '/gst/recon-2b', icon: FileSpreadsheet },
   { id: 'tds', label: 'Dual-Act TDS', href: '/tds', icon: Percent },
+  { id: 'documents', label: 'Client documents', href: '/documents', icon: FolderCheck },
   { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'] },
 ];
 
@@ -220,6 +223,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette />
+      <KeyboardShortcuts />
       <SupportWidget />
     </div>
   );

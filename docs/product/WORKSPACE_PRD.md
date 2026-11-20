@@ -121,6 +121,11 @@ Confirmed and safe to build: 2-year TDS correction window (s.397(3)(f), from the
   - Pins: Go 1.27 / toolchain go1.27.4, Node `22.x` + `.nvmrc`, Next `~16.4.6`, Postgres 17 compose (already). API refuses the dev HMAC secret in production.
 - **20 Nov 2026, Checkpoint 2 (live site):** space restored in "clarity and compliance so your team can breathe easy"; `/privacy` (DPDP Act), `/terms` and `/contact` pages added; nav and footer links work from every page; pricing already server-rendered. Tax-engine unit tests for Sec 170, Sec 516, Rule 269, 88A/86B, Advisory 643 and validators already existed. Company emails, Grievance Officer and courts clause in `apps/web/src/lib/legal.ts` need confirming before launch.
 
+- **20 Nov 2026, competitor phases 0 to 6 (see COMPETITOR_SMARTBIZ.md):**
+  - Fixed: demo partner backdoor (now dev or `ENABLE_DEMO_WORKSPACE` only), refresh that never worked against the DB (CSRF and an auth-role permission error), silent fallback to the demo account, logout not revoking, simulated DSC signing reported as verified, FVU dispatch inventing a validation result and token, PII reveal returning a fixed fake value without logging, full client PANs on screen, DATE columns shifting a day, pglite-socket locking out a restarted API.
+  - Built: client import (tax-engine rules, `/clients/import`, partner-only commit); Form 140 statement import with Protean's official layout and section codes (`tax-engine/tds`), payee master, TDS health (`/tds/health`); salary TDS calculator; document checklists with gap board and WhatsApp/email reminders (`/documents`, migration 0014); PII redaction for any AI use; `/switch`, `/security`, `/features/gst`, `/features/tds`, `/tools`, `/whats-new`; keyboard shortcuts.
+  - Still open, needs outside inputs: real PKCS#11 signing (USB token), FVU runner containers, 1961-format and TRACES conso import (file layouts), correction statements, Form 130/131 certificate handling (TRACES files), client self-upload (file storage) and automatic WhatsApp sending (provider), India hosting, API responses masking PAN.
+
 ## 4. Build order
 
 Each milestone ships UI, API and data together, against the `MockGspAdapter`, so screens stop being mock-only as they are built.

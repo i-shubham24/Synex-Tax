@@ -421,20 +421,20 @@ export class AuthService {
   public static async refreshToken(token: string, ip?: string, userAgent?: string): Promise<AuthTokens> {
     const tokenHash = sha256(token);
 
+    // The auth role reads only auth.* tables; firm membership comes from app.list_memberships,
+    // which returns active users of active firms only.
     const session = await db.withAuthTransaction(async (client) => {
       const res = await client.query(
-        `SELECT s.id, s.identity_id, s.user_id, s.expires_at, s.revoked_at,
-                u.firm_id, u.display_name, u.role, u.status AS user_status,
-                f.legal_name, f.trade_name, f.trial_ends_at, f.status AS firm_status,
-                i.email
+        `SELECT s.id, s.identity_id, s.user_id, s.expires_at, s.revoked_at, i.email, i.status AS identity_status
          FROM auth.sessions s
-         JOIN public.users u ON u.id = s.user_id
-         JOIN public.firms f ON f.id = u.firm_id
          JOIN auth.identities i ON i.id = s.identity_id
          WHERE s.refresh_token_hash = $1`,
         [tokenHash],
       );
-      return res.rows[0];
+      const row = res.rows[0];
+      if (!row) return undefined;
+      const m = await client.query('SELECT firm_id FROM app.list_memberships($1) WHERE user_id = $2', [row.identity_id, row.user_id]);
+      return { ...row, firm_id: m.rows[0]?.firm_id as string | undefined };
     });
 
     if (!session || session.revoked_at || new Date(session.expires_at) < new Date()) {
@@ -443,7 +443,7 @@ export class AuthService {
       throw error;
     }
 
-    if (session.user_status !== 'ACTIVE' || session.firm_status !== 'ACTIVE') {
+    if (session.identity_status !== 'ACTIVE' || !session.firm_id) {
       const error: any = new Error('User membership or firm is inactive');
       error.statusCode = 403;
       throw error;

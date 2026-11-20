@@ -71,7 +71,10 @@ export async function startDevDatabase({ dataDir, port = 54329, host = '127.0.0.
   const db = await openDatabase({ dataDir });
   await migrate(db, { log });
   await ensureContextKey(db, { kid, secret });
-  const server = new PGLiteSocketServer({ db, port, host });
+  // pglite-socket 0.1.x allows one connection by default and never frees the slot when a client
+  // dies abruptly (its error path skips the close bookkeeping), so a restarted API would be locked
+  // out. Its query queue keeps each transaction on its own connection, so more slots are safe.
+  const server = new PGLiteSocketServer({ db, port, host, maxConnections: 32 });
   await server.start();
   const address = server.server?.address?.();
   const boundPort = typeof address === 'object' && address ? address.port : port;
