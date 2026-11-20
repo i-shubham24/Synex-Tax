@@ -56,6 +56,10 @@ class DatabaseManager {
     });
   }
 
+  public isConfigured(): boolean {
+    return Boolean(process.env.DATABASE_URL || process.env.POSTGRES_DB);
+  }
+
   public getPool(): pg.Pool {
     if (!this.pool) this.pool = this.makePool(connectionString('')!);
     return this.pool;

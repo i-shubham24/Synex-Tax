@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   GitCompare,
   AlertTriangle,
@@ -141,8 +141,108 @@ export default function ReconPage() {
   const [filter, setFilter] = useState<string>('ALL');
   const [acknowledgedDeltas, setAcknowledgedDeltas] = useState<Record<string, boolean>>({});
   const [notification, setNotification] = useState<string | null>(null);
+  const [activeGstin, setActiveGstin] = useState<string>('03AAFCP4821K1Z5');
+  const [activePeriod, setActivePeriod] = useState<string>('Nov 2025 (112025)');
 
-  const handleImsAction = (id: string, action: 'A' | 'R' | 'P' | 'NONE') => {
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRecon() {
+      try {
+        const res = await fetch('/api/v1/recon/active', {
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && json.data) {
+          if (json.data.gstin) setActiveGstin(json.data.gstin);
+          if (json.data.period) setActivePeriod(json.data.period);
+
+          const newItems: ReconItem[] = [];
+
+          if (json.data.pairs && Array.isArray(json.data.pairs)) {
+            for (const p of json.data.pairs) {
+              const pr = p.purchaseInvoice;
+              const g2b = p.gstr2bRecord;
+              newItems.push({
+                id: pr.id || g2b.id,
+                status: p.matchType === 'EXACT' ? 'EXACT_MATCH' : 'FUZZY_MATCH',
+                confidenceScore: p.confidenceScore || (p.matchType === 'EXACT' ? 1.0 : 0.96),
+                supplierGstin: g2b.supplierGstin || pr.vendorGstin,
+                supplierName: g2b.supplierName || pr.vendorName || 'Supplier',
+                prInvoiceNum: pr.invoiceNum,
+                portalDocNum: g2b.docNum,
+                invoiceDate: pr.invoiceDate || g2b.docDate,
+                taxableValue: pr.taxableValue || g2b.taxableValue,
+                totalTax: pr.totalTax || g2b.totalTax,
+                cgst: pr.cgstAmount || g2b.cgstAmount || '0.00',
+                sgst: pr.sgstAmount || g2b.sgstAmount || '0.00',
+                igst: pr.igstAmount || g2b.igstAmount || '0.00',
+                itcEligibility: pr.itcEligibility || 'ELIGIBLE',
+                imsAction: (g2b.imsActionStatus as any) || 'NONE',
+                notes: p.matchType === 'EXACT' ? 'Exact Match: Verified identical in Books and GSTR-2B.' : 'Pass 2 Fuzzy Match: Normalized FY tokens and delimiters.',
+              });
+            }
+          }
+
+          if (json.data.unmatchedPurchase && Array.isArray(json.data.unmatchedPurchase)) {
+            for (const pr of json.data.unmatchedPurchase) {
+              newItems.push({
+                id: pr.id,
+                status: 'PURCHASE_NOT_IN_2B',
+                confidenceScore: 0.0,
+                supplierGstin: pr.vendorGstin,
+                supplierName: pr.vendorName || 'Vendor',
+                prInvoiceNum: pr.invoiceNum,
+                invoiceDate: pr.invoiceDate,
+                taxableValue: pr.taxableValue,
+                totalTax: pr.totalTax,
+                cgst: pr.cgstAmount || '0.00',
+                sgst: pr.sgstAmount || '0.00',
+                igst: pr.igstAmount || '0.00',
+                itcEligibility: pr.itcEligibility || 'ELIGIBLE',
+                imsAction: 'NONE',
+                notes: 'Purchase invoice in books, missing from GSTR-2B. Credit at risk for filing period.',
+              });
+            }
+          }
+
+          if (json.data.unmatchedPortal2b && Array.isArray(json.data.unmatchedPortal2b)) {
+            for (const g2b of json.data.unmatchedPortal2b) {
+              newItems.push({
+                id: g2b.id,
+                status: 'VENDOR_NOT_IN_PR',
+                confidenceScore: 0.0,
+                supplierGstin: g2b.supplierGstin,
+                supplierName: g2b.supplierName || 'Portal Supplier',
+                portalDocNum: g2b.docNum,
+                invoiceDate: g2b.docDate,
+                taxableValue: g2b.taxableValue,
+                totalTax: g2b.totalTax,
+                cgst: g2b.cgstAmount || '0.00',
+                sgst: g2b.sgstAmount || '0.00',
+                igst: g2b.igstAmount || '0.00',
+                itcEligibility: g2b.itcAvailable ? 'ELIGIBLE' : 'INELIGIBLE_17_5',
+                imsAction: (g2b.imsActionStatus as any) || 'NONE',
+                notes: 'Invoice in GSTR-2B but unrecorded in books. Unclaimed credit.',
+              });
+            }
+          }
+
+          if (newItems.length > 0) {
+            setItems(newItems);
+          }
+        }
+      } catch {
+        // preserve initialized list
+      }
+    }
+    loadRecon();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleImsAction = async (id: string, action: 'A' | 'R' | 'P' | 'NONE') => {
     const target = items.find((it) => it.id === id);
     if (!target) return;
 
@@ -162,6 +262,22 @@ export default function ReconPage() {
       action === 'A' ? 'Accepted' : action === 'R' ? 'Rejected' : action === 'P' ? 'Pending' : 'Reset';
     setNotification(`Invoice ${target.prInvoiceNum || target.portalDocNum}: IMS status updated to ${actionText}.`);
     setTimeout(() => setNotification(null), 3000);
+
+    try {
+      await fetch('/api/v1/recon/ims-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          invoiceId: target.portalDocNum || id,
+          action,
+          gstin: activeGstin,
+          acknowledgedDelta: !!acknowledgedDeltas[id],
+        }),
+      });
+    } catch {
+      // optimistic update maintained
+    }
   };
 
   const toggleDeltaAck = (id: string) => {
@@ -208,11 +324,11 @@ export default function ReconPage() {
         <div className="flex items-center gap-2 text-xs font-mono">
           <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md">
             <span className="text-pos-ink/60">GSTIN: </span>
-            <span className="text-pos-ink font-bold">03AABCP1332L1Z4</span>
+            <span className="text-pos-ink font-bold">{activeGstin}</span>
           </div>
           <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md">
             <span className="text-pos-ink/60">Period: </span>
-            <span className="text-pos-accent font-bold">Nov 2025 (112025)</span>
+            <span className="text-pos-accent font-bold">{activePeriod}</span>
           </div>
         </div>
       </div>

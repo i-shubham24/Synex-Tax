@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Receipt,
   Search,
@@ -117,6 +117,7 @@ const SAMPLE_INVOICES: InvoiceRow[] = [
 
 export default function MasterInvoicesPage() {
   const { user } = useAuth();
+  const [rows, setRows] = useState<InvoiceRow[]>(SAMPLE_INVOICES);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedRowId, setSelectedRowId] = useState<string>('row-1');
@@ -125,9 +126,45 @@ export default function MasterInvoicesPage() {
   const [cashOffsetInput, setCashOffsetInput] = useState<string>('24150.00');
   const [filingFeedback, setFilingFeedback] = useState<string | null>(null);
 
-  const selectedRow = SAMPLE_INVOICES.find((r) => r.id === selectedRowId) || SAMPLE_INVOICES[0];
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSales() {
+      try {
+        const res = await fetch('/api/v1/gst/sales', { credentials: 'include' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && json.data && json.data.invoices && json.data.invoices.length > 0) {
+          const mapped: InvoiceRow[] = json.data.invoices.map((inv: any) => ({
+            id: inv.id,
+            docNum: inv.invoiceNum,
+            docDate: inv.invoiceDate,
+            counterparty: inv.customerName,
+            gstin: inv.customerGstin || '03AAFCP4821K1Z5',
+            pos: `State (${inv.pos})`,
+            taxableValue: parseFloat(inv.taxableValue),
+            rate: inv.igstAmount !== '0.00' ? '5%' : '5%',
+            cgst: parseFloat(inv.cgstAmount),
+            sgst: parseFloat(inv.sgstAmount),
+            igst: parseFloat(inv.igstAmount),
+            status: inv.status || 'FILED',
+            statusLabel: inv.status === 'FILED' ? 'Filed' : 'Validated',
+          }));
+          setRows(mapped);
+          if (mapped.length > 0) setSelectedRowId(mapped[0].id);
+        }
+      } catch {
+        // preserve initial sample
+      }
+    }
+    loadSales();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const filteredRows = SAMPLE_INVOICES.filter((row) => {
+  const selectedRow = rows.find((r) => r.id === selectedRowId) || rows[0];
+
+  const filteredRows = rows.filter((row) => {
     if (filterStatus === 'PENDING' && row.status !== 'PENDING') return false;
     if (filterStatus === 'RECONCILED' && row.status !== 'RECONCILED') return false;
     if (filterStatus === 'FILED' && row.status !== 'FILED') return false;

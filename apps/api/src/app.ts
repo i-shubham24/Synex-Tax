@@ -13,6 +13,7 @@ import { reconRoutes } from './routes/recon.routes.js';
 import { tdsRoutes } from './routes/tds.routes.js';
 import { dscRoutes } from './routes/dsc.routes.js';
 import { workspaceRoutes } from './routes/workspace.routes.js';
+import { gstRoutes } from './routes/gst.routes.js';
 
 export function buildApp(): FastifyInstance {
   // Validate JWT Secret strength: Minimum 32 characters
@@ -157,6 +158,7 @@ export function buildApp(): FastifyInstance {
   app.register(tdsRoutes, { prefix: '/api/v1/tds' });
   app.register(dscRoutes, { prefix: '/api/v1/dsc' });
   app.register(workspaceRoutes, { prefix: '/api/v1/workspace' });
+  app.register(gstRoutes, { prefix: '/api/v1/gst' });
 
   return app;
 }
