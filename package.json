@@ -4,6 +4,12 @@
   "private": true,
   "description": "SynexTax: Cloud-Native Indian GST & Dual-Act TDS/TCS Compliance SaaS Platform",
   "packageManager": "npm@10.8.2",
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": ">=10.0.0"
+    }
+  },
   "workspaces": [
     "apps/*",
     "packages/*",
