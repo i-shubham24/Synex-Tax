@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { CustomDropdown, CustomSelect } from '../../../components/ui/CustomSelect';
 
 interface SectionAllocation {
   id: string;
@@ -692,17 +693,18 @@ export default function TdsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs text-pos-ink/60 font-semibold">TDS Section</label>
-                <select
+                <CustomDropdown
+                  variant="form"
                   value={calcSection}
-                  onChange={(e) => setCalcSection(e.target.value)}
-                  className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono text-pos-ink focus:outline-none focus:border-pos-accent"
-                >
-                  {SECTION_OPTIONS.map((opt) => (
-                    <option key={opt.code} value={opt.code}>
-                      {opt.code}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setCalcSection(val)}
+                  className="w-full"
+                  buttonClassName="w-full h-9"
+                  options={SECTION_OPTIONS.map((opt) => ({
+                    value: opt.code,
+                    label: opt.code,
+                    description: opt.label,
+                  }))}
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -843,14 +845,17 @@ export default function TdsPage() {
 
               <div className="space-y-1">
                 <span className="text-pos-ink/60">Major Head</span>
-                <select
+                <CustomDropdown
+                  variant="form"
                   value={majorHead}
-                  onChange={(e) => setMajorHead(e.target.value as any)}
-                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-bold"
-                >
-                  <option value="0020">0020 (Company)</option>
-                  <option value="0021">0021 (Non-Company)</option>
-                </select>
+                  onChange={(val) => setMajorHead(val as any)}
+                  className="w-full"
+                  buttonClassName="w-full h-9 font-bold"
+                  options={[
+                    { value: '0020', label: '0020 (Company Deductee)', badge: '0020' },
+                    { value: '0021', label: '0021 (Non-Company Deductee)', badge: '0021' },
+                  ]}
+                />
               </div>
             </div>
 
@@ -887,7 +892,8 @@ export default function TdsPage() {
                     {allocations.map((alloc) => (
                       <tr key={alloc.id} className="hover:bg-pos-tint">
                         <td className="py-2.5 px-3">
-                          <select
+                          <CustomSelect
+                            variant="table"
                             value={alloc.sectionCode}
                             onChange={(e) => {
                               const newSec = e.target.value;
@@ -897,14 +903,13 @@ export default function TdsPage() {
                                 )
                               );
                             }}
-                            className="bg-pos-surface border border-pos-line rounded px-2 py-1 text-xs text-pos-ink"
                           >
                             {SECTION_OPTIONS.map((o) => (
-                              <option key={o.code} value={o.code}>
+                              <option key={o.code} value={o.code} className="bg-[#17191C] text-white">
                                 {o.code}
                               </option>
                             ))}
-                          </select>
+                          </CustomSelect>
                         </td>
                         <td className="py-2.5 px-3 text-right">
                           <input

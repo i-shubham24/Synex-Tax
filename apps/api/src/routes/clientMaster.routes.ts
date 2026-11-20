@@ -49,8 +49,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
         // Fetch entities (PostgreSQL RLS limits staff to assigned entities; partners see all)
         const entitiesRes = await client.query(
           `SELECT id, client_group_id, pan, legal_name, trade_name, constitution,
-                  msme_udyam_number, is_rule_14b_eco, rule_86b_exempt, rule_86b_exempt_reason,
-                  accounting_software, status, created_at, updated_at
+                  cin, llpin, status, created_at, updated_at
            FROM public.entities
            WHERE firm_id = app.current_firm_id()
            ORDER BY legal_name`,
@@ -67,7 +66,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
 
         // Fetch TAN registrations
         const tanRes = await client.query(
-          `SELECT id, entity_id, tan, deductor_category, ddo_code, status,
+          `SELECT id, entity_id, tan, deductor_type_code, branch_name, status,
                   created_at, updated_at
            FROM public.tan_registrations
            WHERE firm_id = app.current_firm_id()`,
@@ -195,8 +194,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       const list = await db.withTenantTransaction(getCtx(request), async (client) => {
         const res = await client.query(
           `SELECT id, client_group_id, pan, legal_name, trade_name, constitution,
-                  msme_udyam_number, is_rule_14b_eco, rule_86b_exempt, rule_86b_exempt_reason,
-                  accounting_software, status, created_at, updated_at
+                  cin, llpin, status, created_at, updated_at
            FROM public.entities
            WHERE firm_id = app.current_firm_id()
            ORDER BY legal_name`,
@@ -236,19 +234,15 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
         }
 
         const res = await client.query(
-          `INSERT INTO public.entities (firm_id, client_group_id, pan, legal_name, trade_name, constitution, msme_udyam_number, is_rule_14b_eco, rule_86b_exempt, rule_86b_exempt_reason, created_by)
-           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-           RETURNING id, client_group_id, pan, legal_name, trade_name, constitution, msme_udyam_number, is_rule_14b_eco, rule_86b_exempt, rule_86b_exempt_reason, status, created_at, updated_at`,
+          `INSERT INTO public.entities (firm_id, client_group_id, pan, legal_name, trade_name, constitution, created_by)
+           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6)
+           RETURNING id, client_group_id, pan, legal_name, trade_name, constitution, cin, llpin, status, created_at, updated_at`,
           [
             parse.data.clientGroupId,
             parse.data.pan,
             parse.data.legalName,
             parse.data.tradeName || null,
             parse.data.constitution,
-            parse.data.msmeUdyamNumber || null,
-            parse.data.isRule14bEco || false,
-            parse.data.rule86bExempt || false,
-            parse.data.rule86bExemptReason || null,
             user.userId,
           ],
         );
@@ -315,13 +309,12 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
         const filingCategory = parse.data.filingFrequency === 'QRMP' ? 'QRMP' : 'REGULAR_MONTHLY';
 
         const res = await client.query(
-          `INSERT INTO public.gst_registrations (firm_id, entity_id, gstin, state_code, legal_name_on_portal, trade_name_on_portal, registration_type, filing_category, portal_registration_status, api_access_status, created_by)
-           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, 'ACTIVE', 'NOT_ENABLED', $8)
+          `INSERT INTO public.gst_registrations (firm_id, entity_id, gstin, legal_name_on_portal, trade_name_on_portal, registration_type, filing_category, portal_registration_status, api_access_status, created_by)
+           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, 'ACTIVE', 'NOT_ENABLED', $7)
            RETURNING id, entity_id, gstin, state_code, legal_name_on_portal, trade_name_on_portal, registration_type, filing_category, portal_registration_status, api_access_status, created_at, updated_at`,
           [
             parse.data.entityId,
             parse.data.gstin,
-            parse.data.stateCode,
             parse.data.legalName || null,
             parse.data.tradeName || null,
             parse.data.registrationType,
@@ -342,7 +335,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
     try {
       const list = await db.withTenantTransaction(getCtx(request), async (client) => {
         const res = await client.query(
-          `SELECT id, entity_id, tan, deductor_category, ddo_code, status,
+          `SELECT id, entity_id, tan, deductor_type_code, branch_name, status,
                   created_at, updated_at
            FROM public.tan_registrations
            WHERE firm_id = app.current_firm_id()`,
@@ -376,9 +369,9 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
         }
 
         const res = await client.query(
-          `INSERT INTO public.tan_registrations (firm_id, entity_id, tan, deductor_category, status, created_by)
+          `INSERT INTO public.tan_registrations (firm_id, entity_id, tan, deductor_type_code, status, created_by)
            VALUES (app.current_firm_id(), $1, $2, $3, 'ACTIVE', $4)
-           RETURNING id, entity_id, tan, deductor_category, ddo_code, status, created_at, updated_at`,
+           RETURNING id, entity_id, tan, deductor_type_code, branch_name, status, created_at, updated_at`,
           [
             parse.data.entityId,
             parse.data.tan,

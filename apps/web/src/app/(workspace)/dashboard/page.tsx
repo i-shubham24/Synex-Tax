@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { StepMark } from '../../../components/landing/primitives';
+import { CustomDropdown } from '../../../components/ui/CustomSelect';
 import { useAuth } from '../../../context/AuthContext';
 import { useWorkspace } from '../../../workspace/WorkspaceContext';
 import {
@@ -98,7 +99,7 @@ const inrShort = (n: number) => (n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n 
 const timeShort = (iso: string) =>
   new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
 
-/* --------------------------------------------------------------- charts */
+/* Charts */
 
 function Donut({ data }: { data: WorkspaceSnapshot['composition'] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -201,7 +202,7 @@ function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
   );
 }
 
-/* ----------------------------------------------------------------- page */
+/* Page */
 
 export default function ControlTowerPage() {
   const router = useRouter();
@@ -280,7 +281,7 @@ export default function ControlTowerPage() {
               aria-selected={period === id}
               onClick={() => setPeriod(id)}
               className={`h-9 rounded-full px-4 text-[13px] font-medium transition-colors ${
-                period === id ? 'bg-pos-accent text-white shadow-[0_8px_18px_-10px_rgb(var(--pos-accent)/0.9)]' : 'bg-pos-surface text-pos-ink/65 ring-1 ring-inset ring-pos-line hover:text-pos-ink'
+                period === id ? 'bg-pos-accent text-white shadow-md' : 'bg-pos-surface text-pos-ink/65 ring-1 ring-inset ring-pos-line hover:text-pos-ink'
               }`}
             >
               {label}
@@ -292,20 +293,35 @@ export default function ControlTowerPage() {
       {/* Filter chips: partners and managers */}
       {canFilter && (
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          <label className="sr-only" htmlFor="f-staff">Assigned staff</label>
-          <select id="f-staff" value={filters.staffId ?? ''} onChange={(e) => setF({ staffId: e.target.value || null })} className="h-9 rounded-full border border-pos-line bg-pos-surface px-3.5 text-pos-ink outline-none focus:border-pos-accent">
-            <option value="">All staff</option>
-            {snapshot.staff.filter((s) => s.role !== 'PARTNER').map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <label className="sr-only" htmlFor="f-group">Client group</label>
-          <select id="f-group" value={filters.groupId ?? ''} onChange={(e) => setF({ groupId: e.target.value || null })} className="h-9 rounded-full border border-pos-line bg-pos-surface px-3.5 text-pos-ink outline-none focus:border-pos-accent">
-            <option value="">All client groups</option>
-            {snapshot.groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
+          <CustomDropdown
+            id="f-staff"
+            variant="pill"
+            placeholder="All staff"
+            value={filters.staffId ?? ''}
+            onChange={(val) => setF({ staffId: val || null })}
+            options={[
+              { value: '', label: 'All staff' },
+              ...snapshot.staff.filter((s) => s.role !== 'PARTNER').map((s) => ({
+                value: s.id,
+                label: s.name,
+                badge: s.role,
+              })),
+            ]}
+          />
+          <CustomDropdown
+            id="f-group"
+            variant="pill"
+            placeholder="All client groups"
+            value={filters.groupId ?? ''}
+            onChange={(val) => setF({ groupId: val || null })}
+            options={[
+              { value: '', label: 'All client groups' },
+              ...snapshot.groups.map((g) => ({
+                value: g.id,
+                label: g.name,
+              })),
+            ]}
+          />
           {(['ALL', 'REGULAR_MONTHLY', 'QRMP', 'COMPOSITION', 'TDS'] as const).map((c) => (
             <button
               key={c}

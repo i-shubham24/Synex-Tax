@@ -33,23 +33,18 @@ export async function auditRoutes(fastify: FastifyInstance, _opts: FastifyPlugin
     if (db.isConfigured()) {
       try {
         const result = await db.withTenantTransaction(getCtx(request), async (client: any) => {
-          const params: any[] = [];
-          let filterSql = '';
-          if (tableName) {
-            params.push(tableName);
-            filterSql = `AND table_name = $${params.length}`;
-          }
-
+          const offset = (page - 1) * limit;
           const res = await client.query(
             `SELECT id::text, table_schema, table_name, record_id::text, action, actor_kind,
                     ip_addr::text, timestamp_ist::text,
                     coalesce(diff->>'summary', action || ' on ' || table_name || ' (record: ' || substring(record_id::text, 1, 8) || '...)') as summary,
                     md5(id::text || table_name || record_id::text || action || timestamp_ist::text) as hmac_hash
              FROM audit.immutable_audit_logs
-             WHERE firm_id = app.current_firm_id() ${filterSql}
+             WHERE firm_id = app.current_firm_id()
+               AND ($1::text IS NULL OR table_name = $1)
              ORDER BY timestamp_ist DESC
-             LIMIT ${limit} OFFSET ${(page - 1) * limit}`,
-            params,
+             LIMIT $2 OFFSET $3`,
+            [tableName || null, limit, offset],
           );
 
           // Also check signing audit logs

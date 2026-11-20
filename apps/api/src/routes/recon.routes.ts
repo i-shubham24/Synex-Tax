@@ -269,12 +269,11 @@ export async function reconRoutes(app: FastifyInstance) {
                  total_invoice_value::text, itc_eligibility
           FROM public.gst_invoices_purchase
           WHERE firm_id = app.current_firm_id()
-            ${regId ? 'AND gst_registration_id = $1' : ''}
-            AND return_period = ${regId ? '$2' : '$1'}
+            AND return_period = $1
+            AND ($2::uuid IS NULL OR gst_registration_id = $2)
           ORDER BY invoice_date DESC, invoice_num DESC
         `;
-        const prParams = regId ? [regId, period] : [period];
-        const prRes = await client.query(prSql, prParams);
+        const prRes = await client.query(prSql, [period, regId || null]);
 
         // Fetch GSTR-2B records
         const g2bSql = `
@@ -283,12 +282,11 @@ export async function reconRoutes(app: FastifyInstance) {
                  itc_available, gstr1_filing_date::text, ims_action_status
           FROM public.gst_2b_records
           WHERE firm_id = app.current_firm_id()
-            ${regId ? 'AND gst_registration_id = $1' : ''}
-            AND return_period = ${regId ? '$2' : '$1'}
+            AND return_period = $1
+            AND ($2::uuid IS NULL OR gst_registration_id = $2)
           ORDER BY doc_date DESC, doc_num DESC
         `;
-        const g2bParams = regId ? [regId, period] : [period];
-        const g2bRes = await client.query(g2bSql, g2bParams);
+        const g2bRes = await client.query(g2bSql, [period, regId || null]);
 
         const prList: PurchaseRegisterInvoice[] = prRes.rows.length > 0
           ? prRes.rows.map((r) => ({

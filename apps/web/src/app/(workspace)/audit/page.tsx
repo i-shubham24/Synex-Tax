@@ -24,6 +24,7 @@ import {
   Download,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { CustomDropdown, CustomSelect } from '../../../components/ui/CustomSelect';
 
 interface AuditLogEntry {
   id: string;
@@ -596,15 +597,33 @@ export default function AuditRadarPage() {
                 <div className="space-y-3 font-mono text-xs">
                   <div className="space-y-1.5">
                     <label className="text-pos-ink/70 font-semibold block">Select Filing for Digital Signing:</label>
-                    <select
+                    <CustomDropdown
+                      variant="form"
                       value={selectedFilingForSign}
-                      onChange={(e) => setSelectedFilingForSign(e.target.value)}
-                      className="w-full bg-pos-surface border border-pos-line rounded-lg px-3 py-2 text-pos-ink font-bold focus:outline-none focus:border-pos-accent"
-                    >
-                      <option value="GSTR-3B (102025)">Amritsar Phulkari Textiles | GSTR-3B (Period 102025)</option>
-                      <option value="GSTR-1 (102025)">Amritsar Phulkari Textiles | GSTR-1 (Period 102025)</option>
-                      <option value="FORM_140 (Q3 2026)">Golden Gate Hardware | Form 140 TDS (Q3 2026)</option>
-                    </select>
+                      onChange={(val) => setSelectedFilingForSign(val)}
+                      className="w-full"
+                      buttonClassName="w-full h-10 font-bold"
+                      options={[
+                        {
+                          value: 'GSTR-3B (102025)',
+                          label: 'Amritsar Phulkari Textiles | GSTR-3B',
+                          description: 'GSTIN: 03AAFCP4821K1Z5 | Period: 102025 | ITC Set-off Complete',
+                          badge: 'GSTR-3B',
+                        },
+                        {
+                          value: 'GSTR-1 (102025)',
+                          label: 'Amritsar Phulkari Textiles | GSTR-1',
+                          description: 'GSTIN: 03AAFCP4821K1Z5 | Period: 102025 | Outward Invoices Validated',
+                          badge: 'GSTR-1',
+                        },
+                        {
+                          value: 'FORM_140 (Q3 2026)',
+                          label: 'Golden Gate Hardware | Form 140 TDS',
+                          description: 'TAN: AMRG04217D | Q3 2026 | Dual-Act ITNS 281N Reconciled',
+                          badge: 'Form 140',
+                        },
+                      ]}
+                    />
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-pos-surface border border-pos-line space-y-2 text-[11px]">
@@ -776,19 +795,19 @@ export default function AuditRadarPage() {
             </div>
 
             <div className="flex items-center gap-2 text-xs font-mono">
-              <select
+              <CustomDropdown
+                variant="table"
                 value={filterTable}
-                onChange={(e) => {
-                  setFilterTable(e.target.value);
-                }}
-                className="bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-xs text-pos-ink font-bold"
-              >
-                <option value="ALL">All Event Types</option>
-                <option value="entities">Legal Entities</option>
-                <option value="gst_registrations">GST Registrations</option>
-                <option value="gst_invoices_purchase">Purchase Invoices</option>
-                <option value="signing_audit_logs">DSC Signing Logs</option>
-              </select>
+                onChange={(val) => setFilterTable(val)}
+                className="min-w-[170px]"
+                options={[
+                  { value: 'ALL', label: 'All Event Types', badge: 'ALL' },
+                  { value: 'entities', label: 'Legal Entities', badge: 'Entities' },
+                  { value: 'gst_registrations', label: 'GST Registrations', badge: 'GSTIN' },
+                  { value: 'gst_invoices_purchase', label: 'Purchase Invoices', badge: 'Invoices' },
+                  { value: 'signing_audit_logs', label: 'DSC Signing Logs', badge: 'PKCS#7' },
+                ]}
+              />
               <button
                 type="button"
                 onClick={refreshLogs}
