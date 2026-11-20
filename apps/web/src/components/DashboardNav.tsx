@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Users,
+  Building2,
   Receipt,
   GitCompare,
   Percent,
   ShieldCheck,
+  Settings,
   Usb,
   Sparkles,
   Crown,
@@ -33,30 +35,42 @@ const NAV_ITEMS: NavItem[] = [
     hotkey: 'Alt+1',
   },
   {
+    label: 'Client Master',
+    href: '/clients',
+    icon: Building2,
+    hotkey: 'Alt+2',
+  },
+  {
     label: 'Sales Invoicing',
     href: '/gst',
     icon: Receipt,
-    hotkey: 'Alt+2',
+    hotkey: 'Alt+3',
   },
   {
     label: 'GST & IMS Recon',
     href: '/gst/recon-2b',
     icon: GitCompare,
-    hotkey: 'Alt+3',
+    hotkey: 'Alt+4',
     badge: '14th Guard',
   },
   {
     label: 'Dual-Act TDS Hub',
     href: '/tds',
     icon: Percent,
-    hotkey: 'Alt+4',
+    hotkey: 'Alt+5',
     badge: '281N',
   },
   {
     label: 'Audit & Invariant Radar',
     href: '/audit',
     icon: ShieldCheck,
-    hotkey: 'Alt+5',
+    hotkey: 'Alt+6',
+  },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    hotkey: 'Alt+7',
   },
 ];
 
