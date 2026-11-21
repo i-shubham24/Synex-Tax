@@ -222,7 +222,7 @@ function GstinCheck() {
 
 
 function SalaryTds() {
-  const [v, setV] = useState({ gross: '1800000', basic: '900000', hra: '360000', rent: '300000', metro: false, c80: '150000', other: '25000', nps: '0', done: '0', months: '5' });
+  const [v, setV] = useState({ gross: '1800000', basic: '900000', hra: '360000', rent: '300000', metro: false, c80: '150000', other: '25000', nps: '0', done: '0', months: '5', perq: '0', prevSalary: '0', prevTds: '0', lta: '0', homeLoan: '0' });
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setV({ ...v, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value.replace(/[^\d.]/g, '') });
   const r = useMemo(
@@ -231,6 +231,7 @@ function SalaryTds() {
         grossSalary: v.gross || 0, basicPlusDa: v.basic || 0, hraReceived: v.hra || 0, rentPaid: v.rent || 0, metroCity: v.metro,
         section80C: v.c80 || 0, otherDeductions: v.other || 0, employerNps: v.nps || 0, professionalTax: 2500,
         tdsAlreadyDeducted: v.done || 0, monthsRemaining: Number(v.months) || 12,
+        perquisites: v.perq || 0, previousEmployer: { salary: v.prevSalary || 0, tds: v.prevTds || 0 }, ltaExempt: v.lta || 0, homeLoanInterest: v.homeLoan || 0,
       }),
     [v],
   );
@@ -249,6 +250,11 @@ function SalaryTds() {
         {num('Employer NPS (₹)', 'nps')}
         {num('TDS already deducted (₹)', 'done')}
         {num('Months left incl. this one', 'months')}
+        {num('Perquisites, taxable value (₹)', 'perq')}
+        {num('Salary from earlier employer (₹)', 'prevSalary')}
+        {num('TDS by earlier employer (₹)', 'prevTds')}
+        {num('LTA exempt, old regime (₹)', 'lta')}
+        {num('Home-loan interest, old regime (₹)', 'homeLoan')}
         <label className="flex items-center gap-2 self-end pb-3 text-[13.5px] text-ink/70">
           <input type="checkbox" checked={v.metro} onChange={set('metro')} className="h-4 w-4 accent-[#2f8ae0]" /> Rent in a metro city
         </label>
@@ -267,7 +273,7 @@ function SalaryTds() {
           </div>
         ))}
       </div>
-      <p className="mt-3 text-[12.5px] text-ink/45">Professional tax of ₹2,500 is assumed under the old regime. Perquisites, previous employer income and other income are not included.</p>
+      <p className="mt-3 text-[12.5px] text-ink/45">Professional tax of ₹2,500 is assumed under the old regime. Income other than salary is not included; claims need the evidence Form 124 asks for (the landlord’s PAN above ₹1 lakh rent, the lender’s details for home-loan interest).</p>
     </Card>
   );
 }

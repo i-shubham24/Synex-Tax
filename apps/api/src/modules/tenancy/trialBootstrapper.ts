@@ -212,8 +212,8 @@ export async function bootstrapTrialWorkspace(client: pg.PoolClient, { firmId, p
       count += 1;
       await q(
         `INSERT INTO public.tds_deductees (firm_id, entity_id, tan_registration_id, challan_id, section_allocation_id, deductee_pan, deductee_name, pan_status,
-           payment_credit_date, amount_paid, tds_rate, tds_deducted, total_tds_deposited, deduction_date, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12, $9, $13)`,
+           payment_credit_date, amount_paid, tds_rate, tds_deducted, total_tds_deposited, deduction_date, created_by, form_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12, $9, $13, '140')`,
         [firmId, tradingId, tanId, challanId, allocId, pan, name, pan === 'PANNOTAVBL' ? 'UNAVAILABLE' : 'OPERATIVE', d(Math.min(28, 10 + count * 3)), amount, rate, tds, partnerUserId],
       );
     }

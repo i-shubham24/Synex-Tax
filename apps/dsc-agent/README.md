@@ -34,3 +34,8 @@ The SynexTax Local Desktop Agent is a lightweight native daemon designed for CA 
 | `GET` | `/api/v1/tokens` | Enumerates connected Class 3 certificates and signatory PANs |
 | `POST` | `/api/v1/sign` | Executes hardware PKCS#11 RSA-SHA256 digest signing |
 | `POST` | `/api/v1/tally/query` | Proxies TDL XML payload to Tally with concurrency lock |
+| `GET` | `/api/v1/backup/detect` | Tally, Busy and Marg data folders found on this machine |
+| `POST` | `/api/v1/backup/run` | Zips one product's data folder with a SHA-256 manifest (needs a challenge nonce); only the product's own folders are allowed |
+| `GET` | `/api/v1/backup/list?product=tally` | Backups kept for a product, newest first (30 kept) |
+
+Backups are written to `%USERPROFILE%\SynexTax Backups\<product>` and never uploaded. Files held open by the accounting software are listed as skipped; close the company and run again for a complete copy.

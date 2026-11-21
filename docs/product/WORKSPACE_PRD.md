@@ -126,6 +126,32 @@ Confirmed and safe to build: 2-year TDS correction window (s.397(3)(f), from the
   - Built: client import (tax-engine rules, `/clients/import`, partner-only commit); Form 140 statement import with Protean's official layout and section codes (`tax-engine/tds`), payee master, TDS health (`/tds/health`); salary TDS calculator; document checklists with gap board and WhatsApp/email reminders (`/documents`, migration 0014); PII redaction for any AI use; `/switch`, `/security`, `/features/gst`, `/features/tds`, `/tools`, `/whats-new`; keyboard shortcuts.
   - Still open, needs outside inputs: real PKCS#11 signing (USB token), FVU runner containers, 1961-format and TRACES conso import (file layouts), correction statements, Form 130/131 certificate handling (TRACES files), client self-upload (file storage) and automatic WhatsApp sending (provider), India hosting, API responses masking PAN.
 
+- **21 Nov 2026, statement files for all four 2025 Act forms:**
+  - `writeTdsStatement` (tax-engine `tds/statementWriter.ts`) writes Forms 138 (Q1 to Q3), 140, 144 and 143 from Protean's file formats v1.2, with Annexure 2, 6, 8, 9 and 10 rules for each form. Form 138 uses file type SL1, has no rate field and carries the deposit date in DD field 29; Form 138 Q4 is refused because Protean has not published that format yet.
+  - Parser reads all four forms, including Protean's published 138 and 140 samples; imports keep the Form 144 and 143 fields (migration 0017).
+  - Fixed: a statement picked up every challan for the TAN and quarter, so a Form 138 file pulled in a Form 144 challan. Each deductee row now records its form (migration 0018); older rows are placed by section code. Forms 140 and 144 share eleven codes, so section codes alone cannot decide this.
+  - Tests: tax-engine 70, DB 41, API 20 (Form 144 and 138 import, then write back from the database).
+  - Still open: Form 138 Q4 annexure (waiting on Protean), Form 124 declarations, perquisites and previous-employer income feeding the salary computation, a screen to edit non-resident and collectee fields row by row.
+  - 1961 Act import: 24Q, 26Q, 27Q and 27EQ regular statements (layouts read from Protean's .xls formats; CD 41 and DD 54 fields, tax = income tax + surcharge + cess, section from DD 33 or, in older files, CD 21). Checked against Protean's published samples for all four forms. Stored under IT_ACT_1961; a challan carrying more than one section is refused, since an ITNS 281 challan covers one. 24Q Q4 salary detail (SD, S16, C6A) records are skipped with a warning.
+  - Fixed: Form 143 files were written with file type NS1; Protean's format and sample use TC1. Any Form 143 file written before 21 Nov 2026 must be written again.
+
+- **21 Nov 2026, registers, GST returns, practice, access, bank, ITR:**
+  - TDS: registers and default analysis (tax-engine `tds/registers.ts`), Form 121 register (migration 0019), quarter sheet import that creates challans, rows and the draft return (`tds/quarterImport.ts`), challan endpoint now saves.
+  - GST: sales register import and GSTR-1 classification (`gst/salesRegister.ts`, migration 0020 adds tables 5 and 6A), rate-wise summary, CMP-08 and GSTR-4 (`gst/composition.ts`), `/gst/returns`.
+  - Practice: tasks from due dates, fee invoices with a per-year series, receipts and ledgers (`practice/tasks.ts`, `practice/fees.ts`, migration 0021), `/practice`.
+  - Access: per-screen modules per user (migration 0022, `security/modules.ts` enforced on every request), team routes, real Settings team panel; nav hides screens a user lacks.
+  - Bank to books (`bank/statement.ts`, `/bank`, browser only) and ITR computation (`itr/computation.ts`, `/itr`).
+  - Fixed: fake challan save, fake portal status, full PANs in payee and health responses, MFA challenge secret without a production guard, delimiter detection on pasted sheets with title rows.
+  - Tests: tax-engine 97, DB 43, API 26; web type-check and production build pass. No ESLint is set up in the web app (`next lint` no longer exists in Next 16).
+  - Comparison with SmartBiz: `COMPETITOR_SMARTBIZ.md` section 5.
+
+- **21 Nov 2026, items needing no outside input:**
+  - Salary TDS: perquisites, an earlier employer's salary, PT and TDS, LTA and home-loan interest (`tds/salary.ts`); Form 124 claim checks and conversion (`tds/form124.ts`); calculator on `/tools` updated.
+  - ITC-04 (`gst/itc04.ts`): job work position, deemed supply after one or three years, period and due date by turnover; tab on `/gst/returns`, browser only.
+  - GSTR-3B for the year (`gst/gstr3bYear.ts`, `GET /api/v1/gst/gstr3b/year`): 3B against the sales register and GSTR-2B, QRMP by quarter; months with no 3B kept here are shown as not in SynexTax, not as overdue.
+  - Desktop agent: `modules/backup` zips Tally, Busy or Marg data folders with a SHA-256 manifest, keeps 30, refuses folders that are not the product's own; endpoints `/api/v1/backup/{detect,run,list}`, run needs a challenge nonce. Not compiled: no Go toolchain on this machine.
+  - Tests: tax-engine 105, DB 43, API 27; web type-check passes.
+
 ## 4. Build order
 
 Each milestone ships UI, API and data together, against the `MockGspAdapter`, so screens stop being mock-only as they are built.

@@ -1,6 +1,46 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import { PortalHealthResponseSchema, FeatureFlagSchema } from '@synextax/shared-schemas';
+import { FeatureFlagSchema } from '@synextax/shared-schemas';
 import { verifyWebhookSignature } from '../security/webhookSecurity.js';
+
+type PortalKind = 'GSTN' | 'NIC_IRP' | 'TRACES' | 'CBDT_EFILING';
+type PortalState = 'OPERATIONAL' | 'DEGRADED' | 'OUTAGE' | 'UNKNOWN';
+const PORTAL_URLS: Array<{ portal: PortalKind; name: string; url: string }> = [
+  { portal: 'GSTN', name: 'GST portal', url: 'https://www.gst.gov.in/' },
+  { portal: 'NIC_IRP', name: 'e-Invoice (IRP)', url: 'https://einvoice1.gst.gov.in/' },
+  { portal: 'TRACES', name: 'TRACES', url: 'https://www.tdscpc.gov.in/' },
+  { portal: 'CBDT_EFILING', name: 'Income Tax e-Filing', url: 'https://www.incometax.gov.in/' },
+];
+let portalCache: { at: number; body: unknown } | null = null;
+
+async function probe(url: string): Promise<{ status: PortalState; latencyMs: number; message: string }> {
+  if (process.env.NODE_ENV === 'test' || process.env.PORTAL_PROBES === 'off') return { status: 'UNKNOWN', latencyMs: 0, message: 'Not checked in this environment.' };
+  const started = Date.now();
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const res = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctl.signal, headers: { 'user-agent': 'SynexTax portal check' } });
+    const ms = Date.now() - started;
+    await res.body?.cancel().catch(() => undefined);
+    if (res.status >= 500) return { status: 'DEGRADED', latencyMs: ms, message: `The site answered with error ${res.status}.` };
+    return ms > 2500 ? { status: 'DEGRADED', latencyMs: ms, message: 'The site answered slowly.' } : { status: 'OPERATIONAL', latencyMs: ms, message: 'The site answered normally.' };
+  } catch {
+    return { status: 'UNKNOWN', latencyMs: 0, message: 'Could not reach the site from SynexTax just now.' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function portalHealth() {
+  if (portalCache && Date.now() - portalCache.at < 5 * 60 * 1000) return portalCache.body;
+  const checkedAt = new Date().toISOString();
+  const portals = await Promise.all(PORTAL_URLS.map(async (p) => ({ portal: p.portal, name: p.name, ...(await probe(p.url)), lastChecked: checkedAt })));
+  const order: PortalState[] = ['OUTAGE', 'DEGRADED', 'OPERATIONAL'];
+  const known = portals.filter((p) => p.status !== 'UNKNOWN');
+  const overallStatus: PortalState = known.length ? order.find((s) => known.some((p) => p.status === s)) ?? 'OPERATIONAL' : 'UNKNOWN';
+  const body = { overallStatus, checkedAt, portals };
+  portalCache = { at: Date.now(), body };
+  return body;
+}
 
 export async function complianceRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
   // Live Statutory Feature Flags
@@ -45,50 +85,11 @@ export async function complianceRoutes(fastify: FastifyInstance, _opts: FastifyP
   });
 
   // ---------------------------------------------------------------------
-  // Live Government Portal Health Banner Telemetry
+  // Government portal reachability: a timed request to each portal's public home page from this
+  // server, cached for five minutes. It says whether the site answers and how fast, nothing more;
+  // when this server cannot reach the internet the status is UNKNOWN, not a guess.
   // ---------------------------------------------------------------------
-  fastify.get('/portal-health', async (_request, reply) => {
-    const health = {
-      overallStatus: 'OPERATIONAL' as const,
-      checkedAt: new Date().toISOString(),
-      portals: [
-        {
-          portal: 'GSTN' as const,
-          name: 'GSTN Common Portal',
-          status: 'OPERATIONAL' as const,
-          latencyMs: 142,
-          lastChecked: new Date().toISOString(),
-          message: 'All GST return filing and GSP API endpoints responding normally.',
-        },
-        {
-          portal: 'NIC_IRP' as const,
-          name: 'NIC e-Invoice & e-Way Bill IRP',
-          status: 'OPERATIONAL' as const,
-          latencyMs: 88,
-          lastChecked: new Date().toISOString(),
-          message: 'IRN generation cluster operating at peak sub-100ms response time.',
-        },
-        {
-          portal: 'TRACES' as const,
-          name: 'TRACES TDS/TCS Portal',
-          status: 'OPERATIONAL' as const,
-          latencyMs: 310,
-          lastChecked: new Date().toISOString(),
-          message: 'Form 16/16A generation and CSI file download queues operating normally.',
-        },
-        {
-          portal: 'CBDT_EFILING' as const,
-          name: 'Income Tax e-Filing (Protean/CBDT)',
-          status: 'OPERATIONAL' as const,
-          latencyMs: 195,
-          lastChecked: new Date().toISOString(),
-          message: 'AIS/TIS data exchange and 26AS verification services active.',
-        },
-      ],
-    };
-
-    return reply.send(health);
-  });
+  fastify.get('/portal-health', async (_request, reply) => reply.send(await portalHealth()));
 
   // Statutory Webhook Receiver with HMAC-SHA256 signature and replay verification
   fastify.post('/webhook', async (request, reply) => {

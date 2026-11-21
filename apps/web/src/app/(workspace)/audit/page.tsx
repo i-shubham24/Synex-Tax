@@ -74,7 +74,7 @@ interface DscTokenInfo {
 interface PortalStatus {
   portal: string;
   name: string;
-  status: 'OPERATIONAL' | 'DEGRADED' | 'DOWN';
+  status: 'OPERATIONAL' | 'DEGRADED' | 'OUTAGE' | 'UNKNOWN';
   latencyMs: number;
   message: string;
 }
@@ -518,8 +518,12 @@ export default function AuditRadarPage() {
                 <Activity className="w-4 h-4 text-pos-accent" />
                 <span>Live Government Portal Health & Gateway Telemetry</span>
               </div>
-              <span className="text-[10px] font-mono text-emerald-600 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                All 4 Portals Operational
+              <span className="text-[10px] font-mono text-pos-ink/70 font-bold px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
+                {portals.length === 0
+                  ? 'Not checked yet'
+                  : portals.every((p) => p.status === 'OPERATIONAL')
+                    ? `All ${portals.length} answering`
+                    : `${portals.filter((p) => p.status === 'OPERATIONAL').length} of ${portals.length} answering normally`}
               </span>
             </div>
 
@@ -528,9 +532,9 @@ export default function AuditRadarPage() {
                 <div key={p.portal} className="p-3 rounded-lg bg-pos-muted border border-pos-line space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-pos-ink">{p.portal}</span>
-                    <span className="text-emerald-600 font-bold text-[10px] flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      {p.latencyMs}ms
+                    <span className={`font-bold text-[10px] flex items-center gap-1 ${p.status === 'OPERATIONAL' ? 'text-emerald-600' : p.status === 'UNKNOWN' ? 'text-pos-ink/50' : 'text-amber-600'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${p.status === 'OPERATIONAL' ? 'bg-emerald-500' : p.status === 'UNKNOWN' ? 'bg-pos-ink/30' : 'bg-amber-500'}`}></span>
+                      {p.status === 'UNKNOWN' ? 'Unknown' : `${p.latencyMs} ms`}
                     </span>
                   </div>
                   <div className="text-[11px] text-pos-ink/70 truncate">{p.name}</div>

@@ -9,6 +9,28 @@ export const metadata: Metadata = {
 
 const RELEASES: Array<{ date: string; title: string; items: Array<[string, string, string?]> }> = [
   {
+    date: '21 November 2026',
+    title: 'Statement files for salaries, residents, non-residents and TCS',
+    items: [
+      ['Salary TDS, fuller', 'Perquisites, salary from an earlier employer, LTA and home-loan interest in the calculator, and Form 124 checks on each claim.', '/tools'],
+      ['ITC-04 and the 3B year', 'Job work positions with deemed supplies flagged, and every month’s GSTR-3B set against GSTR-1 and GSTR-2B.', '/features/gst'],
+      ['Backups of Tally, Busy and Marg data', 'The SynexTax desktop agent zips a client’s accounting data on your machine, with a checksum for every file. Nothing is uploaded.'],
+      ['This quarter’s TDS from your Excel sheet', 'Paste the quarter’s payments with their challans; the rows are checked and the draft return is ready for its statement file.', '/features/tds'],
+      ['TDS registers and default analysis', 'Interest for late deduction and deposit, short deposits, no-PAN rows below the higher rate, a deposit register, section-wise totals for the tax audit report and a Form 121 register.', '/features/tds'],
+      ['GST returns', 'Sales register import with GSTR-1 classification, a rate-wise GSTR-1 summary, and CMP-08 and GSTR-4 workings for composition clients.', '/features/gst'],
+      ['Practice', 'Tasks created from each client’s due dates, fee invoices with GST, receipts and each client’s ledger with ageing.'],
+      ['Team and access', 'Choose the screens each team member can open and the clients they work on.'],
+      ['Bank to books', 'A bank statement pasted in, its balance checked, ledgers suggested, and Tally vouchers to import. The statement never leaves your browser.'],
+      ['Income tax computation', 'An individual’s tax under both regimes, with salary, house property, presumptive business, capital gains and other income.'],
+      ['Portal status is now real', 'The status of the GST, e-invoice, TRACES and income tax portals is checked from our server every five minutes instead of being shown as always normal.'],
+      ['Form 138, 140, 144 and 143 statement files', 'Write the upload-ready text file for a quarter from the challans and deductee rows you keep here. Anything the file format needs is listed for you to fill in first.', '/features/tds'],
+      ['Bring in 24Q, 26Q, 27Q and 27EQ statements', 'Statement files from earlier years, in Protean’s 1961 Act formats, become closed history with their payees. Quarter 4 salary details are not brought in yet.', '/switch'],
+      ['Form 143 files fixed', 'Form 143 statement files now carry file type TC1, as Protean’s format requires. Files written before this fix should be written again.'],
+      ['Form 138 for quarters 1 to 3', 'Salary statements in Protean’s Form 138 format, version 1.2. The quarter 4 format with the annual salary details is not out yet; Q4 files follow once Protean releases it.'],
+      ['Non-resident and TCS fields', 'Form 144 rows keep the nature of remittance, country, Act or treaty rate and Form 15CA reference; Form 143 rows keep the collectee code. Imported statements keep them too.'],
+    ],
+  },
+  {
     date: '20 November 2026',
     title: 'Switching, TDS history and client documents',
     items: [

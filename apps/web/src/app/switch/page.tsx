@@ -25,7 +25,7 @@ const STEPS: Array<{ title: string; body: string; status: Availability }> = [
   },
   {
     title: 'Carry your TDS history over',
-    body: 'Form 140 statement files come in as closed history with a payee master for each TAN. Files in the 1961 Act formats and TRACES consolidated files are next.',
+    body: 'Statement files in the 2025 Act forms (138, 140, 144, 143) and the 1961 Act forms (24Q, 26Q, 27Q, 27EQ) come in as closed history with a payee master for each TAN. This quarter’s payments come in from your own Excel sheet. TRACES consolidated files are next.',
     status: 'live',
   },
   {

@@ -39,9 +39,11 @@ test("Protean's Form 140 sample parses with no errors", () => {
   );
 });
 
-test('1961 Act statements and corrections are refused, not guessed', () => {
+test('a 2025 layout labelled as a 1961 form, and corrections, are refused, not guessed', () => {
   const as26q = PROTEAN_SAMPLE.replace('^140^', '^26Q^');
-  assert.match(parseEtdsStatement(as26q).issues.map((i) => i.message).join(' '), /Only Form 140/);
+  const msgs = parseEtdsStatement(as26q).issues.map((i) => i.message).join(' ');
+  assert.match(msgs, /covers periods up to March 2026/);
+  assert.match(msgs, /CD record has 30 fields; the Form 26Q format has 41/);
   const correction = PROTEAN_SAMPLE.replace('^NS1^R^', '^NS1^C^');
   assert.match(parseEtdsStatement(correction).issues.map((i) => i.message).join(' '), /regular statements/);
 });

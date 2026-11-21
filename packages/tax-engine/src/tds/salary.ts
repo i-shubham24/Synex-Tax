@@ -27,6 +27,14 @@ export interface SalaryInput {
   ageBand?: AgeBand;
   tdsAlreadyDeducted?: string | number;
   monthsRemaining?: number; // including the current month
+  /** Taxable value of perquisites (car, accommodation, ESOPs and the like), added to salary. */
+  perquisites?: string | number;
+  /** Salary from an earlier employer in the same year, as the employee declares it. */
+  previousEmployer?: { salary: string | number; professionalTax?: string | number; tds?: string | number };
+  /** Old regime: leave travel concession exempt for the year (actual travel cost within the LTA received). */
+  ltaExempt?: string | number;
+  /** Old regime: interest on a loan for a self-occupied home, set against salary up to Rs 2 lakh. */
+  homeLoanInterest?: string | number;
 }
 
 export interface RegimeResult {
@@ -42,16 +50,16 @@ export interface RegimeResult {
 
 const D = (v: string | number | undefined) => new Decimal(v ?? 0);
 
-const NEW_SLABS: Array<[number, number]> = [
+export const NEW_SLABS: Array<[number, number]> = [
   [400000, 0], [800000, 0.05], [1200000, 0.1], [1600000, 0.15], [2000000, 0.2], [2400000, 0.25], [Infinity, 0.3],
 ];
 
-function oldSlabs(age: AgeBand): Array<[number, number]> {
+export function oldSlabs(age: AgeBand): Array<[number, number]> {
   const nil = age === 'SUPER_SENIOR' ? 500000 : age === 'SENIOR' ? 300000 : 250000;
   return [[nil, 0], [500000, 0.05], [1000000, 0.2], [Infinity, 0.3]];
 }
 
-function slabTax(income: Decimal, slabs: Array<[number, number]>): Decimal {
+export function slabTax(income: Decimal, slabs: Array<[number, number]>): Decimal {
   let tax = new Decimal(0);
   let lower = 0;
   for (const [upper, rate] of slabs) {
@@ -64,7 +72,7 @@ function slabTax(income: Decimal, slabs: Array<[number, number]>): Decimal {
 }
 
 /** Surcharge with marginal relief: tax plus surcharge never rises by more than the income above each threshold. */
-function surchargeFor(income: Decimal, tax: Decimal, regime: Regime, taxAt: (i: Decimal) => Decimal): Decimal {
+export function surchargeFor(income: Decimal, tax: Decimal, regime: Regime, taxAt: (i: Decimal) => Decimal): Decimal {
   const bands: Array<[number, number]> = regime === 'NEW'
     ? [[5000000, 0.1], [10000000, 0.15], [20000000, 0.25]]
     : [[5000000, 0.1], [10000000, 0.15], [20000000, 0.25], [50000000, 0.37]];
@@ -92,7 +100,8 @@ export function hraExemption(input: Pick<SalaryInput, 'hraReceived' | 'rentPaid'
 }
 
 function computeRegime(regime: Regime, i: SalaryInput): RegimeResult {
-  const gross = D(i.grossSalary);
+  const prev = i.previousEmployer;
+  const gross = D(i.grossSalary).add(D(i.perquisites)).add(D(prev?.salary));
   const age = i.ageBand ?? 'BELOW_60';
   const standard = Decimal.min(gross, regime === 'NEW' ? 75000 : 50000);
   const npsCap = D(i.basicPlusDa).mul(regime === 'NEW' ? 0.14 : 0.1);
@@ -101,7 +110,9 @@ function computeRegime(regime: Regime, i: SalaryInput): RegimeResult {
   if (regime === 'OLD') {
     deductions = deductions
       .add(hraExemption(i))
-      .add(Decimal.min(D(i.professionalTax), 2500))
+      .add(Decimal.min(D(i.professionalTax).add(D(prev?.professionalTax)), 2500))
+      .add(D(i.ltaExempt))
+      .add(Decimal.min(D(i.homeLoanInterest), 200000))
       .add(Decimal.min(D(i.section80C), 150000))
       .add(D(i.otherDeductions));
   }
@@ -126,7 +137,7 @@ function computeRegime(regime: Regime, i: SalaryInput): RegimeResult {
   const cess = afterRebate.add(surcharge).mul(0.04);
   const total = afterRebate.add(surcharge).add(cess).toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
   const months = Math.max(1, Math.min(12, i.monthsRemaining ?? 12));
-  const monthly = Decimal.max(0, total.sub(D(i.tdsAlreadyDeducted))).div(months).toDecimalPlaces(0, Decimal.ROUND_UP);
+  const monthly = Decimal.max(0, total.sub(D(i.tdsAlreadyDeducted)).sub(D(prev?.tds))).div(months).toDecimalPlaces(0, Decimal.ROUND_UP);
   return {
     regime,
     taxableIncome: taxable.toFixed(2),

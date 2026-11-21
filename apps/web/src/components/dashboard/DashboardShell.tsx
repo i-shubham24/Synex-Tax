@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -18,6 +18,10 @@ import {
   Sun,
   Users,
   FolderCheck,
+  FileStack,
+  CalendarCheck,
+  Landmark,
+  Calculator,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../workspace/WorkspaceContext';
@@ -39,25 +43,27 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   roles?: AppRole[]; // omitted = every firm role
+  module?: string; // screen permission needed (see the team settings)
 }
 
 // Role-aware: audit logs (PII reveals, signing trail) stay with partners and managers.
 const NAV_ITEMS: NavItem[] = [
   { id: 'control', label: 'Control Tower', href: '/dashboard', icon: LayoutDashboard },
   { id: 'clients', label: 'Client Master', href: '/clients', icon: Users },
-  { id: 'gst', label: 'GST and IMS', href: '/gst', icon: ReceiptText },
-  { id: 'recon', label: '2B reconciliation', href: '/gst/recon-2b', icon: FileSpreadsheet },
-  { id: 'tds', label: 'Dual-Act TDS', href: '/tds', icon: Percent },
-  { id: 'documents', label: 'Client documents', href: '/documents', icon: FolderCheck },
-  { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'] },
+  { id: 'gst', label: 'GST and IMS', href: '/gst', icon: ReceiptText, module: 'GST' },
+  { id: 'recon', label: '2B reconciliation', href: '/gst/recon-2b', icon: FileSpreadsheet, module: 'GST' },
+  { id: 'gst-returns', label: 'GST returns', href: '/gst/returns', icon: FileStack, module: 'GST' },
+  { id: 'tds', label: 'Dual-Act TDS', href: '/tds', icon: Percent, module: 'TDS' },
+  { id: 'itr', label: 'Income tax', href: '/itr', icon: Calculator },
+  { id: 'practice', label: 'Practice', href: '/practice', icon: CalendarCheck, module: 'PRACTICE' },
+  { id: 'documents', label: 'Client documents', href: '/documents', icon: FolderCheck, module: 'DOCUMENTS' },
+  { id: 'bank', label: 'Bank to books', href: '/bank', icon: Landmark, module: 'PRACTICE' },
+  { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'], module: 'AUDIT' },
 ];
 
-const PORTALS = [
-  { name: 'GSTN', ok: true, ms: 420 },
-  { name: 'NIC IRP', ok: true, ms: 310 },
-  { name: 'TRACES', ok: false, ms: 2_850 },
-  { name: 'ITD', ok: true, ms: 640 },
-];
+// Short names for the header; the status comes from a real check of each portal's public site.
+const PORTAL_SHORT: Record<string, string> = { GSTN: 'GSTN', NIC_IRP: 'NIC IRP', TRACES: 'TRACES', CBDT_EFILING: 'ITD' };
+interface PortalDot { name: string; status: 'OPERATIONAL' | 'DEGRADED' | 'OUTAGE' | 'UNKNOWN'; ms: number }
 
 /** Ink tile with the site's pixel S (sky and mint pixels). */
 function AppMark() {
@@ -94,7 +100,22 @@ function writePref(key: string, value: string) {
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, authFetch } = useAuth();
+  // Screens this person may open; null until known, and then nothing is hidden.
+  const [modules, setModules] = useState<string[] | null>(null);
+  const [portals, setPortals] = useState<PortalDot[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    authFetch('/api/v1/compliance/portal-health')
+      .then(async (r) => (r.ok ? setPortals(((await r.json()).portals ?? []).map((p: { portal: string; status: PortalDot['status']; latencyMs: number }) => ({ name: PORTAL_SHORT[p.portal] ?? p.portal, status: p.status, ms: p.latencyMs }))) : null))
+      .catch(() => null);
+  }, [user, authFetch]);
+  useEffect(() => {
+    if (!user) return;
+    authFetch('/api/v1/team/me')
+      .then(async (r) => (r.ok ? setModules((await r.json()).modules) : null))
+      .catch(() => null);
+  }, [user, authFetch]);
   const { snapshot, source, sourceNote } = useWorkspace();
   // The shell renders only on the client (behind AuthGate), so preferences are read before first paint.
   const [dark, setDark] = useState(() => readPref('synextax_dashboard_theme', false));
@@ -114,11 +135,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const role = (user?.role ?? 'STAFF') as AppRole;
-  const items = NAV_ITEMS.filter((i) => !i.roles || i.roles.includes(role));
+  const items = NAV_ITEMS.filter((i) => (!i.roles || i.roles.includes(role)) && (!i.module || !modules || modules.includes(i.module)));
   const isActive = (href: string) => (href === '/dashboard' || href === '/gst' ? pathname === href : pathname.startsWith(href));
   const railW = expanded ? 'w-[220px]' : 'w-[72px]';
   const mainMl = expanded ? 'ml-[220px]' : 'ml-[72px]';
-  const slowest = PORTALS.filter((p) => !p.ok);
+  const slowest = portals.filter((p) => p.status === 'DEGRADED' || p.status === 'OUTAGE');
 
   const navLink = (item: NavItem) => {
     const Icon = item.icon;
@@ -202,9 +223,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               className="hidden items-center gap-3 rounded-full border border-pos-line bg-pos-surface/70 px-3.5 py-1.5 text-[12px] text-pos-ink/80 xl:flex"
               aria-label={`Government portal status${slowest.length ? `: ${slowest.map((p) => p.name).join(', ')} slow` : ''}`}
             >
-              {PORTALS.map((p) => (
-                <span key={p.name} className="flex items-center gap-1.5" title={`${p.name}: ${p.ok ? 'normal' : 'slower than usual'}, ${p.ms} ms`}>
-                  <span className={`h-2 w-2 rounded-full ${p.ok ? 'bg-[#5fe88a]' : 'bg-[#f2b53a]'}`} />
+              {portals.map((p) => (
+                <span key={p.name} className="flex items-center gap-1.5" title={p.status === 'UNKNOWN' ? `${p.name}: not checked` : `${p.name}: ${p.status === 'OPERATIONAL' ? 'answering normally' : 'slow or failing'}, ${p.ms} ms`}>
+                  <span className={`h-2 w-2 rounded-full ${p.status === 'OPERATIONAL' ? 'bg-[#5fe88a]' : p.status === 'UNKNOWN' ? 'bg-pos-ink/25' : 'bg-[#f2b53a]'}`} />
                   <span className="hidden 2xl:inline">{p.name}</span>
                 </span>
               ))}

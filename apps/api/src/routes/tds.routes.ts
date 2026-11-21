@@ -396,24 +396,62 @@ export async function tdsRoutes(app: FastifyInstance) {
       });
     }
 
-    return reply.status(201).send({
-      success: true,
-      data: {
-        challanId: 'chl-' + Math.random().toString(36).substring(2, 9),
-        statutoryRegime: challan.statutoryRegime,
-        challanNo: challan.challanNo,
-        bsrCode: challan.bsrCode,
-        depositDate: challan.depositDate,
-        taxYear: challan.taxYear,
-        quarter: challan.quarter,
-        deducteeTypeHead: challan.deducteeTypeHead,
-        minorHead: challan.minorHead,
-        sectionsCount: challan.sectionAllocations.length,
-        totalChallanAmount: challan.totalChallanAmount,
-        status: 'READY_FOR_CSI_MATCH',
-        createdAt: new Date().toISOString(),
-      },
-    });
+    // Saved under the caller's RLS context; the database checks the TAN belongs to a visible client
+    // and the 1961 one-section rule (validate_challan_section_allocations).
+    try {
+      const saved = await db.withTenantTransaction(getCtx(req), async (client) => {
+        const tan = (await client.query<{ entity_id: string }>('SELECT entity_id FROM public.tan_registrations WHERE id = $1', [challan.tanRegistrationId])).rows[0];
+        if (!tan || tan.entity_id !== challan.entityId) return null;
+        const incomeTax = challan.sectionAllocations.reduce((a, s) => a.plus(s.incomeTax), new Decimal(0));
+        const surcharge = challan.sectionAllocations.reduce((a, s) => a.plus(s.surcharge), new Decimal(0));
+        const cess = challan.sectionAllocations.reduce((a, s) => a.plus(s.cess), new Decimal(0));
+        const row = (
+          await client.query<{ id: string; created_at: Date }>(
+            `INSERT INTO public.tds_challans (firm_id, entity_id, tan_registration_id, challan_no, bsr_code, deposit_date, statutory_regime, tax_year, quarter,
+               deductee_type_head, minor_head, total_income_tax, total_surcharge, total_cess, interest_allocation, others_allocation, fee_late_filing_427_234e,
+               total_challan_amount, created_by)
+             VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, app.current_user_id())
+             RETURNING id, created_at`,
+            [
+              challan.entityId, challan.tanRegistrationId, challan.challanNo, challan.bsrCode, challan.depositDate, challan.statutoryRegime, challan.taxYear, challan.quarter,
+              challan.deducteeTypeHead, challan.minorHead, incomeTax.toFixed(2), surcharge.toFixed(2), cess.toFixed(2), challan.interestAllocation || '0',
+              challan.othersAllocation || '0', challan.feeLateFiling || '0', challan.totalChallanAmount,
+            ],
+          )
+        ).rows[0];
+        for (const s of challan.sectionAllocations) {
+          await client.query(
+            `INSERT INTO public.tds_challan_section_allocations (firm_id, entity_id, challan_id, section_code, income_tax, total_section_amount)
+             VALUES (app.current_firm_id(), $1, $2, $3, $4, $5)`,
+            [challan.entityId, row.id, s.sectionCode, s.incomeTax, s.totalSectionAmount],
+          );
+        }
+        return row;
+      });
+      if (!saved) return reply.status(404).send({ error: 'TAN_NOT_FOUND', message: 'That TAN is not in Client Master for this client.' });
+      return reply.status(201).send({
+        success: true,
+        data: {
+          challanId: saved.id,
+          statutoryRegime: challan.statutoryRegime,
+          challanNo: challan.challanNo,
+          bsrCode: challan.bsrCode,
+          depositDate: challan.depositDate,
+          taxYear: challan.taxYear,
+          quarter: challan.quarter,
+          deducteeTypeHead: challan.deducteeTypeHead,
+          minorHead: challan.minorHead,
+          sectionsCount: challan.sectionAllocations.length,
+          totalChallanAmount: challan.totalChallanAmount,
+          status: 'SAVED',
+          createdAt: new Date(saved.created_at).toISOString(),
+        },
+      });
+    } catch (err: any) {
+      if (err.code === '23505') return reply.status(409).send({ error: 'DUPLICATE_CHALLAN', message: 'This challan is already recorded for the TAN.' });
+      if (err.code === '23514') return reply.status(422).send({ error: 'STATUTORY_CHALLAN_VIOLATION', message: err.message });
+      throw err;
+    }
   });
 
   // Match Book Challans with NSDL / Protean CSI File

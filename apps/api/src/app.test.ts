@@ -3,6 +3,7 @@ import { startDevDatabase } from '@synextax/db';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { buildApp } from './app.js';
+import { Decimal } from 'decimal.js';
 import { hashPassword, verifyPassword, verifyTotpToken, generateTotpCode } from './security/cryptoUtils.js';
 import { validateSafeOutboundUrl } from './security/ssrfGuard.js';
 import { verifyWebhookSignature } from './security/webhookSecurity.js';
@@ -566,7 +567,7 @@ test('TDS history: a Form 140 file is previewed, imported once, feeds payees and
   assert.equal(again.statusCode, 409);
 
   const payees = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/tds/payees?tan=AMRG04217D', headers: auth })).body).payees;
-  assert.ok(payees.some((p: { pan: string }) => p.pan === 'BRNPA6778G'));
+  assert.ok(payees.some((p: { pan: string }) => p.pan === 'XXXXX6778G'));
 
   const health = await app.inject({ method: 'GET', url: '/api/v1/tds/health?tan=AMRG04217D', headers: auth });
   assert.equal(health.statusCode, 200);
@@ -607,5 +608,367 @@ test('Practice: a checklist from a template, items marked, gaps and a WhatsApp r
   assert.ok(!rem.message.includes('Sales invoices or sales register'), 'received item is not chased');
   assert.match(rem.message, /by 5 Nov 2026/, 'calendar dates are not shifted by the server timezone');
   assert.match(rem.message, /monthly GST return for Oct 2026/);
+  await app.close();
+});
+
+test('TDS statement: lists what is missing, then writes a Form 140 file that reads back cleanly', async () => {
+  const { parseEtdsStatement } = await import('@synextax/tax-engine');
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const returns = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/tds/returns?tan=AMRG04217D', headers: auth })).body).returns;
+  const q3 = returns.find((r: { quarter: string; source?: string; workflow_status: string }) => r.quarter === 'Q3' && r.workflow_status === 'DRAFT');
+  assert.ok(q3, 'sample Q3 return');
+
+  const first = await app.inject({ method: 'POST', url: `/api/v1/tds/returns/${q3.id}/statement`, headers: auth });
+  assert.equal(first.statusCode, 422);
+  const missing = JSON.parse(first.body).issues.map((i: { where: string }) => i.where);
+  assert.ok(missing.includes('Deductor email') && missing.includes('Responsible person PAN'), missing.join(', '));
+
+  const addr = { line1: 'SCO 12', line3: 'Hall Bazaar', district: 'Amritsar', state: 'Punjab', pin: '143006' };
+  const put = await app.inject({
+    method: 'PUT', url: '/api/v1/tds/tan-details', headers: auth,
+    payload: {
+      tan: 'AMRG04217D', deductorType: 'K', address: addr, deductorEmail: 'accounts@goldengate.example', deductorPhone: '9814012345',
+      responsible: { name: 'Harpreet Kaur', designation: 'Director', pan: 'ABCPK1234L', address: addr, email: 'hk@goldengate.example', phone: '9814012346' },
+    },
+  });
+  assert.equal(put.statusCode, 200, put.body);
+
+  // The Q1 statement imported earlier was filed; the next statement must quote its token.
+  const q1 = returns.find((r: { quarter: string; workflow_status: string }) => r.quarter === 'Q1' && r.workflow_status === 'CLOSED');
+  if (q1) {
+    const tok = await app.inject({ method: 'PUT', url: `/api/v1/tds/returns/${q1.id}/token`, headers: auth, payload: { token: '123456789012345' } });
+    assert.equal(tok.statusCode, 200, tok.body);
+  }
+  const ok = await app.inject({ method: 'POST', url: `/api/v1/tds/returns/${q3.id}/statement`, headers: auth });
+  assert.equal(ok.statusCode, 200, ok.body);
+  const { fileName, text } = JSON.parse(ok.body);
+  assert.match(fileName, /^AMRG04217D_140_Q3_202627\.txt$/);
+  const parsed = parseEtdsStatement(text);
+  assert.deepEqual(parsed.issues.filter((i: { level: string }) => i.level === 'error'), []);
+  assert.equal(parsed.deductees.length, 5);
+  assert.deepEqual([...new Set(parsed.deductees.map((d: { sectionCode: string }) => d.sectionCode))].sort(), ['1009', '1023', '1024', '1027']);
+  assert.equal(text.split('\r\n')[1].split('^')[25], '26', 'Punjab written as Protean state code 26');
+  await app.close();
+});
+
+test('TDS statement: a Form 144 file imports with its non-resident fields and is written back the same', async () => {
+  const { parseEtdsStatement, writeTdsStatement } = await import('@synextax/tax-engine');
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const address = { line1: 'SCO 12', district: 'Amritsar', stateCode: '26', pin: '143006' };
+  const source = writeTdsStatement({
+    form: '144', fileCreated: '2026-10-25', fileSequence: 1, preparedWith: 'SynexTax', tan: 'AMRG04217D', deductorPan: 'AAJCG7392L',
+    deductor: { name: 'Golden Gate Hardware Pvt Ltd', address, email: 'accounts@goldengate.example', phone: '9814012345', type: 'K' },
+    responsible: { name: 'Harpreet Kaur', designation: 'Director', pan: 'ABCPK1234L', address, email: 'hk@goldengate.example', phone: '9814012346' },
+    taxYear: 2026, quarter: 2, earlierRegularFiled: false,
+    challans: [{
+      mode: 'C', bsrCode: '0510308', challanNo: '518', depositedOn: '2026-09-07', tax: 20800, interest: 0, fee: 0, others: 0, minorHead: '200',
+      deductees: [{
+        pan: 'AAACF1234X', name: 'Foreign Tech LLC', sectionCode: '1057', paidOn: '2026-08-20', amountPaid: 100000, taxDeducted: 20800, taxDeposited: 20800,
+        deductedOn: '2026-08-20', ratePercent: 20.8, statusCode: '1', optingOut: false, remittanceNature: '21', countryCode: '267', grossedUp: false, rateBasis: 'A',
+      }],
+    }],
+  });
+  assert.deepEqual(source.issues, []);
+
+  const imported = await app.inject({ method: 'POST', url: '/api/v1/tds/import/commit', headers: auth, payload: { text: source.text } });
+  assert.equal(imported.statusCode, 201, imported.body);
+  const { returnId } = JSON.parse(imported.body);
+  const stored = await devDb.db.query(
+    `SELECT d.payee_status_code, d.remittance_nature, d.country_code, d.rate_basis, d.grossed_up, d.opting_out_202 FROM public.tds_deductees d
+     JOIN public.tds_challans c ON c.id = d.challan_id WHERE c.challan_no = '518' AND d.deductee_pan = 'AAACF1234X'`,
+  );
+  assert.deepEqual(stored.rows[0], { payee_status_code: '1', remittance_nature: '21', country_code: '267', rate_basis: 'A', grossed_up: false, opting_out_202: false });
+
+  // Reopen the imported return as a draft, as a correction would, and write it again from the database.
+  await devDb.db.query(`UPDATE public.tds_returns SET workflow_status = 'DRAFT' WHERE id = $1`, [returnId]);
+  const out = await app.inject({ method: 'POST', url: `/api/v1/tds/returns/${returnId}/statement`, headers: auth });
+  assert.equal(out.statusCode, 200, out.body);
+  const { fileName, text } = JSON.parse(out.body);
+  assert.match(fileName, /^AMRG04217D_144_Q2_202627\.txt$/);
+  const parsed = parseEtdsStatement(text);
+  assert.deepEqual(parsed.issues.filter((i: { level: string }) => i.level === 'error'), []);
+  assert.equal(parsed.form, '144');
+  const d = parsed.deductees[0];
+  assert.deepEqual([d.sectionCode, d.statusCode, d.remittanceNature, d.countryCode, d.rateBasis, d.amountPaid], ['1057', '1', '21', '267', 'A', '100000.00']);
+  await app.close();
+});
+
+test('TDS statement: a Form 138 salary file imports and is written back with SL1 and the deposit date', async () => {
+  const { parseEtdsStatement, writeTdsStatement } = await import('@synextax/tax-engine');
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const address = { line1: 'SCO 12', district: 'Amritsar', stateCode: '26', pin: '143006' };
+  const source = writeTdsStatement({
+    form: '138', fileCreated: '2026-10-25', fileSequence: 2, preparedWith: 'SynexTax', tan: 'AMRG04217D', deductorPan: 'AAJCG7392L',
+    deductor: { name: 'Golden Gate Hardware Pvt Ltd', address, email: 'accounts@goldengate.example', phone: '9814012345', type: 'K' },
+    responsible: { name: 'Harpreet Kaur', designation: 'Director', pan: 'ABCPK1234L', address, email: 'hk@goldengate.example', phone: '9814012346' },
+    taxYear: 2026, quarter: 2, earlierRegularFiled: false,
+    challans: [{
+      mode: 'C', bsrCode: '0510308', challanNo: '611', depositedOn: '2026-09-07', tax: 12000, interest: 0, fee: 0, others: 0, minorHead: '200',
+      deductees: [{ pan: 'ABCPK1234L', name: 'Harpreet Kaur', sectionCode: '1002', paidOn: '2026-08-31', amountPaid: 120000, taxDeducted: 12000, taxDeposited: 12000, deductedOn: '2026-08-31', ratePercent: 0 }],
+    }],
+  });
+  assert.deepEqual(source.issues, []);
+
+  const imported = await app.inject({ method: 'POST', url: '/api/v1/tds/import/commit', headers: auth, payload: { text: source.text } });
+  assert.equal(imported.statusCode, 201, imported.body);
+  const { returnId } = JSON.parse(imported.body);
+  await devDb.db.query(`UPDATE public.tds_returns SET workflow_status = 'DRAFT' WHERE id = $1`, [returnId]);
+  const out = await app.inject({ method: 'POST', url: `/api/v1/tds/returns/${returnId}/statement`, headers: auth });
+  assert.equal(out.statusCode, 200, out.body);
+  const { fileName, text } = JSON.parse(out.body);
+  assert.match(fileName, /^AMRG04217D_138_Q2_202627\.txt$/);
+  const lines = text.split('\r\n');
+  assert.equal(lines[0].split('^')[2], 'SL1');
+  assert.deepEqual(lines[3].split('^').slice(27, 29), ['', '07092026']);
+  const parsed = parseEtdsStatement(text);
+  assert.deepEqual(parsed.issues.filter((i: { level: string }) => i.level === 'error'), []);
+  assert.equal(parsed.form, '138');
+  await app.close();
+});
+
+test('TDS history: a 1961 Act 26Q file imports under the 1961 regime; a challan mixing sections is refused', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  // Protean's published 26Q sample, pointed at the demo firm's sample TAN.
+  const lines = [
+    '1^FH^NS1^R^11062020^1^D^AMRG04217D^1^NSDL RPU 3.2^^^^^^^^',
+    '2^BH^1^1^26Q^^^^^^^^AMRG04217D^^BHSFB5213G^202526^202425^Q2^ABC^IT^45^BHVAN^N M MARG^BANDRA^MUMBAI^19^425006^KIRAN@GMAIL.COM^022^7456859^N^F^KIRAN^AM^45^BHVAN^N M MARG^BANDRA^MUMBAI^19^425006^KIRAN@GMAIL.COM^^022^7485963^N^1000.00^^^^N^N^^^^^^^VGSPL8523K^^^^^^^^^^^^^',
+    '3^CD^1^1^1^N^^^^^^00015^^^^0000096^^05082024^^^194^1000.00^0.00^0.00^0.00^0.00^1000.00^^100.00^100.00^0.00^0.00^100.00^0.00^0.00^00001^N^^^^',
+    (() => {
+      const f = '4^DD^1^1^1^O^^2^^NJSPL8523K^^^HIMANI^100.00^0.00^0.00^100.00^^100.00^^^1000.00^05082024^15082024^^10.0000^^N^^^^^^^^^^^^^^^^^^^^^^^^^^'.split('^');
+      f[32] = '94C'; // field 33: section code
+      return f.join('^');
+    })(),
+  ];
+  const text = lines.join('\r\n') + '\r\n';
+
+  const preview = JSON.parse((await app.inject({ method: 'POST', url: '/api/v1/tds/import/preview', headers: auth, payload: { text } })).body);
+  assert.equal(preview.regime, 'IT_ACT_1961');
+  assert.deepEqual(preview.sections, [{ code: '94C', nature: '1961 Act code 94C' }]);
+
+  // Two rows on one challan under different sections cannot be stored as an ITNS 281 challan.
+  const mixed = [...lines.slice(0, 3).map((l) => l.replace('^1^1^1^N^', '^1^1^2^N^')), lines[3], lines[3].replace(/^4\^DD\^1\^1\^1\^/, '5^DD^1^1^2^').replace('^94C^', '^94J^')];
+  const refused = await app.inject({ method: 'POST', url: '/api/v1/tds/import/commit', headers: auth, payload: { text: mixed.join('\r\n') + '\r\n' } });
+  assert.equal(refused.statusCode, 422, refused.body);
+  assert.match(JSON.parse(refused.body).message, /covers one section/);
+
+  const ok = await app.inject({ method: 'POST', url: '/api/v1/tds/import/commit', headers: auth, payload: { text } });
+  assert.equal(ok.statusCode, 201, ok.body);
+  const row = await devDb.db.query(
+    `SELECT r.statutory_regime, r.form_code, r.tax_year, c.statutory_regime AS challan_regime, d.form_code AS row_form, a.section_code
+     FROM public.tds_returns r JOIN public.tds_challans c ON c.tan_registration_id = r.tan_registration_id AND c.tax_year = r.tax_year AND c.quarter = r.quarter
+     JOIN public.tds_deductees d ON d.challan_id = c.id JOIN public.tds_challan_section_allocations a ON a.id = d.section_allocation_id
+     WHERE r.id = $1`,
+    [JSON.parse(ok.body).returnId],
+  );
+  assert.deepEqual(row.rows[0], { statutory_regime: 'IT_ACT_1961', form_code: '26Q', tax_year: 2024, challan_regime: 'IT_ACT_1961', row_form: '26Q', section_code: '94C' });
+  await app.close();
+});
+
+test('TDS registers: default analysis, deposits, sections, statements and the Form 121 register, with PANs masked', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+
+  const company = await app.inject({
+    method: 'POST', url: '/api/v1/tds/form121', headers: auth,
+    payload: { tan: 'AMRG04217D', taxYear: 2026, pan: 'AAKCR2290D', name: 'A Company', receivedOn: '2026-04-10', estimatedIncome: 1000, estimatedTotalIncome: 1000 },
+  });
+  assert.equal(company.statusCode, 400);
+  assert.match(JSON.parse(company.body).message, /not by companies or firms/);
+
+  const added = await app.inject({
+    method: 'POST', url: '/api/v1/tds/form121', headers: auth,
+    payload: { tan: 'AMRG04217D', taxYear: 2026, pan: 'BQRPS4410K', name: 'Saving Account Holder', receivedOn: '2026-04-10', seniorCitizen: true, estimatedIncome: 40000, estimatedTotalIncome: 250000 },
+  });
+  assert.equal(added.statusCode, 201, added.body);
+
+  const res = await app.inject({ method: 'GET', url: '/api/v1/tds/registers?tan=AMRG04217D&year=2026', headers: auth });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.doesNotMatch(res.body, /\b(?!XXXXX)[A-Z]{5}\d{4}[A-Z]\b/, 'no full PAN leaves the server');
+  const r = JSON.parse(res.body);
+  assert.ok(r.sections.length >= 1 && r.deposits.length >= 1 && r.statements.length >= 1);
+  assert.deepEqual(r.form121.map((f: { pan: string; seniorCitizen: boolean }) => [f.pan, f.seniorCitizen]), [['XXXXX4410K', true]]);
+  assert.ok('interestDue' in r.analysis.totals);
+
+  const withdrawn = await app.inject({ method: 'POST', url: `/api/v1/tds/form121/${JSON.parse(added.body).id}/withdraw`, headers: auth });
+  assert.equal(withdrawn.statusCode, 200);
+  await app.close();
+});
+
+test('GST: a pasted sales register is checked, imported once, and summarised for GSTR-1', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const regs = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/gst/registrations', headers: auth })).body).registrations;
+  const gstin = regs.find((r: { gstin: string }) => r.gstin.startsWith('03')).gstin;
+  const text = [
+    'Invoice No\tDate\tParty Name\tGSTIN\tPlace of Supply\tTaxable Value\tRate\tIGST\tCGST\tSGST',
+    'QA/1\t05/09/2026\tLudhiana Traders\t03AABCL1234F1Z8\t03\t10000\t18\t0\t900\t900',
+    'QA/2\t06/09/2026\tDelhi Mart\t\t07\t150000\t5\t7500\t0\t0',
+    'QA/3\t07/09/2026\tWalk-in\t\t03\t2000\t18\t0\t180\t180',
+  ].join('\n');
+
+  const preview = JSON.parse((await app.inject({ method: 'POST', url: '/api/v1/gst/sales/preview', headers: auth, payload: { gstin, period: '2026-09', text } })).body);
+  assert.deepEqual(preview.rows.map((r: { invoice: { section: string } | null }) => r.invoice?.section), ['B2B', 'B2CL', 'B2CS']);
+
+  const broken = await app.inject({ method: 'POST', url: '/api/v1/gst/sales/import', headers: auth, payload: { gstin, period: '2026-09', text: text.replace('\t7500\t0\t0', '\t0\t3750\t3750') } });
+  assert.equal(broken.statusCode, 422);
+
+  const ok = await app.inject({ method: 'POST', url: '/api/v1/gst/sales/import', headers: auth, payload: { gstin, period: '2026-09', text } });
+  assert.equal(ok.statusCode, 201, ok.body);
+  const again = await app.inject({ method: 'POST', url: '/api/v1/gst/sales/import', headers: auth, payload: { gstin, period: '2026-09', text } });
+  assert.equal(again.statusCode, 409);
+
+  const sum = JSON.parse((await app.inject({ method: 'GET', url: `/api/v1/gst/gstr1/summary?gstin=${gstin}&from=2026-09`, headers: auth })).body);
+  assert.deepEqual(sum.lines.map((l: { section: string; rate: number; taxableValue: string }) => [l.section, l.rate, l.taxableValue]), [['B2B', 18, '10000.00'], ['B2CL', 5, '150000.00'], ['B2CS', 18, '2000.00']]);
+  assert.equal(sum.totals.tax, '9660.00');
+  await app.close();
+});
+
+test('Practice: tasks from the calendar once only; fee invoice, receipt and ledger', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+
+  const first = JSON.parse((await app.inject({ method: 'POST', url: '/api/v1/practice/tasks/generate', headers: auth, payload: { from: '2026-12-01', to: '2027-01-31' } })).body);
+  assert.ok(first.added > 0, JSON.stringify(first));
+  const second = JSON.parse((await app.inject({ method: 'POST', url: '/api/v1/practice/tasks/generate', headers: auth, payload: { from: '2026-12-01', to: '2027-01-31' } })).body);
+  assert.equal(second.added, 0);
+  const listed = await app.inject({ method: 'GET', url: '/api/v1/practice/tasks?from=2026-12-01&to=2027-01-31', headers: auth });
+  assert.equal(listed.statusCode, 200, listed.body);
+  const tasks = JSON.parse(listed.body).tasks;
+  assert.ok(tasks.some((t: { kind: string }) => t.kind === 'TDS_STATEMENT'));
+  const done = await app.inject({ method: 'PATCH', url: `/api/v1/practice/tasks/${tasks[0].id}`, headers: auth, payload: { status: 'DONE' } });
+  assert.equal(done.statusCode, 200);
+
+  const entityId = tasks[0].entity_id;
+  const inv = await app.inject({
+    method: 'POST', url: '/api/v1/practice/fees/invoices', headers: auth,
+    payload: { entityId, date: '2026-11-01', lines: [{ sac: '998231', description: 'GST returns, Q2', amount: 10000 }] },
+  });
+  assert.equal(inv.statusCode, 201, inv.body);
+  const invoice = JSON.parse(inv.body);
+  assert.match(invoice.invoiceNo, /^[A-Z0-9]{1,4}\/26-27\/\d{4}$/);
+  // The demo firm has no GSTIN of its own, so it issues a bill of supply; a registered firm adds 18%.
+  assert.equal(new Decimal(invoice.total).toFixed(2), new Decimal(invoice.taxable).mul(invoice.kind === 'TAX_INVOICE' ? 1.18 : 1).toFixed(2));
+
+  const badRef = await app.inject({ method: 'POST', url: '/api/v1/practice/fees/receipts', headers: auth, payload: { entityId, date: '2026-11-05', amount: 5000, mode: 'BANK', reference: '50100123456789' } });
+  assert.equal(badRef.statusCode, 400);
+  const rec = await app.inject({ method: 'POST', url: '/api/v1/practice/fees/receipts', headers: auth, payload: { entityId, date: '2026-11-05', amount: 5000, mode: 'UPI', reference: 'UPI 631234' } });
+  assert.equal(rec.statusCode, 201, rec.body);
+  const ledger = JSON.parse((await app.inject({ method: 'GET', url: `/api/v1/practice/fees/ledger?entityId=${entityId}`, headers: auth })).body).ledger;
+  assert.equal(ledger.outstanding, new Decimal(invoice.total).sub(5000).toFixed(2));
+  await app.close();
+});
+
+test('Team: partner sets a staff member’s screens and clients; the API refuses screens they lack', async () => {
+  const app = buildApp();
+  await app.ready();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const partnerToken = JSON.parse(demo.body).accessToken;
+  const auth = { authorization: `Bearer ${partnerToken}` };
+  const claims = JSON.parse(Buffer.from(partnerToken.split('.')[1], 'base64url').toString());
+
+  // A staff member in the demo firm, created directly for the test.
+  const identity = crypto.randomUUID();
+  const staffId = crypto.randomUUID();
+  await devDb.db.query(`INSERT INTO auth.identities (id, email, password_hash, mfa_required, status) VALUES ($1, $2, 'x', false, 'ACTIVE')`, [identity, `staff-${identity}@example.test`]);
+  await devDb.db.query(`INSERT INTO public.users (id, firm_id, identity_id, display_name, role, status) VALUES ($1, $2, $3, 'Test Staff', 'STAFF', 'ACTIVE')`, [staffId, claims.firmId, identity]);
+  const staff = { authorization: `Bearer ${app.jwt.sign({ userId: staffId, firmId: claims.firmId, identityId: identity, role: 'STAFF', email: 'staff@example.test', displayName: 'Test Staff' })}` };
+
+  const team = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/team', headers: auth })).body);
+  const member = team.members.find((m: { id: string }) => m.id === staffId);
+  assert.deepEqual(member.modules, ['GST', 'TDS', 'PRACTICE', 'DOCUMENTS', 'CLIENTS']);
+  assert.equal((await app.inject({ method: 'GET', url: '/api/v1/team', headers: staff })).statusCode, 403);
+
+  // Staff cannot see fees by default; TDS is allowed until the partner takes it away.
+  assert.equal((await app.inject({ method: 'GET', url: '/api/v1/practice/fees/clients', headers: staff })).statusCode, 403);
+  assert.equal((await app.inject({ method: 'GET', url: '/api/v1/tds/returns?tan=AMRG04217D', headers: staff })).statusCode, 200);
+  assert.equal((await app.inject({ method: 'PUT', url: `/api/v1/team/${staffId}/modules`, headers: auth, payload: { modules: ['GST'] } })).statusCode, 200);
+  assert.equal((await app.inject({ method: 'GET', url: '/api/v1/tds/returns?tan=AMRG04217D', headers: staff })).statusCode, 403);
+  assert.deepEqual(JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/team/me', headers: staff })).body).modules, ['GST']);
+
+  // Client access: none until assigned.
+  const before = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/gst/registrations', headers: staff })).body).registrations.length;
+  assert.equal(before, 0);
+  const client = team.clients[0];
+  assert.equal((await app.inject({ method: 'POST', url: `/api/v1/team/${staffId}/clients`, headers: auth, payload: { entityId: client.id } })).statusCode, 201);
+  const regs = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/gst/registrations', headers: staff })).body).registrations;
+  const all = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/gst/registrations', headers: auth })).body).registrations;
+  assert.ok(regs.length <= all.length);
+  await app.close();
+});
+
+test('TDS quarter sheet: pasted payments become challans, rows and a draft return that writes a clean file', async () => {
+  const { parseEtdsStatement } = await import('@synextax/tax-engine');
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const sheet = [
+    'BSR Code\tChallan No\tChallan Date\tSection\tPAN\tName\tAmount Paid\tPaid On\tTDS',
+    '0510308\t00731\t07/08/2026\t1027\tABCPK1234L\tDr Kaur\t60,000\t15/07/2026\t6,000',
+    '0510308\t00731\t07/08/2026\t1023\tBQRPS4410K\tSingh Transport\t1,00,000\t20/07/2026\t1,000',
+  ].join('\n');
+  const body = { tan: 'AMRG04217D', form: '140', taxYear: 2026, quarter: 2, text: sheet };
+
+  const preview = JSON.parse((await app.inject({ method: 'POST', url: '/api/v1/tds/quarter/preview', headers: auth, payload: body })).body);
+  assert.deepEqual([preview.errors, preview.challans.length, preview.challans[0].tax], [[], 1, '7000.00']);
+  const bad = await app.inject({ method: 'POST', url: '/api/v1/tds/quarter/import', headers: auth, payload: { ...body, text: sheet.replace('1027', '194J') } });
+  assert.equal(bad.statusCode, 422);
+
+  const ok = await app.inject({ method: 'POST', url: '/api/v1/tds/quarter/import', headers: auth, payload: body });
+  assert.equal(ok.statusCode, 201, ok.body);
+  const { returnId, rows } = JSON.parse(ok.body);
+  assert.equal(rows, 2);
+  const again = await app.inject({ method: 'POST', url: '/api/v1/tds/quarter/import', headers: auth, payload: body });
+  assert.equal(again.statusCode, 409);
+
+  const file = await app.inject({ method: 'POST', url: `/api/v1/tds/returns/${returnId}/statement`, headers: auth });
+  assert.equal(file.statusCode, 200, file.body);
+  const parsed = parseEtdsStatement(JSON.parse(file.body).text);
+  assert.deepEqual(parsed.issues.filter((i: { level: string }) => i.level === 'error'), []);
+  assert.deepEqual(parsed.deductees.map((d: { sectionCode: string; taxDeducted: string }) => [d.sectionCode, d.taxDeducted]).sort(), [['1023', '1000.00'], ['1027', '6000.00']]);
+
+  // The challan endpoint now saves what it accepts.
+  const tanId = (await devDb.db.query(`SELECT id, entity_id FROM public.tan_registrations WHERE tan = 'AMRG04217D'`)).rows[0] as { id: string; entity_id: string };
+  const ch = await app.inject({
+    method: 'POST', url: '/api/v1/tds/challans', headers: auth,
+    payload: { entityId: tanId.entity_id, tanRegistrationId: tanId.id, statutoryRegime: 'IT_ACT_2025', taxYear: 2026, quarter: 'Q3', challanNo: '00999', bsrCode: '0510308', depositDate: '2026-11-07', deducteeTypeHead: '0021', minorHead: '200', interestAllocation: '0.00', othersAllocation: '0.00', feeLateFiling: '0.00', totalChallanAmount: '500.00', sectionAllocations: [{ sectionCode: '1027', incomeTax: '500.00', surcharge: '0.00', cess: '0.00', totalSectionAmount: '500.00' }] },
+  });
+  assert.equal(ch.statusCode, 201, ch.body);
+  const saved = await devDb.db.query(`SELECT total_challan_amount::text AS t FROM public.tds_challans WHERE id = $1`, [JSON.parse(ch.body).data.challanId]);
+  assert.equal((saved.rows[0] as { t: string }).t, '500.00');
+  await app.close();
+});
+
+test('GST: the year’s 3B summary reads the imported sales register', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const regs = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/gst/registrations', headers: auth })).body).registrations;
+  const reg = regs.find((r: { gstin: string; category: string }) => r.gstin.startsWith('03') && r.category === 'REGULAR_MONTHLY') ?? regs[0];
+  const res = await app.inject({ method: 'GET', url: `/api/v1/gst/gstr3b/year?gstin=${reg.gstin}&fy=2026`, headers: auth });
+  assert.equal(res.statusCode, 200, res.body);
+  const y = JSON.parse(res.body);
+  assert.equal(y.year, '2026-27');
+  assert.ok(y.months.length === 12 || y.months.length === 4);
   await app.close();
 });

@@ -50,3 +50,18 @@ test('surcharge with marginal relief just above Rs 50 lakh', () => {
   // Without relief surcharge would be 10% of tax; relief caps the rise at the Rs 10,000 above 50 lakh.
   assert.ok(s > 0 && s <= 10000, `surcharge ${s}`);
 });
+
+test('perquisites and an earlier employer are added; earlier TDS reduces the monthly deduction', () => {
+  const base = salaryTds({ grossSalary: 1200000, basicPlusDa: 600000, monthsRemaining: 6 });
+  const r = salaryTds({ grossSalary: 1200000, basicPlusDa: 600000, perquisites: 100000, previousEmployer: { salary: 300000, tds: 10000 }, monthsRemaining: 6 });
+  assert.equal(r.NEW.taxableIncome, '1525000.00');
+  assert.ok(Number(r.NEW.totalTax) > Number(base.NEW.totalTax));
+  // 1,525,000: 20,000 + 40,000 + 48,750 = 1,08,750; with cess 1,13,100; less 10,000 already deducted, over 6 months.
+  assert.equal(r.NEW.totalTax, '113100.00');
+  assert.equal(r.NEW.monthlyTds, '17184.00'); // 1,03,100 / 6 rounded up, so the year is not under-deducted
+});
+
+test('old regime: LTA and home-loan interest (capped at Rs 2 lakh) reduce taxable salary', () => {
+  const r = salaryTds({ grossSalary: 1500000, basicPlusDa: 700000, ltaExempt: 30000, homeLoanInterest: 250000 });
+  assert.equal(r.OLD.taxableIncome, '1220000.00');
+});

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const PortalKindEnum = z.enum(['GSTN', 'NIC_IRP', 'TRACES', 'CBDT_EFILING']);
 export type PortalKind = z.infer<typeof PortalKindEnum>;
 
-export const PortalHealthStatusEnum = z.enum(['OPERATIONAL', 'DEGRADED', 'OUTAGE']);
+export const PortalHealthStatusEnum = z.enum(['OPERATIONAL', 'DEGRADED', 'OUTAGE', 'UNKNOWN']);
 export type PortalHealthStatus = z.infer<typeof PortalHealthStatusEnum>;
 
 export const PortalHealthItemSchema = z.object({

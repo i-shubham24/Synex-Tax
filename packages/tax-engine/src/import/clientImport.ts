@@ -81,11 +81,13 @@ export function matchHeader(header: string): ImportField | null {
  */
 export function parseDelimited(text: string): string[][] {
   const src = text.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
-  const firstLine = src.split('\n').find((l) => l.trim()) ?? '';
+  // Exports often start with a title line; judge the delimiter on the busiest of the first lines.
+  const sample = src.split('\n').filter((l) => l.trim()).slice(0, 15);
+  const most = (re: RegExp) => Math.max(0, ...sample.map((l) => (l.match(re) ?? []).length));
   const counts: Array<[string, number]> = [
-    ['\t', (firstLine.match(/\t/g) ?? []).length],
-    [',', (firstLine.match(/,/g) ?? []).length],
-    [';', (firstLine.match(/;/g) ?? []).length],
+    ['\t', most(/\t/g)],
+    [',', most(/,/g)],
+    [';', most(/;/g)],
   ];
   const delim = counts.sort((a, b) => b[1] - a[1])[0][1] > 0 ? counts[0][0] : ',';
 

@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:deps && tsc",
+    "build:deps": "npm run build --prefix ../../packages/shared-schemas && npm run build --prefix ../../packages/tax-engine && npm run build --prefix ../../workers/queue-worker",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "node --test dist/**/*.test.js",

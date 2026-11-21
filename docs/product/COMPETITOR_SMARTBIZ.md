@@ -57,3 +57,50 @@ Their portal automation ("TRACES automation", "e-filing prepared for you") shoul
 10. AI on India-hosted models with PII redaction: notice reply drafts, rule digest, bank statement to ledger.
 
 **Decision needed: ITR.** Smart Tax is their anchor. Either plan an ITR module, or position SynexTax as the GST and TDS workspace that sits beside existing ITR software and import AIS/26AS later.
+
+## 5. Where it stands on 21 Nov 2026
+
+Re-read on 21 Nov 2026 from new.smartbizindia.com (Smart GST and Smart e-TDS pages). Their lists have not changed since yesterday; the column below is what SynexTax does today, checked by tests and in the browser.
+
+### Level or ahead now
+
+| Area | SmartBiz | SynexTax now |
+|---|---|---|
+| New Act statements | Forms 138, 140, 143, 144 | Statement files for all four (Form 138 for Q1 to Q3), every Annexure rule checked before the FVU; Form 143 uses file type TC1 as Protean requires |
+| Past filings | FVU .txt one at a time or a folder | 2025 Act and 1961 Act (24Q, 26Q, 27Q, 27EQ) files, checked against Protean's layouts and samples; one file at a time |
+| Quarter data entry | Excel templates | The firm's own sheet pasted in; rows checked, challans and draft return created |
+| TDS health and reports | Health dashboard, deposit and payee registers, default analysis, clause 34 data | Health view, defaults (late deduction and deposit interest, short deposit, no-PAN rate), deposit register, section-wise clause 34(a) totals, statement register for 34(b) |
+| Form 121 register | Yes, with portal template | Register checked against flag B rows; no portal template yet |
+| Salary TDS | Both regimes, perquisites, previous employer, Form 124 | Both regimes with HRA, LTA, home-loan interest, 80C, NPS, perquisites and an earlier employer; Form 124 claim checks (no Form 124 report yet) |
+| GST sales | Import from Excel and accounting software, rate-wise GSTR-1 report | Paste import with GSTR-1 classification and tax checks, rate-wise summary |
+| Composition | GSTR-4 e-filed | CMP-08 and GSTR-4 workings; filing waits on a GSP |
+| Practice | Tasks, calendar, fee ledger, documents locked until paid | Tasks from due dates, fee invoices with GST and a rule 46 number series, receipts, ledger with ageing; no deliverable lock until the client portal exists |
+| Users | Rights screen by screen | Screens per team member, clients per team member, both enforced by the server and the database |
+| Bank to ledger | AI bank statement to ledgers | Rules and party detection to Tally vouchers, statement kept in the browser |
+| ITC-04 | e-filed | Job work position, deemed supplies, period and due date; filing waits on a GSP |
+| GSTR-3B yearly summary | Yes, plus 3B against 1 and 2A | 3B against GSTR-1 and GSTR-2B (not 2A) month by month |
+| Tally, Busy, Marg backup | Agent | Agent module with SHA-256 manifest and retention; written but not yet compiled (no Go toolchain on the build machine) |
+| ITR | ITR-1 to 6, e-filed | Computation under both regimes; no return file yet |
+
+### Still behind, and what each needs
+
+| Gap | Needs |
+|---|---|
+| e-filing GST returns, GSTR-2 download, cash and credit ledgers, challan history, filed cases | GSP contract and API access |
+| FVU run and statement upload, e-Pay Tax helper, CSI download, bulk PAN checks, Form 130/131/133, conso and corrections | FVU download consent, sample TRACES files, an ERI or TRACES-sanctioned route (no stored portal passwords) |
+| Form 138 Q4 | Protean's Q4 format (still "expected to be released soon") |
+| Section rates and thresholds for every 393 and 394 code | A verified rate table; not guessed |
+| ITR return files | ITD's ITR schemas for Tax Year 2026-27 |
+| Client phone upload, automatic WhatsApp reminders, deliverable lock | File storage and a WhatsApp provider (BSP) |
+| Tally, Busy and Marg backup agent | Install Go 1.27 to build and test the module, then sign the agent build |
+| AI notice replies and rule digest | India-hosted model |
+| Staff invitations | Email provider for invite links |
+| Local network install | Not planned; SynexTax is cloud only |
+
+### Fixed along the way
+- Form 143 files carried file type NS1 instead of TC1.
+- A statement took every challan in the quarter, mixing forms; rows now carry their form.
+- The TDS challan endpoint returned an invented ID without saving; it now saves.
+- Government portal status in the header and audit page was hard-coded as normal; it is now a real five-minute check.
+- Payee and health responses sent full PANs; they are masked now.
+- The MFA challenge secret had no production guard; production now refuses the development default.

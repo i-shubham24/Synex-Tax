@@ -9,6 +9,11 @@ import { authRoutes } from './routes/auth.routes.js';
 import { clientMasterRoutes } from './routes/clientMaster.routes.js';
 import { clientImportRoutes } from './routes/clientImport.routes.js';
 import { tdsInsightsRoutes } from './routes/tdsInsights.routes.js';
+import { tdsRegistersRoutes } from './routes/tdsRegisters.routes.js';
+import { gstReturnsRoutes } from './routes/gstReturns.routes.js';
+import { practiceOpsRoutes } from './routes/practiceOps.routes.js';
+import { teamRoutes } from './routes/team.routes.js';
+import { enforceModules } from './security/modules.js';
 import { practiceRoutes } from './routes/practice.routes.js';
 import { complianceRoutes } from './routes/compliance.routes.js';
 import { auditRoutes } from './routes/audit.routes.js';
@@ -26,6 +31,11 @@ export function buildApp(): FastifyInstance {
   }
   if (process.env.NODE_ENV === 'production' && jwtSecret.includes('super_secret_jwt_key')) {
     throw new Error('FATAL SECURITY ERROR: Default demo JWT_SECRET detected in production environment.');
+  }
+  // The MFA challenge token secret has a development default too; production must set its own.
+  const challengeSecret = process.env.CHALLENGE_JWT_SECRET ?? '';
+  if (process.env.NODE_ENV === 'production' && (challengeSecret.length < 32 || challengeSecret.includes('synextax_challenge_token_secret'))) {
+    throw new Error('FATAL SECURITY ERROR: CHALLENGE_JWT_SECRET must be set to a secret of at least 32 characters in production.');
   }
 
   const app = fastify({
@@ -153,6 +163,8 @@ export function buildApp(): FastifyInstance {
   // ---------------------------------------------------------------------
   // API Version 1 Routes
   // ---------------------------------------------------------------------
+  // Per-screen access for team members (client access is enforced by row-level security).
+  app.addHook('preHandler', enforceModules);
   app.register(authRoutes, { prefix: '/api/v1/auth' });
   app.register(clientMasterRoutes, { prefix: '/api/v1/client-master' });
   app.register(clientImportRoutes, { prefix: '/api/v1/client-master/import' });
@@ -161,10 +173,14 @@ export function buildApp(): FastifyInstance {
   app.register(reconRoutes, { prefix: '/api/v1/recon' });
   app.register(tdsRoutes, { prefix: '/api/v1/tds' });
   app.register(tdsInsightsRoutes, { prefix: '/api/v1/tds' });
+  app.register(tdsRegistersRoutes, { prefix: '/api/v1/tds' });
   app.register(practiceRoutes, { prefix: '/api/v1/practice' });
+  app.register(practiceOpsRoutes, { prefix: '/api/v1/practice' });
+  app.register(teamRoutes, { prefix: '/api/v1/team' });
   app.register(dscRoutes, { prefix: '/api/v1/dsc' });
   app.register(workspaceRoutes, { prefix: '/api/v1/workspace' });
   app.register(gstRoutes, { prefix: '/api/v1/gst' });
+  app.register(gstReturnsRoutes, { prefix: '/api/v1/gst' });
 
   return app;
 }

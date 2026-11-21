@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { TeamPanel } from '../../../components/settings/TeamPanel';
 import {
   Building,
   User,
@@ -37,7 +38,7 @@ interface SettingsTab {
 
 const SETTINGS_TABS: SettingsTab[] = [
   { id: 'firm', label: 'Firm & Personal Info', icon: Building },
-  { id: 'team', label: 'Team & RBAC Assignments', icon: Users },
+  { id: 'team', label: 'Team and access', icon: Users },
   { id: 'dsc', label: 'DSC Token Inventory', icon: Usb },
   { id: 'api', label: 'API & GSP Connections', icon: Key },
   { id: 'dpdp', label: 'DPDP & Audit Pack', icon: ShieldCheck },
@@ -60,34 +61,6 @@ export default function SettingsPage() {
   const [pincode, setPincode] = useState<string>('143001');
   const [pan, setPan] = useState<string>('AABCP1332L');
 
-  // Team RBAC state
-  const [makerCheckerEnabled, setMakerCheckerEnabled] = useState<boolean>(true);
-  const [teamMembers] = useState([
-    {
-      id: 'usr-1',
-      name: 'CA Amrinder Verma, FCA',
-      email: 'ca.verma@synextax.com',
-      role: 'PARTNER',
-      status: 'ACTIVE',
-      assignedClients: 'All Clients (Unrestricted)',
-    },
-    {
-      id: 'usr-2',
-      name: 'Rajat Sharma',
-      email: 'staff.rajat@synextax.com',
-      role: 'STAFF',
-      status: 'ACTIVE',
-      assignedClients: 'Amritsar Phulkari Textiles, Golden Gate Hardware',
-    },
-    {
-      id: 'usr-3',
-      name: 'Gurpreet Kaur',
-      email: 'staff.gurpreet@synextax.com',
-      role: 'STAFF',
-      status: 'ACTIVE',
-      assignedClients: 'Majha Agro Spices, Doaba Auto Components',
-    },
-  ]);
 
   // DSC Bridge state
   const [bridgeTesting, setBridgeTesting] = useState<boolean>(false);
@@ -343,84 +316,7 @@ export default function SettingsPage() {
           )}
 
           {/* TAB 2: TEAM & RBAC ASSIGNMENTS */}
-          {activeTab === 'team' && (
-            <div className="space-y-6">
-              <div className="pb-4 border-b border-pos-line flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-lg font-bold text-pos-ink">Team & RBAC Assignments</h3>
-                  <p className="text-xs text-pos-ink/70 mt-0.5">
-                    Maker-Checker governance, client access delegation, and ICAI compliance boundaries.
-                  </p>
-                </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-pos-muted border border-pos-line text-pos-accent">
-                  3 Active Members
-                </span>
-              </div>
-
-              {/* Maker-Checker Policy Toggle */}
-              <div className="p-4 rounded-xl bg-pos-muted border border-pos-line space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-pos-ink block font-mono">
-                      Statutory Maker-Checker Guard (Rule 26 / Sec 39)
-                    </span>
-                    <span className="text-[11px] text-pos-ink/70">
-                      Requires Senior Partner approval on GSTR-3B liability computation before hardware DSC signing is unlocked.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMakerCheckerEnabled(!makerCheckerEnabled)}
-                    className={`px-3 py-1 rounded-full text-xs font-mono font-bold transition-colors ${
-                      makerCheckerEnabled
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-pos-line text-pos-ink/60'
-                    }`}
-                  >
-                    {makerCheckerEnabled ? 'ENABLED' : 'OPTIONAL'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Team Table */}
-              <div className="overflow-x-auto border border-pos-line rounded-lg">
-                <table className="w-full text-left text-xs border-collapse font-mono">
-                  <thead>
-                    <tr className="bg-pos-muted text-pos-ink/60 border-b border-pos-line text-[11px]">
-                      <th className="py-2.5 px-3">Member Name</th>
-                      <th className="py-2.5 px-3">Email</th>
-                      <th className="py-2.5 px-2">Role</th>
-                      <th className="py-2.5 px-3">Assigned Clients</th>
-                      <th className="py-2.5 px-2 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-pos-line">
-                    {teamMembers.map((m) => (
-                      <tr key={m.id} className="hover:bg-pos-tint">
-                        <td className="py-2.5 px-3 font-bold text-pos-ink">{m.name}</td>
-                        <td className="py-2.5 px-3 text-pos-ink/70">{m.email}</td>
-                        <td className="py-2.5 px-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            m.role === 'PARTNER'
-                              ? 'bg-pos-accent/10 text-pos-accent border border-pos-accent/20'
-                              : 'bg-pos-muted text-pos-ink/70'
-                          }`}>
-                            {m.role}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-[11px] text-pos-ink/80">{m.assignedClients}</td>
-                        <td className="py-2.5 px-2 text-center">
-                          <span className="text-emerald-600 font-bold text-[10px] flex items-center justify-center gap-1">
-                            <Check className="w-3 h-3" /> Active
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          {activeTab === 'team' && <TeamPanel />}
 
           {/* TAB 3: DSC TOKEN INVENTORY */}
           {activeTab === 'dsc' && (

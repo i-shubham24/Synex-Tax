@@ -542,3 +542,98 @@ test('Checklists: staff work on their assigned clients only, and every change is
   const audited = (await db.query(`SELECT count(*)::int AS n FROM audit.immutable_audit_logs WHERE table_name IN ('doc_checklists','doc_checklist_items') AND firm_id = $1`, [F.A])).rows[0].n;
   assert.ok(audited >= 2);
 });
+
+// ---------------------------------------------------------------------------
+// 0016: placeholder section codes from early trial data
+test('Section codes: early trial placeholders are converted to official Form 140 codes', async () => {
+  const ch = id();
+  const alloc = id();
+  await db.exec(`
+    INSERT INTO public.tds_challans (id, firm_id, entity_id, tan_registration_id, challan_no, bsr_code, deposit_date, statutory_regime, tax_year, quarter, deductee_type_head)
+    VALUES ('${ch}', '${F.A}', '${E.A1}', '${T.A1}', '00999', '0510308', '2026-11-07', 'IT_ACT_2025', 2026, 'Q3', '0021');
+    INSERT INTO public.tds_challan_section_allocations (id, firm_id, entity_id, challan_id, section_code, income_tax, total_section_amount)
+    VALUES ('${alloc}', '${F.A}', '${E.A1}', '${ch}', '393(1)-194C', 5900, 5900);
+    INSERT INTO public.tds_deductees (firm_id, entity_id, tan_registration_id, challan_id, section_allocation_id, deductee_pan, deductee_name, payment_credit_date, tds_rate, tds_deducted, total_tds_deposited, deduction_date)
+    VALUES ('${F.A}', '${E.A1}', '${T.A1}', '${ch}', '${alloc}', 'BQRPS4410K', 'Individual', '2026-10-13', 0.01, 1500, 1500, '2026-10-13'),
+           ('${F.A}', '${E.A1}', '${T.A1}', '${ch}', '${alloc}', 'AAKFR2290D', 'Firm', '2026-10-16', 0.02, 4400, 4400, '2026-10-16');
+  `);
+  const fs = await import('node:fs');
+  await db.exec(fs.readFileSync(new URL('../migrations/0016_sample_section_codes.sql', import.meta.url), 'utf8'));
+  const rows = (await db.query(
+    `SELECT a.section_code, d.deductee_name, a.total_section_amount::text AS amt FROM public.tds_deductees d JOIN public.tds_challan_section_allocations a ON a.id = d.section_allocation_id WHERE d.challan_id = $1 ORDER BY d.deductee_name`,
+    [ch],
+  )).rows;
+  assert.deepEqual(rows, [
+    { section_code: '1024', deductee_name: 'Firm', amt: '4400.00' },
+    { section_code: '1023', deductee_name: 'Individual', amt: '1500.00' },
+  ]);
+});
+
+// ---------------------------------------------------------------------------
+// 0019: Form 121 declaration register
+test('Form 121 register: firm-scoped, audited, companies and firms cannot declare, senior citizens are individuals', async () => {
+  await asApp(ctx(F.A, U.pA), (tx) =>
+    tx.query(
+      `INSERT INTO public.form121_declarations (firm_id, entity_id, tan_registration_id, tax_year, declarant_pan, declarant_name, received_on, estimated_income)
+       VALUES ($1, $2, $3, 2026, 'BQRPS4410K', 'Saving Account Holder', '2026-04-10', 40000)`,
+      [F.A, E.A1, T.A1],
+    ),
+  );
+  await assert.rejects(
+    asApp(ctx(F.A, U.pA), (tx) =>
+      tx.query(
+        `INSERT INTO public.form121_declarations (firm_id, entity_id, tan_registration_id, tax_year, declarant_pan, declarant_name, received_on)
+         VALUES ($1, $2, $3, 2026, 'AAKCR2290D', 'A Company', '2026-04-10')`,
+        [F.A, E.A1, T.A1],
+      ),
+    ),
+    /check constraint/,
+  );
+  await assert.rejects(
+    asApp(ctx(F.A, U.pA), (tx) =>
+      tx.query(
+        `INSERT INTO public.form121_declarations (firm_id, entity_id, tan_registration_id, tax_year, declarant_pan, declarant_name, received_on, senior_citizen)
+         VALUES ($1, $2, $3, 2026, 'AAKHR2290D', 'An HUF', '2026-04-10', true)`,
+        [F.A, E.A1, T.A1],
+      ),
+    ),
+    /check constraint/,
+  );
+  const otherFirm = await asApp(ctx(F.B, U.pB), async (tx) => (await tx.query('SELECT count(*)::int AS n FROM public.form121_declarations')).rows[0].n);
+  assert.equal(otherFirm, 0);
+  const audited = (await db.query(`SELECT count(*)::int AS n FROM audit.immutable_audit_logs WHERE table_name = 'form121_declarations' AND firm_id = $1`, [F.A])).rows[0].n;
+  assert.equal(audited, 1);
+});
+
+// ---------------------------------------------------------------------------
+// 0021: practice tasks and fee ledger
+test('Fee invoices: firm-scoped, totals must add up, issued invoices cannot be edited or deleted', async () => {
+  const invId = id();
+  await asApp(ctx(F.A, U.pA), (tx) =>
+    tx.query(
+      `INSERT INTO public.fee_invoices (id, firm_id, entity_id, invoice_no, invoice_date, kind, place_of_supply, lines, taxable, cgst, sgst, total)
+       VALUES ($1, $2, $3, 'INV/26-27/0001', '2026-11-01', 'TAX_INVOICE', '03', '[{"sac":"998231","description":"GST returns","amount":"10000.00"}]', 10000, 900, 900, 11800)`,
+      [invId, F.A, E.A1],
+    ),
+  );
+  await assert.rejects(
+    asApp(ctx(F.A, U.pA), (tx) =>
+      tx.query(
+        `INSERT INTO public.fee_invoices (firm_id, entity_id, invoice_no, invoice_date, kind, place_of_supply, lines, taxable, cgst, sgst, total)
+         VALUES ($1, $2, 'INV/26-27/0002', '2026-11-01', 'TAX_INVOICE', '03', '[{"sac":"998231","description":"x","amount":"1"}]', 100, 9, 9, 120)`,
+        [F.A, E.A1],
+      ),
+    ),
+    /check constraint/,
+  );
+  await assert.rejects(asApp(ctx(F.A, U.pA), (tx) => tx.query(`UPDATE public.fee_invoices SET total = 1, taxable = 1, cgst = 0, sgst = 0 WHERE id = $1`, [invId])), /FEE_INVOICE_IMMUTABLE/);
+  await asApp(ctx(F.A, U.pA), (tx) => tx.query(`UPDATE public.fee_invoices SET status = 'CANCELLED' WHERE id = $1`, [invId]));
+  const otherFirm = await asApp(ctx(F.B, U.pB), async (tx) => (await tx.query('SELECT count(*)::int AS n FROM public.fee_invoices')).rows[0].n);
+  assert.equal(otherFirm, 0);
+  // Staff see only their assigned clients' tasks.
+  await asApp(ctx(F.A, U.pA), (tx) =>
+    tx.query(`INSERT INTO public.practice_tasks (firm_id, entity_id, task_key, kind, title, period_label, due_date) VALUES ($1, $2, 'GSTR1:X:2026-10', 'GSTR1', 'GSTR-1 for Oct 2026', 'Oct 2026', '2026-11-11')`, [F.A, E.A2]),
+  );
+  const staffSees = await asApp(ctx(F.A, U.sA), async (tx) => (await tx.query(`SELECT count(*)::int AS n FROM public.practice_tasks WHERE entity_id = $1`, [E.A2])).rows[0].n);
+  assert.equal(staffSees, 0);
+});

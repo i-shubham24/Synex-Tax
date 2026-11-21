@@ -2,11 +2,14 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft, CheckCircle2, FileUp, HeartPulse, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, FileText, FileUp, HeartPulse, Users } from 'lucide-react';
 import type { TdsHealthReport } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
+import { StatementPanel } from '../../../../components/tds/StatementPanel';
+import { RegistersPanel } from '../../../../components/tds/RegistersPanel';
+import { QuarterSheetPanel } from '../../../../components/tds/QuarterSheetPanel';
 
-type Tab = 'health' | 'import' | 'payees';
+type Tab = 'health' | 'statement' | 'registers' | 'import' | 'payees';
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const nice = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
@@ -131,7 +134,7 @@ export default function TdsHealthPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="tablist">
-          {([['health', 'Health', HeartPulse], ['import', 'Import past statements', FileUp], ['payees', 'Payee master', Users]] as const).map(([id, label, Icon]) => (
+          {([['health', 'Health', HeartPulse], ['statement', 'Prepare statement', FileText], ['registers', 'Registers', BookOpen], ['import', 'Import past statements', FileUp], ['payees', 'Payee master', Users]] as const).map(([id, label, Icon]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}>
               <Icon className="h-4 w-4" /> {label}
@@ -143,7 +146,7 @@ export default function TdsHealthPage() {
             TAN
             <select value={tan} onChange={(e) => setTan(e.target.value)} className="rounded-full border border-pos-line bg-pos-surface px-3 py-1.5 font-mono text-pos-ink">
               {tab === 'health' && <option value="">All TANs</option>}
-              {tab === 'payees' && !tan && <option value="">Choose a TAN</option>}
+              {tab !== 'health' && !tan && <option value="">Choose a TAN</option>}
               {tans.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </label>
@@ -194,10 +197,13 @@ export default function TdsHealthPage() {
         </>
       )}
 
+      {tab === 'statement' && <StatementPanel tan={tan} />}
+      {tab === 'registers' && <RegistersPanel tan={tan} />}
+
       {tab === 'import' && (
         <div className="pos-card space-y-4 p-5">
           <p className="text-[13.5px] text-pos-ink/65">
-            Choose a Form 140 regular statement text file (the .txt your return software produced for upload). It is checked against Protean&apos;s Form 140 file format before anything is saved, and kept as closed history for that quarter. Statements in the 1961 Act formats (24Q, 26Q, 27Q, 27EQ) are not supported yet.
+            Choose a regular statement text file (the .txt your return software produced for upload): Form 138, 140, 144 or 143, or 24Q, 26Q, 27Q or 27EQ for periods up to March 2026. It is checked against Protean&apos;s file format for that form before anything is saved, and kept as closed history for that quarter. Quarter 4 salary details in 24Q files are not brought in; the deductee rows are.
           </p>
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-pos-line px-6 py-8 text-[14px] text-pos-ink/60 hover:border-pos-accent">
             <FileUp className="h-6 w-6" /> {busy ? 'Reading' : 'Choose a statement file (.txt, up to 5 MB)'}
@@ -210,7 +216,7 @@ export default function TdsHealthPage() {
                   ['Form', preview.form || 'Unknown'],
                   ['TAN', `${preview.tan}${preview.tanKnown ? '' : ' (not in Client Master)'}`],
                   ['Deductor', preview.deductorName],
-                  ['Period', preview.taxYear ? `Q${preview.quarter} TY ${preview.taxYear}-${String((preview.taxYear + 1) % 100).padStart(2, '0')}` : 'Unknown'],
+                  ['Period', preview.taxYear ? `Q${preview.quarter} ${/Q$/.test(preview.form) ? 'FY' : 'TY'} ${preview.taxYear}-${String((preview.taxYear + 1) % 100).padStart(2, '0')}` : 'Unknown'],
                   ['Challans', String(preview.challans)],
                   ['Deductee rows', String(preview.deductees)],
                   ['Deposited', inr(preview.totalDeposited)],
@@ -235,6 +241,7 @@ export default function TdsHealthPage() {
           {message && <p role="status" className="text-[13.5px] text-pos-ink/75">{message}</p>}
         </div>
       )}
+      {tab === 'import' && <QuarterSheetPanel tans={tans} />}
 
       {tab === 'payees' && (
         <Section title={`Payees${tan ? ` of ${tan}` : ''}`} count={payees.length} empty={tan ? 'No deductee rows for this TAN yet.' : 'Choose a TAN to see its payees.'}>

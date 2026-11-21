@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/synextax/synextax/apps/dsc-agent/modules/backup"
 	"github.com/synextax/synextax/apps/dsc-agent/modules/dsc"
 	"github.com/synextax/synextax/apps/dsc-agent/modules/tally"
 	"github.com/synextax/synextax/apps/dsc-agent/security"
@@ -21,6 +24,7 @@ type AppServer struct {
 	tokenMgr     *dsc.TokenManager
 	tallyPoller  *tally.TallyPoller
 	nonceVerifier *security.NonceVerifier
+	backups      backup.Config
 }
 
 func corsMiddleware(next http.HandlerFunc, verifier *security.NonceVerifier) http.HandlerFunc {
@@ -54,6 +58,7 @@ func main() {
 		tokenMgr:     dsc.NewTokenManager(),
 		tallyPoller:  tally.NewTallyPoller("http://127.0.0.1:9000"),
 		nonceVerifier: security.NewNonceVerifier(),
+		backups:      backup.Config{Destination: backupHome(), Keep: 30},
 	}
 
 	mux := http.NewServeMux()
@@ -123,6 +128,59 @@ func main() {
 		json.NewEncoder(w).Encode(resp)
 	}, server.nonceVerifier))
 
+	// Accounting data backups (Tally, Busy, Marg) kept on this machine.
+	mux.HandleFunc("/api/v1/backup/detect", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"folders": server.backups.Detect(), "destination": server.backups.Destination})
+	}, server.nonceVerifier))
+
+	mux.HandleFunc("/api/v1/backup/list", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		list, err := server.backups.List(backup.Product(r.URL.Query().Get("product")))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]any{"backups": list})
+	}, server.nonceVerifier))
+
+	mux.HandleFunc("/api/v1/backup/run", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error":"METHOD_NOT_ALLOWED"}`, http.StatusMethodNotAllowed)
+			return
+		}
+		var req struct {
+			Product        backup.Product `json:"product"`
+			Source         string         `json:"source"`
+			ChallengeNonce string         `json:"challengeNonce"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "INVALID_JSON_PAYLOAD"})
+			return
+		}
+		if err := server.nonceVerifier.ConsumeNonce(req.ChallengeNonce); err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		res, err := server.backups.Run(req.Product, req.Source, time.Now())
+		if err != nil {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		json.NewEncoder(w).Encode(res)
+	}, server.nonceVerifier))
+
 	fmt.Printf("SynexTax Local Desktop Bridge listening securely on https://%s\n", ListenAddress)
 	log.Fatal(http.ListenAndServe(ListenAddress, mux))
+}
+
+// backupHome is where backups are kept: a folder in the signed-in user's profile.
+func backupHome() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, "SynexTax Backups")
 }
