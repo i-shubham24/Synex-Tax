@@ -4,7 +4,6 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -39,10 +38,10 @@ type SignDigestRequest struct {
 }
 
 type SignDigestResponse struct {
-	SignatureHex     string                `json:"signatureHex"`
-	Certificate      TokenCertificateInfo  `json:"certificate"`
-	SigningTimestamp time.Time             `json:"signingTimestamp"`
-	Algorithm        string                `json:"algorithm"`
+	SignatureHex     string               `json:"signatureHex"`
+	Certificate      TokenCertificateInfo `json:"certificate"`
+	SigningTimestamp time.Time            `json:"signingTimestamp"`
+	Algorithm        string               `json:"algorithm"`
 }
 
 type TokenManager struct {
@@ -53,9 +52,9 @@ func NewTokenManager() *TokenManager {
 	return &TokenManager{
 		knownDriverPaths: []string{
 			`C:\Windows\System32\eps2003csp11.dll`, // Feitian ePass2003
-			`C:\Windows\System32\wdpkcs.dll`,      // Watchdata ProxKey
-			`C:\Windows\System32\akisp11.dll`,     // Aladdin / mToken
-			`C:\Windows\System32\etpkcs11.dll`,    // eToken Pro
+			`C:\Windows\System32\wdpkcs.dll`,       // Watchdata ProxKey
+			`C:\Windows\System32\akisp11.dll`,      // Aladdin / mToken
+			`C:\Windows\System32\etpkcs11.dll`,     // eToken Pro
 		},
 	}
 }

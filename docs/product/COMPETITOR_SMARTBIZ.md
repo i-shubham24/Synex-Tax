@@ -79,7 +79,7 @@ Re-read on 21 Nov 2026 from new.smartbizindia.com (Smart GST and Smart e-TDS pag
 | Bank to ledger | AI bank statement to ledgers | Rules and party detection to Tally vouchers, statement kept in the browser |
 | ITC-04 | e-filed | Job work position, deemed supplies, period and due date; filing waits on a GSP |
 | GSTR-3B yearly summary | Yes, plus 3B against 1 and 2A | 3B against GSTR-1 and GSTR-2B (not 2A) month by month |
-| Tally, Busy, Marg backup | Agent | Agent module with SHA-256 manifest and retention; written but not yet compiled (no Go toolchain on the build machine) |
+| Tally, Busy, Marg backup | Agent | Agent module with SHA-256 manifest and retention; built with Go 1.27.4, vetted and tested |
 | ITR | ITR-1 to 6, e-filed | Computation under both regimes; no return file yet |
 
 ### Still behind, and what each needs
@@ -92,7 +92,7 @@ Re-read on 21 Nov 2026 from new.smartbizindia.com (Smart GST and Smart e-TDS pag
 | Section rates and thresholds for every 393 and 394 code | A verified rate table; not guessed |
 | ITR return files | ITD's ITR schemas for Tax Year 2026-27 |
 | Client phone upload, automatic WhatsApp reminders, deliverable lock | File storage and a WhatsApp provider (BSP) |
-| Tally, Busy and Marg backup agent | Install Go 1.27 to build and test the module, then sign the agent build |
+| Tally, Busy and Marg backup agent | Code-signing certificate for the agent installer |
 | AI notice replies and rule digest | India-hosted model |
 | Staff invitations | Email provider for invite links |
 | Local network install | Not planned; SynexTax is cloud only |

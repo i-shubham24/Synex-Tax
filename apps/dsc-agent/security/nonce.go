@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	ErrInvalidOrigin   = errors.New("security: unauthorized origin header")
-	ErrInvalidNonce    = errors.New("security: invalid or expired challenge nonce")
+	ErrInvalidOrigin  = errors.New("security: unauthorized origin header")
+	ErrInvalidNonce   = errors.New("security: invalid or expired challenge nonce")
 	ErrReplayDetected = errors.New("security: replay detected, nonce already consumed")
 )
 
 var allowedOrigins = map[string]bool{
-	"http://localhost:3000":     true,
-	"http://127.0.0.1:3000":     true,
-	"https://app.synextax.com":  true,
+	"http://localhost:3000":      true,
+	"http://127.0.0.1:3000":      true,
+	"https://app.synextax.com":   true,
 	"https://portal.synextax.in": true,
 }
 

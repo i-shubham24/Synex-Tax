@@ -21,10 +21,10 @@ const (
 )
 
 type AppServer struct {
-	tokenMgr     *dsc.TokenManager
-	tallyPoller  *tally.TallyPoller
+	tokenMgr      *dsc.TokenManager
+	tallyPoller   *tally.TallyPoller
 	nonceVerifier *security.NonceVerifier
-	backups      backup.Config
+	backups       backup.Config
 }
 
 func corsMiddleware(next http.HandlerFunc, verifier *security.NonceVerifier) http.HandlerFunc {
@@ -55,10 +55,10 @@ func corsMiddleware(next http.HandlerFunc, verifier *security.NonceVerifier) htt
 
 func main() {
 	server := &AppServer{
-		tokenMgr:     dsc.NewTokenManager(),
-		tallyPoller:  tally.NewTallyPoller("http://127.0.0.1:9000"),
+		tokenMgr:      dsc.NewTokenManager(),
+		tallyPoller:   tally.NewTallyPoller("http://127.0.0.1:9000"),
 		nonceVerifier: security.NewNonceVerifier(),
-		backups:      backup.Config{Destination: backupHome(), Keep: 30},
+		backups:       backup.Config{Destination: backupHome(), Keep: 30},
 	}
 
 	mux := http.NewServeMux()
@@ -69,14 +69,14 @@ func main() {
 		certs, _ := server.tokenMgr.ListCertificates()
 
 		json.NewEncoder(w).Encode(map[string]any{
-			"status":            "ONLINE",
-			"version":           AgentVersion,
-			"daemon":            "SynexTax Local Desktop DSC & Tally Agent",
-			"listenAddress":     ListenAddress,
-			"tokensDetected":    len(certs),
-			"tallyReachable":    tallyOk,
-			"tallyStatus":       tallyMsg,
-			"currentTimestamp":  time.Now().UTC().Format(time.RFC3339),
+			"status":           "ONLINE",
+			"version":          AgentVersion,
+			"daemon":           "SynexTax Local Desktop DSC & Tally Agent",
+			"listenAddress":    ListenAddress,
+			"tokensDetected":   len(certs),
+			"tallyReachable":   tallyOk,
+			"tallyStatus":      tallyMsg,
+			"currentTimestamp": time.Now().UTC().Format(time.RFC3339),
 		})
 	}, server.nonceVerifier))
 

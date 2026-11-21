@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "migrate:test": "node --test --test-reporter=spec scripts/test-migrations.js",
+    "migrate": "node scripts/migrate.js",
+    "migrate:check": "node --test scripts/migrate.test.js",
     "db:dev": "node scripts/dev-server.js"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.4.6",
-    "@electric-sql/pglite-socket": "0.1.6"
+    "@electric-sql/pglite-socket": "0.1.6",
+    "pg": "^8.23.1"
   },
   "exports": {
     ".": "./src/devdb.js",
