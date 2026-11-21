@@ -409,7 +409,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firmName: data.user.firmName,
           email: data.user.email,
           fullName: data.user.displayName,
-          role: role,
+          // The server decides the role; the demo signs in as its partner whatever was picked.
+          role: data.user.role ?? 'PARTNER',
           frnNumber: data.user.frnNumber || '014289N',
           mfaVerified: true,
           plan: 'TRIAL',
@@ -425,6 +426,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       // The API answered with an error: report it rather than pretending to be signed in.
       setIsLoading(false);
+      if (res.status === 404) throw new Error('The demo workspace is switched off on this site. Sign in with your firm’s account.');
+      if (res.status >= 500) {
+        const body = await res.json().catch(() => null);
+        throw new Error(
+          body && typeof body.message === 'string'
+            ? 'The demo workspace could not be opened: the server could not reach its database. Try again later.'
+            : 'The demo workspace could not be opened: the SynexTax server is not responding. Try again later.',
+        );
+      }
       throw new Error('The demo workspace could not be opened. Try again in a moment.');
     } catch (err) {
       if (err instanceof Error && err.message.startsWith('The demo workspace')) throw err;
