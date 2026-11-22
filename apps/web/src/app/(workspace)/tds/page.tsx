@@ -21,9 +21,13 @@ import {
   Download,
   Search,
   ExternalLink,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { CustomDropdown, CustomSelect } from '../../../components/ui/CustomSelect';
+import { DualActReconCockpit } from '../../../components/tds/DualActReconCockpit';
+
 
 interface SectionAllocation {
   id: string;
@@ -142,6 +146,9 @@ export default function TdsPage() {
     correctionWindowExpiresAt: '2029-03-31',
     daysToCorrectionExpiry: 862,
   });
+
+  // Top View Mode (Allocator vs Dual-Act Recon Cockpit)
+  const [viewMode, setViewMode] = useState<'allocator' | 'dualActRecon'>('allocator');
 
   // Deductees List
   const [deductees, setDeductees] = useState<DeducteeRow[]>(SAMPLE_DEDUCTEES);
@@ -445,46 +452,89 @@ export default function TdsPage() {
             <span>TDS and TCS under the 1961 and 2025 Acts</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-semibold text-pos-ink tracking-tight mt-1">
-            Challan Allocation & Deductee Compliance Engine
+            {viewMode === 'dualActRecon' ? 'TRACES Conso Auto-Ingestion & Dual-Act Cockpit' : 'Challan Allocation & Deductee Compliance Engine'}
           </h1>
           <p className="text-xs text-pos-ink/70 mt-0.5">
             Client: <span className="font-semibold text-pos-ink">{entityName}</span> | TAN: <span className="font-mono font-semibold text-pos-accent">{tan}</span> | Quarter: <span className="font-semibold">{quarter} ({taxYear})</span>
           </p>
-          <Link href="/tds/health" className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-pos-line px-3 py-1 text-xs font-semibold text-pos-accent hover:bg-pos-tint">
-            TDS health and past statements
-          </Link>
+          <div className="mt-2 flex items-center gap-2">
+            <Link href="/tds/health" className="inline-flex items-center gap-1.5 rounded-full border border-pos-line px-3 py-1 text-xs font-semibold text-pos-accent hover:bg-pos-tint">
+              TDS health and past statements
+            </Link>
+          </div>
         </div>
 
-        {/* Dual-Act Regime Switcher Toggle */}
-        <div className="flex items-center p-1 rounded-lg bg-pos-muted border border-pos-line text-xs font-semibold">
-          <button
-            onClick={() => setStatutoryRegime('IT_ACT_2025')}
-            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
-              statutoryRegime === 'IT_ACT_2025'
-                ? 'bg-pos-accent text-white font-semibold shadow-sm'
-                : 'text-pos-ink/60 hover:text-pos-ink'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>IT Act 2025 (ITNS 281N: 20 Sections)</span>
-          </button>
-          <button
-            onClick={() => {
-              setStatutoryRegime('IT_ACT_1961');
-              if (allocations.length > 1) {
-                setAllocations([allocations[0]]);
-              }
-            }}
-            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
-              statutoryRegime === 'IT_ACT_1961'
-                ? 'bg-pos-accent text-white font-semibold shadow-sm'
-                : 'text-pos-ink/60 hover:text-pos-ink'
-            }`}
-          >
-            <span>IT Act 1961 (ITNS 281: 1 Section)</span>
-          </button>
+        {/* View Mode & Regime Switcher */}
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+          {/* View Mode Switcher */}
+          <div className="flex items-center p-1 rounded-lg bg-pos-muted border border-pos-line text-xs font-semibold">
+            <button
+              onClick={() => setViewMode('allocator')}
+              className={`px-3 py-1.5 rounded-md transition-colors ${
+                viewMode === 'allocator'
+                  ? 'bg-pos-surface text-pos-ink border border-pos-line shadow-sm'
+                  : 'text-pos-ink/60 hover:text-pos-ink'
+              }`}
+            >
+              Challan Allocator
+            </button>
+            <button
+              onClick={() => setViewMode('dualActRecon')}
+              className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
+                viewMode === 'dualActRecon'
+                  ? 'bg-pos-accent text-white shadow-sm font-semibold'
+                  : 'text-pos-ink/60 hover:text-pos-ink'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Dual-Act 2025 Recon</span>
+            </button>
+          </div>
+
+          {viewMode === 'allocator' && (
+            <div className="flex items-center p-1 rounded-lg bg-pos-muted border border-pos-line text-xs font-semibold">
+              <button
+                onClick={() => setStatutoryRegime('IT_ACT_2025')}
+                className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
+                  statutoryRegime === 'IT_ACT_2025'
+                    ? 'bg-pos-accent text-white font-semibold shadow-sm'
+                    : 'text-pos-ink/60 hover:text-pos-ink'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>IT Act 2025</span>
+              </button>
+              <button
+                onClick={() => {
+                  setStatutoryRegime('IT_ACT_1961');
+                  if (allocations.length > 1) {
+                    setAllocations([allocations[0]]);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
+                  statutoryRegime === 'IT_ACT_1961'
+                    ? 'bg-pos-accent text-white font-semibold shadow-sm'
+                    : 'text-pos-ink/60 hover:text-pos-ink'
+                }`}
+              >
+                <span>IT Act 1961</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {viewMode === 'dualActRecon' ? (
+        <DualActReconCockpit
+          tan={tan}
+          entityName={entityName}
+          taxYear={taxYear}
+          quarter={quarter}
+          authToken={token}
+        />
+      ) : (
+        <>
+
 
       {/* Return Summary Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1024,6 +1074,8 @@ export default function TdsPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
     </div>
   );

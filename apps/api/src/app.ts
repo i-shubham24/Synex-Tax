@@ -29,6 +29,8 @@ import { integrationsRoutes } from './routes/integrations.routes.js';
 import { workspaceRoutes } from './routes/workspace.routes.js';
 import { firmRoutes } from './routes/firm.routes.js';
 import { tdsCorrectionDraftsRoutes } from './routes/tdsCorrectionDrafts.routes.js';
+import { tdsDualActReconRoutes } from './routes/tdsDualActRecon.routes.js';
+
 import { practiceAutomationRoutes } from './routes/practiceAutomation.routes.js';
 import { documentsRoutes } from './routes/documents.routes.js';
 import { accountRoutes } from './routes/account.routes.js';
@@ -133,9 +135,7 @@ export function buildApp(): FastifyInstance {
   app.register(registerCsrfProtection);
   app.addHook('preHandler', createCsrfHook());
 
-  // ---------------------------------------------------------------------
-  // Kubernetes Health Probes & Telemetry
-  // ---------------------------------------------------------------------
+  // Kubernetes Health Probes and Telemetry
 
   // Standard health check
   app.get('/health', async () => ({
@@ -179,9 +179,7 @@ export function buildApp(): FastifyInstance {
   });
   app.setNotFoundHandler((request, reply) => reply.status(404).send({ error: 'Not found', message: 'There is nothing at this address.', requestId: request.id }));
 
-  // ---------------------------------------------------------------------
   // API Version 1 Routes
-  // ---------------------------------------------------------------------
   // Per-screen access for team members (client access is enforced by row-level security).
   app.addHook('preHandler', enforceModules);
   // Safe retries: a repeated Idempotency-Key gets the first answer back (see plugins/idempotency.ts).
@@ -195,6 +193,8 @@ export function buildApp(): FastifyInstance {
   app.register(tdsRoutes, { prefix: '/api/v1/tds' });
   app.register(tdsInsightsRoutes, { prefix: '/api/v1/tds' });
   app.register(tdsRegistersRoutes, { prefix: '/api/v1/tds' });
+  app.register(tdsDualActReconRoutes, { prefix: '/api/v1/tds' });
+
   app.register(salaryRoutes, { prefix: '/api/v1/tds' });
   app.register(practiceRoutes, { prefix: '/api/v1/practice' });
   app.register(practiceOpsRoutes, { prefix: '/api/v1/practice' });

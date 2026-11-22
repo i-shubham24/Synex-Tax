@@ -46,3 +46,5 @@ export { ITR_TDS_SECTIONS, ageBandFromDob, interestAndFee, type ItrPerson, type 
 export * from './itr/itr4Json.js';
 export * from './itr/itr2Json.js';
 export * from './itr/specialRateTax.js';
+export * from './tds/dualActRecon.js';
+
