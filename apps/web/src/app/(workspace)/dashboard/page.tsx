@@ -24,6 +24,7 @@ import { StepMark } from '../../../components/landing/primitives';
 import { CustomDropdown } from '../../../components/ui/CustomSelect';
 import { useAuth } from '../../../context/AuthContext';
 import { useWorkspace } from '../../../workspace/WorkspaceContext';
+import { PracticeComplianceHeatmap } from '../../../components/practice/PracticeComplianceHeatmap';
 import {
   OBLIGATIONS,
   STATE_LABEL,
@@ -40,7 +41,7 @@ import {
 import type { FilingCell, FilingState, Obligation, WorkspaceSnapshot } from '../../../workspace/types';
 
 type Period = 'month' | 'quarter' | 'fy' | 'pending';
-type View = 'analytics' | 'matrix';
+type View = 'analytics' | 'matrix' | 'heatmap';
 
 const PERIODS: Array<[Period, string]> = [
   ['month', 'This Month'],
@@ -262,7 +263,7 @@ export default function ControlTowerPage() {
             <StepMark tone="sky" /> Control Tower
           </h1>
           <div className="flex rounded-full bg-pos-muted p-1" role="tablist" aria-label="View">
-            {([['analytics', 'Analytics', LineChart], ['matrix', 'Filing matrix', LayoutGrid]] as const).map(([id, label, Icon]) => (
+            {([['analytics', 'Analytics', LineChart], ['matrix', 'Filing matrix', LayoutGrid], ['heatmap', 'Compliance Heatmap', CalendarClock]] as const).map(([id, label, Icon]) => (
               <button
                 key={id}
                 role="tab"
@@ -407,7 +408,9 @@ export default function ControlTowerPage() {
         </AnimatePresence>
       </section>
 
-      {view === 'analytics' ? (
+      {view === 'heatmap' ? (
+        <PracticeComplianceHeatmap />
+      ) : view === 'analytics' ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_380px]">
           {/* Card 1: composition donut */}
           <section className="pos-card p-5" aria-labelledby="comp-title">

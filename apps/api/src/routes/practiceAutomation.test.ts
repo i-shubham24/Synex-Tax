@@ -129,3 +129,77 @@ test('Automation: settings, a day-1 reminder sent once, pause, day-5 and the day
   assert.ok(summary.pausedFirms >= 1);
   await app.close();
 });
+
+test('Practice Radar: aggregates practice-wide compliance heatmap, statutory deadlines, and risk scoring', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/api/v1/practice/radar?period=2026-10',
+    headers: auth,
+  });
+
+  assert.equal(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.equal(body.success, true);
+  assert.ok(body.data.summary);
+  assert.ok(body.data.summary.totalClients >= 1);
+  assert.ok(body.data.summary.complianceScore !== undefined);
+  assert.ok(Array.isArray(body.data.deadlines));
+  assert.ok(body.data.deadlines.length >= 4);
+
+  const imsDeadline = body.data.deadlines.find((d: any) => d.obligation === 'IMS_ACTION');
+  assert.ok(imsDeadline);
+  assert.equal(imsDeadline.day, 14);
+  assert.ok(imsDeadline.statutoryGround.includes('Section 38'));
+
+  const g3bDeadline = body.data.deadlines.find((d: any) => d.obligation === 'GSTR3B');
+  assert.ok(g3bDeadline);
+  assert.equal(g3bDeadline.day, 20);
+
+  assert.ok(Array.isArray(body.data.heatmap));
+  assert.ok(body.data.heatmap.length >= 28);
+  const day14 = body.data.heatmap.find((h: any) => h.day === 14);
+  assert.equal(day14.hasDeadline, true);
+  assert.equal(day14.urgency, 'CRITICAL');
+
+  assert.ok(Array.isArray(body.data.riskEntities));
+  await app.close();
+});
+
+test('Practice Radar: batch dispatches statutory compliance reminders with WhatsApp click-to-chat links', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/api/v1/practice/radar/dispatch-reminders',
+    headers: auth,
+    payload: {
+      period: '2026-10',
+      obligation: 'IMS_ACTION',
+      channel: 'WHATSAPP',
+    },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.equal(body.success, true);
+  assert.ok(body.count >= 1);
+  assert.ok(Array.isArray(body.notices));
+
+  const firstNotice = body.notices[0];
+  assert.ok(firstNotice.clientName);
+  assert.equal(firstNotice.obligation, 'IMS_ACTION');
+  assert.ok(firstNotice.statutoryGround.includes('Section 38'));
+  assert.ok(firstNotice.noticeText.includes('14th cutoff'));
+  if (firstNotice.phone) {
+    assert.ok(firstNotice.whatsappUrl.startsWith('https://wa.me/'));
+  }
+  await app.close();
+});
