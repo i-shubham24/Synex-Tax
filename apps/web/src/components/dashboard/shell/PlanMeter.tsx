@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { panelClass, usePopover } from './usePopover';
 
@@ -33,7 +33,7 @@ export function PlanMeter() {
           urgent ? 'border-pos-red/40 bg-pos-red/10 text-pos-red' : 'border-pos-line bg-pos-surface/70 text-pos-ink/80'
         }`}
       >
-        <Sparkles className="h-3.5 w-3.5" />
+        <Clock className="h-3.5 w-3.5" />
         Trial: {days} days, {used}/{max} clients
       </button>
       <AnimatePresence>

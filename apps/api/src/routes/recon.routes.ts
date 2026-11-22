@@ -10,6 +10,7 @@ import {
   ImsPre14AlertEngine,
 } from '@synextax/queue-worker';
 import { publicMessage } from '../plugins/publicError.js';
+import { whatsappFromEnv } from '../integrations/whatsapp.js';
 
 const ReconRunInputSchema = z.object({
   entityId: z.guid(),
@@ -510,6 +511,87 @@ export async function reconRoutes(app: FastifyInstance) {
         actionRequired: !!riskScan && riskScan.unactionedCount > 0,
         statutoryAdvice:
           'Section 38 / IMS Rules: Unactioned invoices are deemed accepted on the 14th cutoff. Review flagged records immediately to prevent ineligible ITC claims.',
+      },
+    });
+  });
+
+  const VendorChaserInputSchema = z.object({
+    supplierGstin: z.string().length(15),
+    supplierName: z.string().min(1),
+    supplierPhone: z.string().optional(),
+    invoiceNum: z.string().min(1),
+    invoiceDate: z.string().min(1),
+    taxableValue: z.string(),
+    totalTax: z.string(),
+    period: z.string().optional(),
+  });
+
+  // Automated Vendor Chaser for Invoices Missing in GSTR-2B
+  app.post('/chaser', async (req: FastifyRequest, reply: FastifyReply) => {
+    const parse = VendorChaserInputSchema.safeParse(req.body);
+    if (!parse.success) {
+      return reply.status(400).send({
+        success: false,
+        error: 'VALIDATION_ERROR',
+        details: parse.error.format(),
+      });
+    }
+
+    const {
+      supplierGstin,
+      supplierName,
+      supplierPhone,
+      invoiceNum,
+      invoiceDate,
+      taxableValue,
+      totalTax,
+      period,
+    } = parse.data;
+
+    const noticeText =
+      `URGENT GST COMPLIANCE NOTICE: Invoice ${invoiceNum} dated ${invoiceDate} for Rs ${taxableValue} (Tax: Rs ${totalTax}) ` +
+      `issued by ${supplierName} (GSTIN: ${supplierGstin}) is missing from our GSTR-2B statement${period ? ' for ' + period : ''}. ` +
+      `Under Section 16(2)(aa) of the CGST Act, Input Tax Credit cannot be claimed unless you report this invoice in your GSTR-1 before the 14th cutoff. ` +
+      `Please file or amend your GSTR-1 immediately to prevent statutory credit disallowance.`;
+
+    const cleanPhone = supplierPhone ? supplierPhone.replace(/\D/g, '') : '';
+    const whatsappUrl = `https://wa.me/${cleanPhone ? (cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone) : ''}?text=${encodeURIComponent(noticeText)}`;
+
+    let dispatched = false;
+    let dispatchChannel = 'MANUAL_LINK';
+
+    const wa = whatsappFromEnv();
+    if (wa && cleanPhone) {
+      const e164 = cleanPhone.startsWith('91') ? `+${cleanPhone}` : `+91${cleanPhone}`;
+      try {
+        await wa.sendReminder(e164, [
+          supplierName,
+          period || 'Current Period',
+          `Invoice ${invoiceNum} (Rs ${taxableValue})`,
+          '14th of this month',
+          'GST Compliance Office',
+        ]);
+        dispatched = true;
+        dispatchChannel = 'WHATSAPP_API';
+      } catch (err: any) {
+        req.log.warn({ err }, 'Automated WhatsApp vendor dispatch failed, falling back to direct link');
+      }
+    }
+
+    return reply.status(200).send({
+      success: true,
+      data: {
+        supplierGstin,
+        supplierName,
+        invoiceNum,
+        noticeText,
+        whatsappUrl,
+        dispatched,
+        dispatchChannel,
+        statutoryGround: 'Section 16(2)(aa) CGST Act & Rule 36(4)',
+        message: dispatched
+          ? 'Automated WhatsApp chaser dispatched to supplier.'
+          : 'Statutory chaser notice prepared. Click link to send via WhatsApp or copy notice text.',
       },
     });
   });

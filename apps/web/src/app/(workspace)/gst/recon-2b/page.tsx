@@ -7,12 +7,14 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Sparkles,
   ArrowRight,
   ShieldAlert,
   Info,
   Check,
   RotateCcw,
+  Send,
+  Copy,
+  X,
 } from 'lucide-react';
 
 interface ReconItem {
@@ -143,6 +145,54 @@ export default function ReconPage() {
   const [notification, setNotification] = useState<string | null>(null);
   const [activeGstin, setActiveGstin] = useState<string>('03AAFCP4821K1Z5');
   const [activePeriod, setActivePeriod] = useState<string>('Nov 2025 (112025)');
+  const [chaserModal, setChaserModal] = useState<{
+    open: boolean;
+    item?: ReconItem;
+    noticeText?: string;
+    whatsappUrl?: string;
+    copied?: boolean;
+    sending?: boolean;
+    sentFeedback?: string;
+  }>({ open: false });
+
+  const triggerVendorChaser = async (item: ReconItem) => {
+    try {
+      const csrfRes = await fetch('/api/v1/auth/csrf');
+      const { csrfToken } = await csrfRes.json().catch(() => ({ csrfToken: '' }));
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
+
+      const res = await fetch('/api/v1/recon/chaser', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          supplierGstin: item.supplierGstin,
+          supplierName: item.supplierName,
+          invoiceNum: item.prInvoiceNum || 'PR-INV',
+          invoiceDate: item.invoiceDate,
+          taxableValue: item.taxableValue,
+          totalTax: item.totalTax,
+          period: activePeriod,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        setChaserModal({
+          open: true,
+          item,
+          noticeText: json.data.noticeText,
+          whatsappUrl: json.data.whatsappUrl,
+          copied: false,
+          sending: false,
+          sentFeedback: json.data.message,
+        });
+      }
+    } catch (err: any) {
+      alert('Failed to generate vendor chaser notice: ' + err.message);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -477,7 +527,7 @@ export default function ReconPage() {
                       )}
                       {item.status === 'FUZZY_MATCH' && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#3A6FE8]/10 text-[#3A6FE8] border border-[#3A6FE8]/30">
-                          <Sparkles className="w-3 h-3" />
+                          <GitCompare className="w-3 h-3" />
                           <span>Fuzzy (96%)</span>
                         </span>
                       )}
@@ -515,7 +565,7 @@ export default function ReconPage() {
                     </td>
 
                     {/* Taxable Amount */}
-                    <td className="py-3.5 px-3 text-right font-mono">
+                    <td className="py-3.5 px-3 text-right font-mono tabular-nums">
                       <div className="font-semibold text-pos-ink">
                         ₹{parseFloat(item.taxableValue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
@@ -552,7 +602,7 @@ export default function ReconPage() {
                     </td>
 
                     {/* Tax Breakdown */}
-                    <td className="py-3.5 px-3 text-right font-mono">
+                    <td className="py-3.5 px-3 text-right font-mono tabular-nums">
                       <div className="font-semibold text-pos-accent">
                         ₹{parseFloat(item.totalTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
@@ -578,52 +628,64 @@ export default function ReconPage() {
                       )}
                     </td>
 
-                    {/* IMS Action Buttons */}
+                    {/* IMS Action Buttons or Vendor Chaser */}
                     <td className="py-3.5 px-3 text-center">
-                      <div className="inline-flex items-center gap-1 bg-pos-surface p-1 rounded-lg border border-pos-line">
+                      {item.status === 'PURCHASE_NOT_IN_2B' ? (
                         <button
-                          onClick={() => handleImsAction(item.id, 'A')}
-                          title="Accept in IMS (Hotkey A)"
-                          className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
-                            isAccepted
-                              ? 'bg-pos-accent text-white shadow-sm'
-                              : 'text-pos-ink/60 hover:text-pos-accent hover:bg-pos-muted'
-                          }`}
+                          type="button"
+                          onClick={() => triggerVendorChaser(item)}
+                          title="Generate Section 16(2)(aa) chaser notice for WhatsApp/Email"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold text-pos-accent bg-pos-accent/10 hover:bg-pos-accent hover:text-white border border-pos-accent/30 transition-colors"
                         >
-                          A
+                          <Send className="w-3 h-3" />
+                          <span>Chaser</span>
                         </button>
-                        <button
-                          onClick={() => handleImsAction(item.id, 'R')}
-                          title="Reject in IMS (Hotkey R)"
-                          className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
-                            isRejected
-                              ? 'bg-rose-500 text-pos-ink shadow-sm'
-                              : 'text-pos-ink/60 hover:text-pos-red hover:bg-pos-muted'
-                          }`}
-                        >
-                          R
-                        </button>
-                        <button
-                          onClick={() => handleImsAction(item.id, 'P')}
-                          title="Pending in IMS (Hotkey P)"
-                          className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
-                            isPending
-                              ? 'bg-amber-500 text-white shadow-sm'
-                              : 'text-pos-ink/60 hover:text-[#C2410C] hover:bg-pos-muted'
-                          }`}
-                        >
-                          P
-                        </button>
-                        {item.imsAction !== 'NONE' && (
+                      ) : (
+                        <div className="inline-flex items-center gap-1 bg-pos-surface p-1 rounded-lg border border-pos-line">
                           <button
-                            onClick={() => handleImsAction(item.id, 'NONE')}
-                            title="Reset to Unactioned"
-                            className="p-1 rounded text-pos-ink/50 hover:text-pos-ink transition-colors"
+                            onClick={() => handleImsAction(item.id, 'A')}
+                            title="Accept in IMS (Hotkey A)"
+                            className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
+                              isAccepted
+                                ? 'bg-pos-accent text-white shadow-sm'
+                                : 'text-pos-ink/60 hover:text-pos-accent hover:bg-pos-muted'
+                            }`}
                           >
-                            <RotateCcw className="w-3 h-3" />
+                            A
                           </button>
-                        )}
-                      </div>
+                          <button
+                            onClick={() => handleImsAction(item.id, 'R')}
+                            title="Reject in IMS (Hotkey R)"
+                            className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
+                              isRejected
+                                ? 'bg-rose-500 text-pos-ink shadow-sm'
+                                : 'text-pos-ink/60 hover:text-pos-red hover:bg-pos-muted'
+                            }`}
+                          >
+                            R
+                          </button>
+                          <button
+                            onClick={() => handleImsAction(item.id, 'P')}
+                            title="Pending in IMS (Hotkey P)"
+                            className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
+                              isPending
+                                ? 'bg-amber-500 text-white shadow-sm'
+                                : 'text-pos-ink/60 hover:text-[#C2410C] hover:bg-pos-muted'
+                            }`}
+                          >
+                            P
+                          </button>
+                          {item.imsAction !== 'NONE' && (
+                            <button
+                              onClick={() => handleImsAction(item.id, 'NONE')}
+                              title="Reset to Unactioned"
+                              className="p-1 rounded text-pos-ink/50 hover:text-pos-ink transition-colors"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -656,6 +718,79 @@ export default function ReconPage() {
           </div>
         </div>
       </div>
+
+      {/* Vendor Chaser Notice Modal */}
+      {chaserModal.open && chaserModal.item && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-pos-surface border border-pos-line rounded-xl shadow-2xl max-w-lg w-full overflow-hidden text-pos-ink">
+            <div className="flex items-center justify-between border-b border-pos-line px-5 py-4 bg-pos-muted/50">
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-pos-accent" />
+                <h3 className="font-semibold text-sm">Vendor Compliance Chaser Notice</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChaserModal({ open: false })}
+                className="text-pos-ink/50 hover:text-pos-ink p-1 rounded-md transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div>
+                <span className="text-pos-ink/60">Target Supplier: </span>
+                <span className="font-semibold">{chaserModal.item.supplierName}</span>
+                <span className="font-mono text-pos-accent ml-2">({chaserModal.item.supplierGstin})</span>
+              </div>
+              <div>
+                <span className="text-pos-ink/60">Statutory Ground: </span>
+                <span className="font-semibold text-pos-red">Section 16(2)(aa) CGST Act & Rule 36(4)</span>
+              </div>
+              <div>
+                <label className="block text-pos-ink/70 font-medium mb-1.5">Prepared Notice Text</label>
+                <textarea
+                  readOnly
+                  rows={5}
+                  value={chaserModal.noticeText}
+                  className="w-full bg-pos-muted border border-pos-line rounded-lg p-3 font-mono text-[11px] text-pos-ink focus:outline-none"
+                />
+              </div>
+              {chaserModal.sentFeedback && (
+                <p className="text-[11px] text-pos-green font-medium">
+                  {chaserModal.sentFeedback}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-pos-line px-5 py-3.5 bg-pos-muted/30">
+              <button
+                type="button"
+                onClick={() => {
+                  if (chaserModal.noticeText) {
+                    navigator.clipboard.writeText(chaserModal.noticeText);
+                    setChaserModal((m) => ({ ...m, copied: true }));
+                    setTimeout(() => setChaserModal((m) => ({ ...m, copied: false })), 2000);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-muted border border-pos-line text-pos-ink font-semibold hover:bg-pos-line transition-colors"
+              >
+                {chaserModal.copied ? <Check className="w-3.5 h-3.5 text-pos-green" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{chaserModal.copied ? 'Copied' : 'Copy Notice'}</span>
+              </button>
+              {chaserModal.whatsappUrl && (
+                <a
+                  href={chaserModal.whatsappUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-semibold shadow-md transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send via WhatsApp</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

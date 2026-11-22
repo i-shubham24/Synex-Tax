@@ -21,7 +21,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Sparkles,
   Shield,
   Activity,
   Download,

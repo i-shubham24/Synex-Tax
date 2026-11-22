@@ -828,7 +828,7 @@ export default function TdsPage() {
                       <th className="py-2.5 px-2 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-pos-line font-mono">
+                  <tbody className="divide-y divide-pos-line font-mono tabular-nums">
                     {allocations.map((alloc) => (
                       <tr key={alloc.id} className="hover:bg-pos-tint">
                         <td className="py-2.5 px-3">
@@ -968,7 +968,7 @@ export default function TdsPage() {
                 <th className="py-2.5 px-3 text-center">Compliance Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-pos-line font-mono">
+            <tbody className="divide-y divide-pos-line font-mono tabular-nums">
               {filteredDeductees.map((d) => (
                 <tr key={d.id} className="hover:bg-pos-tint transition-colors">
                   <td className="py-2.5 px-3 font-semibold text-pos-ink">
