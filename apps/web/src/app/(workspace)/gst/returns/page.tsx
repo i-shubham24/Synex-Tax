@@ -2,15 +2,16 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BarChart3, Calculator, CalendarRange, ClipboardPaste, FileStack, PackageCheck } from 'lucide-react';
+import { ArrowLeft, BarChart3, Calculator, CalendarRange, ClipboardPaste, FileStack, Layers, PackageCheck } from 'lucide-react';
 import { COMPOSITION_RATE, cmp08, gstr4Annual, type CompositionKind, type Gstr1SummaryLine, type SalesRowResult } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
 import { Itc04Panel } from '../../../../components/gst/Itc04Panel';
 import { Gstr3bYearPanel } from '../../../../components/gst/Gstr3bYearPanel';
+import { Gstr3bCockpitPanel } from '../../../../components/gst/Gstr3bCockpitPanel';
 import { MisPanel } from '../../../../components/gst/MisPanel';
 import { TemplateLink } from '../../../../components/TemplateLink';
 
-type Tab = 'register' | 'gstr1' | 'gstr3b' | 'mis' | 'composition' | 'itc04';
+type Tab = 'cockpit' | 'register' | 'gstr1' | 'gstr3b' | 'mis' | 'composition' | 'itc04';
 interface Registration { gstin: string; category: string; name: string }
 interface Summary { lines: Gstr1SummaryLine[]; totals: { taxableValue: string; igst: string; cgst: string; sgst: string; cess: string; tax: string } }
 
@@ -54,7 +55,7 @@ function SummaryTable({ s }: { s: Summary }) {
 
 export default function GstReturnsPage() {
   const { authFetch } = useAuth();
-  const [tab, setTab] = useState<Tab>('register');
+  const [tab, setTab] = useState<Tab>('cockpit');
   const [regs, setRegs] = useState<Registration[]>([]);
   const [gstin, setGstin] = useState('');
   const [period, setPeriod] = useState(lastMonth());
@@ -130,28 +131,32 @@ export default function GstReturnsPage() {
       <div>
         <Link href="/gst" className="inline-flex items-center gap-1.5 text-[13px] text-pos-ink/55 hover:text-pos-accent"><ArrowLeft className="h-4 w-4" /> GST and IMS</Link>
         <h1 className="mt-2 text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">GST returns</h1>
-        <p className="mt-1 max-w-2xl text-[14px] text-pos-ink/60">Bring in a month&apos;s sales register, see it the way GSTR-1 lays it out, and work out composition tax for CMP-08 and GSTR-4.</p>
+        <p className="mt-1 max-w-2xl text-[14px] text-pos-ink/60">Practice-wide GSTR-3B autofill and Rule 88A set-off cockpit, sales registers, GSTR-1 summaries, and composition returns.</p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="tablist">
-          {([['register', 'Sales register', ClipboardPaste], ['gstr1', 'GSTR-1 summary', FileStack], ['gstr3b', '3B for the year', CalendarRange], ['mis', 'MIS and parties', BarChart3], ['composition', 'CMP-08 and GSTR-4', Calculator], ['itc04', 'ITC-04 job work', PackageCheck]] as const).map(([id, label, Icon]) => (
+          {([['cockpit', '3B Cockpit', Layers], ['register', 'Sales register', ClipboardPaste], ['gstr1', 'GSTR-1 summary', FileStack], ['gstr3b', '3B for the year', CalendarRange], ['mis', 'MIS and parties', BarChart3], ['composition', 'CMP-08 and GSTR-4', Calculator], ['itc04', 'ITC-04 job work', PackageCheck]] as const).map(([id, label, Icon]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}><Icon className="h-4 w-4" /> {label}</button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[13px] text-pos-ink/60">
-          <label className="flex items-center gap-2">GSTIN
-            <select value={gstin} onChange={(e) => setGstin(e.target.value)} className={`${input} font-mono`}>
-              {!regs.length && <option value="">No GSTINs</option>}
-              {regs.map((r) => <option key={r.gstin} value={r.gstin}>{r.gstin} {r.name}</option>)}
-            </select>
-          </label>
-          {(tab === 'register' || tab === 'gstr1') && <label className="flex items-center gap-2">Month<input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} className={input} /></label>}
-        </div>
+        {tab !== 'cockpit' && (
+          <div className="flex flex-wrap items-center gap-2 text-[13px] text-pos-ink/60">
+            <label className="flex items-center gap-2">GSTIN
+              <select value={gstin} onChange={(e) => setGstin(e.target.value)} className={`${input} font-mono`}>
+                {!regs.length && <option value="">No GSTINs</option>}
+                {regs.map((r) => <option key={r.gstin} value={r.gstin}>{r.gstin} {r.name}</option>)}
+              </select>
+            </label>
+            {(tab === 'register' || tab === 'gstr1') && <label className="flex items-center gap-2">Month<input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} className={input} /></label>}
+          </div>
+        )}
       </div>
 
       {message && <p role="status" className={`rounded-[10px] px-3 py-2 text-[13px] ${message.tone === 'ok' ? 'bg-[#22a356]/10 text-[#15803d]' : 'bg-[#dc2626]/5 text-[#dc2626]'}`}>{message.text}</p>}
+
+      {tab === 'cockpit' && <Gstr3bCockpitPanel />}
 
       {tab === 'register' && (
         <section className="pos-card space-y-3 p-4">
