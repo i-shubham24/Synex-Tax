@@ -10,7 +10,12 @@ const nextConfig = {
   },
   async rewrites() {
     const rawApiUrl = process.env.API_URL;
-    const apiUrl = rawApiUrl ? rawApiUrl.replace(/\/+$/, '') : 'http://127.0.0.1:4000';
+    if (!rawApiUrl) {
+      /* In standalone demo mode or on Vercel without a configured API backend,
+         route API calls directly to internal App Router handlers */
+      return [];
+    }
+    const apiUrl = rawApiUrl.replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',

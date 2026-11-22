@@ -1,0 +1,410 @@
+import { NextResponse } from 'next/server';
+
+/* Zero-config demo fallback user matching CA Verma */
+const DEMO_USER = {
+  id: '11111111-1111-1111-1111-111111111111',
+  firmId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+  firmName: 'Verma & Associates CA (Amritsar)',
+  email: 'ca.verma@synextax.com',
+  displayName: 'CA Amrinder Verma, FCA',
+  role: 'PARTNER',
+  frnNumber: '014289N',
+  mfaVerified: true,
+  plan: 'TRIAL',
+  trialDaysRemaining: 14,
+  activeClientsCount: 4,
+  maxTrialClients: 10,
+};
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  const { path } = await params;
+  const endpoint = path.join('/');
+
+  /* 1. CSRF Token */
+  if (endpoint === 'v1/auth/csrf') {
+    return NextResponse.json({ csrfToken: 'synextax-demo-csrf-token' });
+  }
+
+  /* 2. Current User Profile */
+  if (endpoint === 'v1/auth/me') {
+    return NextResponse.json({ user: DEMO_USER });
+  }
+
+  /* 3. Practice & Compliance Radar / Heatmap */
+  if (endpoint === 'v1/practice/radar' || endpoint === 'v1/compliance/radar') {
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      radar: {
+        healthScore: 92,
+        status: 'EXCELLENT',
+        activeGstins: 14,
+        activeTans: 9,
+        activeEntities: 12,
+        criticalRiskCount: 1,
+        highRiskCount: 2,
+        clearCount: 9,
+        imsFreezeRiskCount: 1,
+        upcomingDeadlines: [
+          { day: 7, title: 'TDS/TCS Deposit', code: 'TDS_DEP_7TH', urgency: 'CRITICAL', legalGround: 'Section 200(3) IT Act' },
+          { day: 11, title: 'GSTR-1 Monthly Regular', code: 'GSTR1_11TH', urgency: 'HIGH', legalGround: 'Section 37 CGST Act' },
+          { day: 14, title: 'IMS Section 38 Review Freeze', code: 'IMS_14TH', urgency: 'CRITICAL', legalGround: 'Section 38 & Advisory 643' },
+          { day: 20, title: 'GSTR-3B Monthly Return', code: 'GSTR3B_20TH', urgency: 'CRITICAL', legalGround: 'Section 39 CGST Act' },
+        ],
+        calendarHeatmap: Array.from({ length: 30 }, (_, i) => ({
+          day: i + 1,
+          urgency: (i + 1 === 7 || i + 1 === 14 || i + 1 === 20) ? 'CRITICAL' : (i + 1 === 11 ? 'HIGH' : 'NORMAL'),
+          milestoneCode: (i + 1 === 7 ? 'TDS_DEP_7TH' : i + 1 === 11 ? 'GSTR1_11TH' : i + 1 === 14 ? 'IMS_14TH' : i + 1 === 20 ? 'GSTR3B_20TH' : null),
+          pendingCount: (i + 1 === 14 ? 2 : i + 1 === 20 ? 4 : 0),
+        })),
+        clientObligations: [
+          {
+            entityId: 'ent-1',
+            legalName: 'Amritsar Silk Mills Pvt Ltd',
+            pan: 'AABCA1234F',
+            pendingObligations: ['GSTR-3B Oct 2026', 'IMS 14th Inward Review'],
+            statutoryGround: 'Section 38 Deemed Acceptance Cutoff',
+            daysRemaining: 2,
+            riskSeverity: 'CRITICAL',
+            contactMobile: '9876543210',
+            whatsappNoticeText: 'Statutory Notice under Section 38: Action required for GSTR-3B & IMS review.',
+          },
+          {
+            entityId: 'ent-2',
+            legalName: 'Ranjit Logistics & Infra LLP',
+            pan: 'AAKFR2290D',
+            pendingObligations: ['Form 140 TDS Q3', 'Rule 86B 1% Cash Guard'],
+            statutoryGround: 'Section 200 IT Act & Rule 86B',
+            daysRemaining: 6,
+            riskSeverity: 'HIGH',
+            contactMobile: '9820011223',
+            whatsappNoticeText: 'Statutory Reminder: Form 140 TDS return due shortly.',
+          },
+        ],
+      },
+    });
+  }
+
+  /* 4. GSTR-3B Practice Cockpit */
+  if (endpoint === 'v1/gst/gstr3b/cockpit') {
+    return NextResponse.json({
+      success: true,
+      month: '2026-10',
+      summary: {
+        totalGstins: 2,
+        totalOutwardTaxable: '2850000.00',
+        totalIgstLiability: '185000.00',
+        totalCgstLiability: '110000.00',
+        totalSgstLiability: '110000.00',
+        totalLiability: '405000.00',
+        totalEligibleItc: '390000.00',
+        totalNetCashPayable: '15000.00',
+        pendingReviewCount: 1,
+        readyToSignCount: 1,
+      },
+      filings: [
+        {
+          id: 'flg-1',
+          gstin: '03AABCA1234F1Z5',
+          legalName: 'Amritsar Silk Mills Pvt Ltd',
+          stateCode: '03',
+          stateName: 'Punjab',
+          periodMonth: 10,
+          periodYear: 2026,
+          workflowStatus: 'VALIDATED',
+          turnoverTaxable: '1250000.00',
+          liabilityTotal: '175000.00',
+          itcEligibleTotal: '170000.00',
+          netCashPayable: '5000.00',
+          rule88aSetOff: {
+            igstCreditUsedForIgst: '60000.00',
+            igstCreditUsedForCgst: '30000.00',
+            igstCreditUsedForSgst: '30000.00',
+            cgstCreditUsedForCgst: '25000.00',
+            sgstCreditUsedForSgst: '25000.00',
+          },
+          rule86bApplicable: false,
+        },
+        {
+          id: 'flg-2',
+          gstin: '27AAKFR2290D1Z8',
+          legalName: 'Ranjit Logistics & Infra LLP',
+          stateCode: '27',
+          stateName: 'Maharashtra',
+          periodMonth: 10,
+          periodYear: 2026,
+          workflowStatus: 'FILED',
+          turnoverTaxable: '1600000.00',
+          liabilityTotal: '230000.00',
+          itcEligibleTotal: '220000.00',
+          netCashPayable: '10000.00',
+          rule88aSetOff: {
+            igstCreditUsedForIgst: '80000.00',
+            igstCreditUsedForCgst: '40000.00',
+            igstCreditUsedForSgst: '40000.00',
+            cgstCreditUsedForCgst: '30000.00',
+            sgstCreditUsedForSgst: '30000.00',
+          },
+          rule86bApplicable: true,
+        },
+      ],
+    });
+  }
+
+  /* 5. Client Master & Registrations */
+  if (endpoint.startsWith('v1/client-master/tan-registrations')) {
+    return NextResponse.json([
+      { tan: 'AMRG04217D', entity_id: 'ent-1' },
+      { tan: 'MUMB12345A', entity_id: 'ent-2' },
+    ]);
+  }
+  if (endpoint.startsWith('v1/client-master')) {
+    return NextResponse.json([
+      { id: 'ent-1', legalName: 'Amritsar Silk Mills Pvt Ltd', pan: 'AABCA1234F', gstin: '03AABCA1234F1Z5' },
+      { id: 'ent-2', legalName: 'Ranjit Logistics & Infra LLP', pan: 'AAKFR2290D', gstin: '27AAKFR2290D1Z8' },
+    ]);
+  }
+
+  /* 6. TDS Active & Health */
+  if (endpoint === 'v1/tds/active') {
+    return NextResponse.json({
+      success: true,
+      data: {
+        tan: 'AMRG04217D',
+        legalName: 'Amritsar Silk Mills Pvt Ltd',
+        statutoryRegime: 'IT_ACT_2025',
+        taxYear: 2026,
+        quarter: 'Q3',
+        challans: [
+          {
+            id: 'chl-demo-1',
+            challanNo: '00418',
+            bsrCode: '0510308',
+            depositDate: '2026-11-20',
+            totalAmount: '25000.00',
+            majorHead: '0021',
+            statutoryRegime: 'IT_ACT_2025',
+            allocations: [
+              { id: 'sec-1', sectionCode: '1023', description: 'Contractor (Indiv)', incomeTax: '10000.00', totalSectionAmount: '10000.00' },
+              { id: 'sec-2', sectionCode: '1026', description: 'Technical Fees', incomeTax: '15000.00', totalSectionAmount: '15000.00' },
+            ],
+          },
+        ],
+        deductees: [
+          { id: 'ded-1', pan: 'BQRPS4410K', name: 'Sukhwinder Singh', sectionCode: '1023', amountPaid: '150000.00', rate: '1.00%', tdsDeducted: '1500.00', status: 'OPERATIVE' },
+          { id: 'ded-2', pan: 'AAKFR2290D', name: 'Ranjit Builders', sectionCode: '1024', amountPaid: '220000.00', rate: '2.00%', tdsDeducted: '4400.00', status: 'OPERATIVE' },
+        ],
+      },
+    });
+  }
+
+  if (endpoint === 'v1/tds/health') {
+    return NextResponse.json({
+      success: true,
+      report: {
+        tan: 'AMRG04217D',
+        openCorrections: 0,
+        lateDepositInterest: '0.00',
+        lateFilingFee: '0.00',
+        panErrors: 0,
+        challanBalanceTotal: '18000.00',
+      },
+    });
+  }
+
+  /* 7. Audit Ledger */
+  if (endpoint.startsWith('v1/audit')) {
+    return NextResponse.json({
+      success: true,
+      data: [
+        {
+          id: 'aud-1',
+          event: 'LOGIN_SUCCESS',
+          actor: 'CA Amrinder Verma',
+          role: 'PARTNER',
+          timestamp: new Date().toISOString(),
+          ip: '103.21.244.1',
+          sha256Hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        },
+      ],
+    });
+  }
+
+  /* Default JSON for unhandled GET */
+  return NextResponse.json({ success: true, data: [] });
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  const { path } = await params;
+  const endpoint = path.join('/');
+
+  /* 1. Auth Demo & Login & Refresh */
+  if (endpoint === 'v1/auth/demo' || endpoint === 'v1/auth/login' || endpoint === 'v1/auth/refresh') {
+    return NextResponse.json({
+      accessToken: 'demo_token_ca_verma',
+      user: DEMO_USER,
+    });
+  }
+
+  /* 2. Auth Logout */
+  if (endpoint === 'v1/auth/logout') {
+    return NextResponse.json({ success: true });
+  }
+
+  /* 3. TDS Dual-Act Recon Analyze */
+  if (endpoint === 'v1/tds/dual-act-recon/analyze') {
+    return NextResponse.json({
+      success: true,
+      report: {
+        tan: 'AMRG04217D',
+        deductorName: 'Amritsar Silk Mills Pvt Ltd',
+        taxYear: 2026,
+        quarter: 3,
+        form: '140',
+        detectedRegime: 'IT_ACT_2025',
+        metrics: {
+          totalChallans: 1,
+          totalDeductees: 3,
+          totalChallanDeposit: '35000.00',
+          totalDeducteeTax: '5000.00',
+          totalUnconsumedSurplus: '30000.00',
+          totalShortDeduction: '36000.00',
+          totalLateDeductionInterest: '0.00',
+          totalLateDepositInterest: '150.00',
+          totalSection201Interest: '150.00',
+          netTracesDemandRisk: '36150.00',
+          criticalRiskCount: 1,
+        },
+        sectionSummary: [
+          { section1961: '194C', section2025: '1023', nature: 'Contractor (Individual/HUF)', deducteeCount: 1, totalAmount: '100000.00', totalDeducted: '1000.00', shortfall: '0.00' },
+          { section1961: '194C', section2025: '1024', nature: 'Contractor (Company/Firm)', deducteeCount: 1, totalAmount: '200000.00', totalDeducted: '4000.00', shortfall: '36000.00' },
+        ],
+        challans: [
+          {
+            recordNo: 1,
+            bsr: '0510308',
+            challanNo: '00123',
+            date: '2026-11-20',
+            totalChallanAmount: '35000.00',
+            totalTax: '35000.00',
+            interest: '0.00',
+            fee: '0.00',
+            others: '0.00',
+            minorHead: '0021',
+            totalAllocatedToDeductees: '5000.00',
+            unconsumedSurplus: '30000.00',
+            status: 'SURPLUS_AVAILABLE',
+            deducteeCount: 2,
+          },
+        ],
+        highRiskDeductees: [
+          {
+            recordNo: 2,
+            challanNo: 1,
+            pan: 'PANNOTAVBL',
+            name: 'Delta Subcontracting Hub',
+            panStatus: 'LITERAL_MISSING',
+            sectionRaw: '194C',
+            section1961: '194C',
+            section2025: '1024',
+            nature: 'Contractor (Company/Firm)',
+            paidOn: '2026-10-15',
+            amount: '200000.00',
+            deducted: '4000.00',
+            deposited: '4000.00',
+            deductedOn: '2026-10-15',
+            appliedRate: '2%',
+            statutoryRate: '20%',
+            isShortDeduction: true,
+            shortDeductionAmount: '36000.00',
+            lateDeductionMonths: 0,
+            lateDeductionInterest: '0.00',
+            lateDepositMonths: 1,
+            lateDepositInterest: '60.00',
+            totalInterest201: '60.00',
+            totalDemandRisk: '36060.00',
+            riskSeverity: 'CRITICAL',
+            suggestedAction: 'Collect genuine PAN and file C3 correction to eliminate Section 206AA demand',
+          },
+        ],
+        allDeductees: [],
+        recommendedCorrections: {
+          c1Deductor: [],
+          c2Challans: [
+            { recordNo: 1, challanNo: '00123', bsr: '0510308', issue: 'Unconsumed surplus of INR 30000.00 in challan', remedy: 'Offset short deductions or allocate against new deductees' },
+          ],
+          c3Deductees: [
+            { recordNo: 2, pan: 'PANNOTAVBL', issue: 'Non-operative PAN attracting 20% Section 206AA demand', remedy: 'Collect genuine PAN and file C3 record update' },
+          ],
+        },
+      },
+    });
+  }
+
+  /* 4. TDS Auto-Correct */
+  if (endpoint === 'v1/tds/dual-act-recon/auto-correct') {
+    return NextResponse.json({
+      success: true,
+      message: 'Generated automated dual-act correction edits for 1 deductee.',
+      recommendedEdits: {
+        deductees: [{ challanNo: 1, recordNo: 2, section: '1024' }],
+      },
+    });
+  }
+
+  /* 5. GSTR-3B Bulk Autofill */
+  if (endpoint === 'v1/gst/gstr3b/bulk-autofill') {
+    return NextResponse.json({
+      success: true,
+      processed: 2,
+      summary: {
+        totalGstins: 2,
+        totalOutwardTaxable: '2850000.00',
+        totalEligibleItc: '390000.00',
+        totalNetCashPayable: '15000.00',
+      },
+      message: 'Successfully generated GSTR-3B filings with Rule 88A set-off hierarchy.',
+    });
+  }
+
+  /* 6. Vendor Compliance Chaser */
+  if (endpoint === 'v1/recon/auto-chaser') {
+    return NextResponse.json({
+      success: true,
+      vendorName: 'Bhagwati Steel Fabricators',
+      vendorGstin: '03AABCB1234F1Z8',
+      invoiceCount: 2,
+      totalMissingTax: '84000.00',
+      noticeSubject: 'Urgent: Section 16(2)(aa) Statutory Notice for GSTR-1 Inward Mismatch',
+      noticeBody: 'Dear Vendor, 2 invoices totaling INR 84000.00 are missing in GSTR-2B. Please file GSTR-1 immediately.',
+      whatsappClickUrl: 'https://wa.me/919876543210?text=Statutory%20Notice%3A%20Section%2016(2)(aa)%20GSTR-1%20mismatch',
+      message: 'Statutory compliance notice prepared.',
+    });
+  }
+
+  /* 7. Dispatch Reminders */
+  if (endpoint === 'v1/practice/radar/dispatch-reminders') {
+    return NextResponse.json({
+      success: true,
+      count: 2,
+      dispatched: [
+        {
+          entityId: 'ent-1',
+          legalName: 'Amritsar Silk Mills Pvt Ltd',
+          recipientMobile: '9876543210',
+          whatsappUrl: 'https://wa.me/919876543210?text=Statutory%20Reminder%3A%20GSTR-3B%20due',
+        },
+      ],
+      message: 'Dispatched statutory compliance notices.',
+    });
+  }
+
+  /* Default POST success */
+  return NextResponse.json({ success: true, message: 'Executed in client demo mode' });
+}

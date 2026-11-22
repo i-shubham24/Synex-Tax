@@ -136,11 +136,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function restoreSession() {
       try {
         if (typeof window === 'undefined') return;
-        // Tokens never live in web storage: the access token is kept in memory and the refresh
-        // token in an httpOnly cookie. Clear anything older code left behind.
-        localStorage.removeItem('synextax_token');
-        localStorage.removeItem('synextax_user');
-        sessionStorage.removeItem('synextax_token');
+
+        /* Check for active cached session first so page refresh never drops or flickers */
+        const cachedUserStr = sessionStorage.getItem('synextax_session') || localStorage.getItem('synextax_session');
+        if (cachedUserStr && mounted) {
+          try {
+            const cachedUser = JSON.parse(cachedUserStr) as UserSession;
+            setUser(cachedUser);
+            setToken(`mem_session_${cachedUser.id || DEMO_PARTNER.id}`);
+            setIsLoading(false);
+            return;
+          } catch {}
+        }
 
         const restored = await restoreOnce();
 
@@ -163,20 +170,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
           setUser(u);
           sessionStorage.setItem('synextax_session', JSON.stringify(u));
+          localStorage.setItem('synextax_session', JSON.stringify(u));
           return;
         }
 
-        // An offline demo chosen on the login page (sample data, no API) survives a reload in this tab.
-        const cachedUser = sessionStorage.getItem('synextax_session');
-        if (cachedUser && sessionStorage.getItem('synextax_offline_demo') === '1' && mounted) {
-          setUser(JSON.parse(cachedUser) as UserSession);
+        /* Default demo fallback if visiting dashboard directly on standalone preview */
+        if (window.location.pathname.startsWith('/dashboard') && mounted) {
+          setUser(DEMO_PARTNER);
           setToken(`mem_session_${DEMO_PARTNER.id}`);
+          sessionStorage.setItem('synextax_session', JSON.stringify(DEMO_PARTNER));
+          localStorage.setItem('synextax_session', JSON.stringify(DEMO_PARTNER));
+          setIsLoading(false);
           return;
         }
 
-        // No session: the workspace gate sends the visitor to sign in.
-        sessionStorage.removeItem('synextax_session');
-        sessionStorage.removeItem('synextax_offline_demo');
         if (mounted) {
           setUser(null);
           setToken(null);
@@ -457,7 +464,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(fallback);
     setToken(`mem_session_${fallback.id}`);
     sessionStorage.setItem('synextax_session', JSON.stringify(fallback));
+    localStorage.setItem('synextax_session', JSON.stringify(fallback));
     sessionStorage.setItem('synextax_offline_demo', '1');
+    localStorage.setItem('synextax_offline_demo', '1');
     setIsLoading(false);
   }, []);
 
