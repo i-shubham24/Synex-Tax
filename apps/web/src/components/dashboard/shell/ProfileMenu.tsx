@@ -93,6 +93,33 @@ export function ProfileMenu({ dark, onToggleTheme }: { dark: boolean; onToggleTh
                   </div>
                 </div>
               </div>
+              {user?.plan === 'TRIAL' && (
+                <div className="border-b border-pos-line bg-pos-surface/60 p-3">
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="font-medium text-pos-ink/75">
+                      Trial: {user.trialDaysRemaining ?? 14} days left
+                    </span>
+                    <Link
+                      href="/settings?tab=billing"
+                      onClick={() => pop.setOpen(false)}
+                      className="font-semibold text-pos-accent hover:underline"
+                    >
+                      Upgrade
+                    </Link>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-pos-ink/50">
+                    <span>{user.activeClientsCount ?? 0} of {user.maxTrialClients ?? 3} client slots</span>
+                  </div>
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-pos-muted">
+                    <div
+                      className="h-full rounded-full bg-pos-accent"
+                      style={{
+                        width: `${Math.min(100, Math.round(((user.activeClientsCount ?? 0) / (user.maxTrialClients || 3)) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
               <div className="p-1.5 text-[13.5px]">
                 <Link role="menuitem" href="/settings" onClick={() => pop.setOpen(false)} className="flex items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-pos-ink hover:bg-pos-muted">
                   <Settings className="h-4 w-4 text-pos-ink/60" /> Settings

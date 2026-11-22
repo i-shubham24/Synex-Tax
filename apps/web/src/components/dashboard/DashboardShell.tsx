@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import {
   ChevronsLeft,
   ChevronsRight,
-  Database,
   FileSpreadsheet,
   LayoutDashboard,
   Moon,
@@ -27,10 +26,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../workspace/WorkspaceContext';
 import { ClientPill } from './shell/ClientPill';
 import { CommandPalette, openCommandPalette } from './shell/CommandPalette';
-import { DscAgentPill } from './shell/DscAgentPill';
 import { KeyboardShortcuts } from './shell/KeyboardShortcuts';
 import { NotificationCenter } from './shell/NotificationCenter';
-import { PlanMeter } from './shell/PlanMeter';
 import { ProfileMenu } from './shell/ProfileMenu';
 import { SupportWidget } from './shell/SupportWidget';
 import { iconButtonClass } from './shell/usePopover';
@@ -60,10 +57,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'bank', label: 'Bank to books', href: '/bank', icon: Landmark, module: 'PRACTICE' },
   { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'], module: 'AUDIT' },
 ];
-
-// Short names for the header; the status comes from a real check of each portal's public site.
-const PORTAL_SHORT: Record<string, string> = { GSTN: 'GSTN', NIC_IRP: 'NIC IRP', TRACES: 'TRACES', CBDT_EFILING: 'ITD' };
-interface PortalDot { name: string; status: 'OPERATIONAL' | 'DEGRADED' | 'OUTAGE' | 'UNKNOWN'; ms: number }
 
 /** Ink tile with the site's pixel S (sky and mint pixels). */
 function AppMark() {
@@ -103,20 +96,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, authFetch } = useAuth();
   // Screens this person may open; null until known, and then nothing is hidden.
   const [modules, setModules] = useState<string[] | null>(null);
-  const [portals, setPortals] = useState<PortalDot[]>([]);
-  useEffect(() => {
-    if (!user) return;
-    authFetch('/api/v1/compliance/portal-health')
-      .then(async (r) => (r.ok ? setPortals(((await r.json()).portals ?? []).map((p: { portal: string; status: PortalDot['status']; latencyMs: number }) => ({ name: PORTAL_SHORT[p.portal] ?? p.portal, status: p.status, ms: p.latencyMs }))) : null))
-      .catch(() => null);
-  }, [user, authFetch]);
   useEffect(() => {
     if (!user) return;
     authFetch('/api/v1/team/me')
       .then(async (r) => (r.ok ? setModules((await r.json()).modules) : null))
       .catch(() => null);
   }, [user, authFetch]);
-  const { snapshot, source, sourceNote } = useWorkspace();
+  const { snapshot } = useWorkspace();
   // The shell renders only on the client (behind AuthGate), so preferences are read before first paint.
   const [dark, setDark] = useState(() => readPref('synextax_dashboard_theme', false));
   const [expanded, setExpanded] = useState(() => readPref('synextax_rail_expanded', false));
@@ -139,7 +125,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) => (href === '/dashboard' || href === '/gst' ? pathname === href : pathname.startsWith(href));
   const railW = expanded ? 'w-[220px]' : 'w-[72px]';
   const mainMl = expanded ? 'ml-[220px]' : 'ml-[72px]';
-  const slowest = portals.filter((p) => p.status === 'DEGRADED' || p.status === 'OUTAGE');
 
   const navLink = (item: NavItem) => {
     const Icon = item.icon;
@@ -211,27 +196,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            {source === 'sample' && (
-              <span
-                title={sourceNote ?? 'Screens are running on the sample firm until the live API is connected.'}
-                className="hidden items-center gap-1.5 rounded-full border border-dashed border-pos-line px-3 py-1.5 text-[11.5px] font-medium text-pos-ink/60 lg:flex"
-              >
-                <Database className="h-3.5 w-3.5" /> Sample data
-              </span>
-            )}
-            <div
-              className="hidden items-center gap-3 rounded-full border border-pos-line bg-pos-surface/70 px-3.5 py-1.5 text-[12px] text-pos-ink/80 xl:flex"
-              aria-label={`Government portal status${slowest.length ? `: ${slowest.map((p) => p.name).join(', ')} slow` : ''}`}
-            >
-              {portals.map((p) => (
-                <span key={p.name} className="flex items-center gap-1.5" title={p.status === 'UNKNOWN' ? `${p.name}: not checked` : `${p.name}: ${p.status === 'OPERATIONAL' ? 'answering normally' : 'slow or failing'}, ${p.ms} ms`}>
-                  <span className={`h-2 w-2 rounded-full ${p.status === 'OPERATIONAL' ? 'bg-[#5fe88a]' : p.status === 'UNKNOWN' ? 'bg-pos-ink/25' : 'bg-[#f2b53a]'}`} />
-                  <span className="hidden 2xl:inline">{p.name}</span>
-                </span>
-              ))}
-            </div>
-            <DscAgentPill />
-            <PlanMeter />
             <button type="button" onClick={toggleTheme} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} className={iconButtonClass}>
               {dark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </button>
