@@ -8,14 +8,21 @@ import {
   form140Section,
   isLegacyForm,
   maskPan,
+  parseConsoFile,
   parseEtdsStatement,
+  parseChallanList,
+  writeCorrection,
+  correctionTypesNeeded,
   parseQuarterSheet,
   tdsHealth,
 } from '@synextax/tax-engine';
+import type { CorrectionOptions } from '@synextax/tax-engine';
 import { db } from '../db/pool.js';
 import { commitStatement, ImportError } from '../modules/tds/statementImport.js';
 import { buildStatement } from '../modules/tds/statementBuilder.js';
 import { commitQuarter } from '../modules/tds/quarterImport.js';
+import { expectedVersion, versionTag, VERSION_MATCHES } from '../plugins/concurrency.js';
+import { CorrectionBody, hasMaskedPan, asEngineEdits, consoPreview } from '../modules/tds/correctionEdits.js';
 
 /** What a section code means in a given form's Annexure 2, for the import preview. */
 function sectionNature(form: string, code: string): string {
@@ -36,6 +43,8 @@ const QuarterBody = z.object({
   taxYear: z.number().int().min(2026).max(2100),
   quarter: z.number().int().min(1).max(4),
   text: z.string().min(10).max(5 * 1024 * 1024),
+  /** Optional challan list, when the payment rows carry no challan columns. */
+  challans: z.string().max(1024 * 1024).optional(),
 });
 const TanQuery = z.object({ tan: z.string().regex(/^[A-Z]{4}\d{5}[A-Z]$/).optional() });
 const AddressSchema = z.object({
@@ -54,6 +63,14 @@ const TanDetailsSchema = z.object({
   deductorEmail: z.string().trim().max(75),
   deductorPhone: z.string().regex(/^\d{10}$/),
   gstin: z.string().regex(/^\d{2}[A-Z0-9]{13}$/).optional().or(z.literal('')),
+  government: z
+    .object({
+      stateCode: z.string().regex(/^\d{2}$/).optional().or(z.literal('')),
+      ministryCode: z.string().regex(/^\d{2}$/).optional().or(z.literal('')),
+      ministryOther: z.string().trim().max(150).optional(),
+      ain: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{7}$/).optional().or(z.literal('')),
+    })
+    .optional(),
   responsible: z.object({
     name: z.string().trim().min(1).max(75),
     designation: z.string().trim().min(1).max(20),
@@ -91,14 +108,18 @@ export async function tdsInsightsRoutes(fastify: FastifyInstance) {
     const b = QuarterBody.safeParse(request.body);
     if (!b.success) return reply.status(400).send({ error: 'Invalid', message: 'Send the TAN, form, tax year, quarter and the pasted sheet.' });
     const q = b.data.quarter as 1 | 2 | 3 | 4;
-    return reply.send(parseQuarterSheet(b.data.text, { form: b.data.form, taxYear: b.data.taxYear, quarter: q }));
+    const list = b.data.challans?.trim() ? parseChallanList(b.data.challans) : null;
+    const parsed = parseQuarterSheet(b.data.text, { form: b.data.form, taxYear: b.data.taxYear, quarter: q, challanList: list?.challans });
+    return reply.send({ ...parsed, errors: [...(list?.errors ?? []).map((e) => ({ line: e.line, message: `Challan list: ${e.message}` })), ...parsed.errors] });
   });
 
   fastify.post('/quarter/import', { bodyLimit: 6 * 1024 * 1024 }, async (request, reply) => {
     const b = QuarterBody.safeParse(request.body);
     if (!b.success) return reply.status(400).send({ error: 'Invalid', message: 'Send the TAN, form, tax year, quarter and the pasted sheet.' });
     const q = b.data.quarter as 1 | 2 | 3 | 4;
-    const parsed = parseQuarterSheet(b.data.text, { form: b.data.form, taxYear: b.data.taxYear, quarter: q });
+    const list = b.data.challans?.trim() ? parseChallanList(b.data.challans) : null;
+    if (list?.errors.length) return reply.status(422).send({ error: 'Not imported', message: `${list.errors.length} challan line(s) have errors; nothing was saved.`, errors: list.errors });
+    const parsed = parseQuarterSheet(b.data.text, { form: b.data.form, taxYear: b.data.taxYear, quarter: q, challanList: list?.challans });
     if (parsed.missing.length) return reply.status(422).send({ error: 'Not imported', message: `Columns not found: ${parsed.missing.join(', ')}.` });
     if (parsed.errors.length) return reply.status(422).send({ error: 'Not imported', message: `${parsed.errors.length} row(s) have errors; nothing was saved.`, errors: parsed.errors });
     if (!parsed.challans.length) return reply.status(422).send({ error: 'Not imported', message: 'No rows found.' });
@@ -202,7 +223,7 @@ export async function tdsInsightsRoutes(fastify: FastifyInstance) {
       (
         await c.query(
           `SELECT tan, deductor_type_code, address, deductor_email, deductor_phone, gstin, responsible_person_name, responsible_person_designation,
-                  responsible_person_pan, responsible_address, responsible_email, responsible_phone
+                  responsible_person_pan, responsible_address, responsible_email, responsible_phone, govt_state_code, ministry_code, ministry_other, ain, updated_at
            FROM public.tan_registrations WHERE tan = $1`,
           [q.data.tan],
         )
@@ -216,22 +237,32 @@ export async function tdsInsightsRoutes(fastify: FastifyInstance) {
     const b = TanDetailsSchema.safeParse(request.body);
     if (!b.success) return reply.status(400).send({ error: 'Validation Error', details: b.error.flatten() });
     const d = b.data;
-    const n = await db.withTenantTransaction(ctx(request), async (c) =>
-      (
-        await c.query(
-          `UPDATE public.tan_registrations SET deductor_type_code = $2, address = $3, deductor_email = $4, deductor_phone = $5, gstin = NULLIF($6, ''),
-             responsible_person_name = $7, responsible_person_designation = $8, responsible_person_pan = $9, responsible_address = $10,
-             responsible_email = $11, responsible_phone = $12
-           WHERE tan = $1`,
-          [d.tan, d.deductorType, d.address, d.deductorEmail, d.deductorPhone, d.gstin ?? '', d.responsible.name, d.responsible.designation, d.responsible.pan, d.responsible.address, d.responsible.email, d.responsible.phone],
-        )
-      ).rowCount,
-    );
-    return n ? reply.send({ ok: true }) : reply.status(404).send({ error: 'Not found' });
+    const expected = expectedVersion(request);
+    const out = await db.withTenantTransaction(ctx(request), async (c) => {
+      const r = await c.query<{ updated_at: Date }>(
+        `UPDATE public.tan_registrations SET deductor_type_code = $2, address = $3, deductor_email = $4, deductor_phone = $5, gstin = NULLIF($6, ''),
+           responsible_person_name = $7, responsible_person_designation = $8, responsible_person_pan = $9, responsible_address = $10,
+           responsible_email = $11, responsible_phone = $12,
+           govt_state_code = NULLIF($13, ''), ministry_code = NULLIF($14, ''), ministry_other = NULLIF($15, ''), ain = NULLIF($16, '')
+         WHERE tan = $1 AND ${VERSION_MATCHES('$17')}
+         RETURNING updated_at`,
+        [d.tan, d.deductorType, d.address, d.deductorEmail, d.deductorPhone, d.gstin ?? '', d.responsible.name, d.responsible.designation, d.responsible.pan, d.responsible.address, d.responsible.email, d.responsible.phone,
+         d.government?.stateCode ?? '', d.government?.ministryCode ?? '', d.government?.ministryOther ?? '', d.government?.ain ?? '', expected],
+      );
+      if (r.rows[0]) return { kind: 'ok' as const, version: r.rows[0].updated_at as Date };
+      const exists = expected ? (await c.query('SELECT 1 FROM public.tan_registrations WHERE tan = $1', [d.tan])).rowCount : 0;
+      return { kind: exists ? ('stale' as const) : ('missing' as const), version: null };
+    });
+    if (out.kind === 'stale') return reply.status(409).send({ error: 'Changed', message: 'Someone saved these deductor details after you opened them. Reload to see their changes.' });
+    if (out.kind === 'missing') return reply.status(404).send({ error: 'Not found' });
+    reply.header('ETag', versionTag(out.version!));
+    return reply.send({ ok: true, version: out.version!.toISOString() });
   });
 
   // Records the 15-digit token number received after filing (the next statement must quote it).
   fastify.put('/returns/:id/token', async (request, reply) => {
+    // Recording the filing receipt is a checker's step.
+    if (!['PARTNER', 'MANAGER'].includes(request.user.role)) return reply.status(403).send({ error: 'Forbidden', message: 'A partner or manager records the token number.' });
     const { id } = request.params as { id: string };
     const token = String((request.body as { token?: string })?.token ?? '');
     if (!/^[0-9a-f-]{36}$/.test(id) || !/^\d{15}$/.test(token)) return reply.status(400).send({ error: 'Give the 15-digit token number.' });
@@ -241,8 +272,40 @@ export async function tdsInsightsRoutes(fastify: FastifyInstance) {
     return n ? reply.send({ ok: true }) : reply.status(404).send({ error: 'Only a filed statement takes a token number.' });
   });
 
+  // TRACES consolidated file: what it holds, PANs masked. Nothing is saved.
+  fastify.post('/corrections/preview', { bodyLimit: 11 * 1024 * 1024 }, async (request, reply) => {
+    const body = StatementBody.extend({ text: z.string().min(10).max(10 * 1024 * 1024) }).safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: 'Send the consolidated file text.' });
+    const c = parseConsoFile(body.data.text);
+    const tanKnown = c.tan
+      ? await db.withTenantTransaction(ctx(request), async (cl) => (await cl.query('SELECT 1 FROM public.tan_registrations WHERE tan = $1', [c.tan])).rows.length > 0)
+      : false;
+    return reply.send({ ...consoPreview(c), tanKnown });
+  });
+
+  // Writes one correction statement (C1, C2, C3, C5 or C9) from the consolidated file and the changes.
+  fastify.post('/corrections/build', { bodyLimit: 11 * 1024 * 1024, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (request, reply) => {
+    if (!['PARTNER', 'MANAGER'].includes(request.user.role)) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Partners and managers prepare correction statements.' });
+    }
+    const body = CorrectionBody.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: 'Invalid', message: body.error.issues[0]?.message ?? 'Check the changes.' });
+    const c = parseConsoFile(body.data.text);
+    const known = c.tan
+      ? await db.withTenantTransaction(ctx(request), async (cl) => (await cl.query('SELECT 1 FROM public.tan_registrations WHERE tan = $1', [c.tan])).rows.length > 0)
+      : false;
+    if (!known) return reply.status(422).send({ error: 'Not ready', issues: [{ where: 'Statement', message: `TAN ${c.tan || '(none)'} is not one of this firm's clients.` }] });
+    const { text: _t, type, originalToken, previousToken, edits } = body.data;
+    if (hasMaskedPan(edits)) return reply.status(400).send({ error: 'Invalid', message: 'Type the full PAN; a masked PAN can only be kept in a saved draft.' });
+    const out = writeCorrection(c, asEngineEdits(edits), { type: type as CorrectionOptions['type'], originalToken, previousToken, fileCreated: istToday(), preparedWith: 'SynexTax' });
+    if (out.issues.length || !out.type) return reply.status(422).send({ error: 'Not ready', type: out.type, pending: out.pending, issues: out.issues });
+    request.log.info({ tan: c.tan, form: c.form, type: out.type }, 'correction statement written');
+    const fileName = `${c.tan}_${c.form}_Q${c.quarter}_${c.taxYear}_${out.type}.txt`;
+    return reply.send({ type: out.type, pending: out.pending, needed: correctionTypesNeeded(c, asEngineEdits(edits)), fileName, text: out.text });
+  });
+
   // Writes the statement text file for a return, or lists what must be filled in first.
-  fastify.post('/returns/:id/statement', async (request, reply) => {
+  fastify.post('/returns/:id/statement', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (request, reply) => {
     const { id } = request.params as { id: string };
     if (!/^[0-9a-f-]{36}$/.test(id)) return reply.status(400).send({ error: 'Bad id' });
     const out = await db.withTenantTransaction(ctx(request), (c) => buildStatement(c, id, istToday()));

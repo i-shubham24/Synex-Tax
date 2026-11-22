@@ -1,5 +1,6 @@
 import pg from 'pg';
 import crypto from 'node:crypto';
+import { isLocalEnv } from '../security/env.js';
 
 const { Pool } = pg;
 
@@ -45,12 +46,17 @@ async function connectWithRetry(pool: pg.Pool): Promise<pg.PoolClient> {
 const APP_ROLE = process.env.DB_APP_ROLE || 'synextax_app';
 const AUTH_ROLE = process.env.DB_AUTH_ROLE || 'synextax_auth';
 
+/** Outside local development there is no default database password. */
+function missingDbPassword(): never {
+  throw new Error('DATABASE_URL or POSTGRES_PASSWORD must be set');
+}
+
 function connectionString(prefix: '' | 'AUTH_'): string | undefined {
   const url = process.env[`${prefix}DATABASE_URL`];
   if (url) return url;
   if (prefix === 'AUTH_') return undefined; // fall back to the main pool
   return `postgresql://${process.env.POSTGRES_USER || 'synextax_app'}:${encodeURIComponent(
-    process.env.POSTGRES_PASSWORD || 'local_app_dev_secret_2026',
+    process.env.POSTGRES_PASSWORD || (isLocalEnv() ? 'local_app_dev_secret_2026' : missingDbPassword()),
   )}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || 'synextax'}`;
 }
 
@@ -74,9 +80,19 @@ class DatabaseManager {
     const p = new Pool({
       connectionString: url,
       // PGlite (local dev) is a single session: POSTGRES_POOL_MAX=1 keeps transactions apart.
-      max: Number(process.env.POSTGRES_POOL_MAX || 25),
+      // On serverless each instance has its own pool: keep it small and put a transaction pooler
+      // (PgBouncer, RDS Proxy, Supavisor) in DATABASE_URL.
+      max: Number(process.env.POSTGRES_POOL_MAX || 10),
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
+      // A runaway query or a transaction left open cannot hold a connection for long.
+      query_timeout: Number(process.env.POSTGRES_QUERY_TIMEOUT_MS || 20000),
+      ...(isLocalEnv()
+        ? {}
+        : {
+            statement_timeout: Number(process.env.POSTGRES_STATEMENT_TIMEOUT_MS || 15000),
+            idle_in_transaction_session_timeout: 30000,
+          }),
     });
     p.on('error', (err) => {
       // Log and safely absorb idle client network/disconnect events
@@ -111,7 +127,7 @@ class DatabaseManager {
       const configured = process.env.CONTEXT_HMAC_SECRET;
       if (!configured || Buffer.byteLength(configured, 'utf8') < 32) {
         // Never sign tenant context with a well-known key outside local development.
-        if (process.env.NODE_ENV === 'production') {
+        if (!isLocalEnv()) {
           throw new Error('CONTEXT_HMAC_SECRET must be set (at least 32 bytes) in production');
         }
       }
@@ -169,6 +185,28 @@ class DatabaseManager {
   /** A signed platform job for one firm (provisioning, imports, scheduled radars). */
   public withSystemTransaction<T>(firmId: string, callback: (client: pg.PoolClient) => Promise<T>, meta: Partial<TenantContext> = {}): Promise<T> {
     return this.withTenantTransaction({ ...meta, firmId, userId: null, actorKind: 'SYSTEM_JOB' }, callback);
+  }
+
+  /**
+   * As the app role with no tenant context at all: row-level security hides every tenant row, so
+   * only SECURITY DEFINER lookups (such as resolving a client upload link) return anything.
+   */
+  public async withAnonymousTransaction<T>(callback: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+    const client = await connectWithRetry(this.getPool());
+    let failed: unknown;
+    try {
+      await client.query('BEGIN');
+      await client.query(`SET LOCAL ROLE ${APP_ROLE}`);
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      failed = err;
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release(isConnectionError(failed) ? (failed as Error) : undefined);
+    }
   }
 
   /** Credentials, MFA factors and sessions, as the auth role. No tenant tables are reachable. */

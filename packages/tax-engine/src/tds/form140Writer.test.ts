@@ -74,7 +74,7 @@ test('rules from the file format are enforced', () => {
   assert.match(msgs((i) => (i.challans[0].deductees[0].reasonFlag = 'A')), /certificate number/);
   assert.match(msgs((i) => (i.challans[0].tax = 13000)), /less than the tax deposited/);
   assert.match(msgs((i) => (i.challans[0].tax = 13700.5)), /whole rupees/);
-  assert.match(msgs((i) => (i.deductor.type = 'A')), /Government deductors/);
+  assert.match(msgs((i) => (i.deductor.type = 'A')), /Central Government deductor must give its ministry/);
   assert.match(msgs((i) => (i.earlierRegularFiled = true)), /15-digit token/);
   assert.match(msgs((i) => (i.taxYear = 2025)), /Form 26Q/);
 });

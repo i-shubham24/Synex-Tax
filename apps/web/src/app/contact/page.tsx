@@ -49,7 +49,7 @@ export default function ContactPage() {
       <main className="site-base">
         <header className="px-3 pt-24 sm:px-6 lg:px-10">
           <div className="round-light mx-auto max-w-[1480px] rounded-[30px] px-6 py-10 sm:rounded-[38px] sm:px-10 sm:py-14">
-            <p className="font-display text-[12.5px] font-semibold uppercase tracking-[0.12em] text-sky-deep">Contact</p>
+            <p className="font-display text-[12.5px] font-semibold text-sky-deep">Contact</p>
             <h1 className="mt-3 max-w-[40rem] font-display text-[clamp(34px,4.4vw,60px)] font-medium leading-[1.04] tracking-[-0.045em] text-ink">
               Talk To The People Building It
             </h1>

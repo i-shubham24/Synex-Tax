@@ -199,42 +199,8 @@ export default function TdsPage() {
   const [isMatchingCsi, setIsMatchingCsi] = useState<boolean>(false);
   const [isDispatchingFvu, setIsDispatchingFvu] = useState<boolean>(false);
 
-  // Helper to obtain or ensure valid JWT session token
-  const getValidAuthToken = async (): Promise<string | null> => {
-    let activeToken = token;
-    if (activeToken && !activeToken.startsWith('mem_session_')) {
-      return activeToken;
-    }
-    const cached = typeof window !== 'undefined' ? sessionStorage.getItem('synextax_token') : null;
-    if (cached && !cached.startsWith('mem_session_')) {
-      return cached;
-    }
-    try {
-      let csrf = '';
-      const cRes = await fetch('/api/v1/auth/csrf');
-      if (cRes.ok) {
-        const cData = await cRes.json();
-        csrf = cData.csrfToken || '';
-      }
-      const dHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrf) dHeaders['x-csrf-token'] = csrf;
-      const dRes = await fetch('/api/v1/auth/demo', {
-        method: 'POST',
-        headers: dHeaders,
-        body: JSON.stringify({ role: 'PARTNER' }),
-      });
-      if (dRes.ok) {
-        const dData = await dRes.json();
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('synextax_token', dData.accessToken);
-        }
-        return dData.accessToken;
-      }
-    } catch {
-      // Fallback
-    }
-    return null;
-  };
+  // The session's access token, held in memory by AuthContext and never written to web storage.
+  const getValidAuthToken = async (): Promise<string | null> => (token && !token.startsWith('mem_session_') ? token : null);
 
   // Load live data from PostgreSQL via /api/v1/tds/active on mount
   useEffect(() => {
@@ -474,15 +440,15 @@ export default function TdsPage() {
       {/* Top Breadcrumb & Metadata Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-pos-accent">
+          <div className="flex items-center gap-2 text-xs text-pos-accent">
             <Percent className="w-4 h-4" />
-            <span>Dual-Act TDS / TCS Processing Hub (1961 vs 2025 ITNS 281N)</span>
+            <span>TDS and TCS under the 1961 and 2025 Acts</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-pos-ink tracking-tight mt-1">
+          <h1 className="text-xl sm:text-2xl font-semibold text-pos-ink tracking-tight mt-1">
             Challan Allocation & Deductee Compliance Engine
           </h1>
           <p className="text-xs text-pos-ink/70 mt-0.5">
-            Client: <span className="font-bold text-pos-ink">{entityName}</span> | TAN: <span className="font-mono font-bold text-pos-accent">{tan}</span> | Quarter: <span className="font-bold">{quarter} ({taxYear})</span>
+            Client: <span className="font-semibold text-pos-ink">{entityName}</span> | TAN: <span className="font-mono font-semibold text-pos-accent">{tan}</span> | Quarter: <span className="font-semibold">{quarter} ({taxYear})</span>
           </p>
           <Link href="/tds/health" className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-pos-line px-3 py-1 text-xs font-semibold text-pos-accent hover:bg-pos-tint">
             TDS health and past statements
@@ -493,9 +459,9 @@ export default function TdsPage() {
         <div className="flex items-center p-1 rounded-lg bg-pos-muted border border-pos-line text-xs font-semibold">
           <button
             onClick={() => setStatutoryRegime('IT_ACT_2025')}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
               statutoryRegime === 'IT_ACT_2025'
-                ? 'bg-pos-accent text-white font-bold shadow-sm'
+                ? 'bg-pos-accent text-white font-semibold shadow-sm'
                 : 'text-pos-ink/60 hover:text-pos-ink'
             }`}
           >
@@ -509,9 +475,9 @@ export default function TdsPage() {
                 setAllocations([allocations[0]]);
               }
             }}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${
               statutoryRegime === 'IT_ACT_1961'
-                ? 'bg-pos-accent text-white font-bold shadow-sm'
+                ? 'bg-pos-accent text-white font-semibold shadow-sm'
                 : 'text-pos-ink/60 hover:text-pos-ink'
             }`}
           >
@@ -525,13 +491,13 @@ export default function TdsPage() {
         <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-xs text-pos-ink/60 font-semibold">
             <span>Statutory Return Form</span>
-            <span className="font-mono font-bold text-pos-accent">{statutoryRegime === 'IT_ACT_2025' ? 'Act 2025' : 'Act 1961'}</span>
+            <span className="font-mono font-semibold text-pos-accent">{statutoryRegime === 'IT_ACT_2025' ? 'Act 2025' : 'Act 1961'}</span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-pos-ink">
+            <span className="text-2xl font-semibold text-pos-ink">
               {statutoryRegime === 'IT_ACT_2025' ? 'Form 140' : 'Form 26Q'}
             </span>
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
               {returnSummary.workflowStatus}
             </span>
           </div>
@@ -544,7 +510,7 @@ export default function TdsPage() {
             <User className="w-3.5 h-3.5 text-pos-accent" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-pos-ink">{deductees.length}</span>
+            <span className="text-2xl font-semibold text-pos-ink">{deductees.length}</span>
             <span className="text-xs text-pos-ink/60 font-medium">Assessees</span>
           </div>
           <p className="text-[11px] text-emerald-600 font-semibold mt-1">100% PAN & Section checked</p>
@@ -556,7 +522,7 @@ export default function TdsPage() {
             <FileSpreadsheet className="w-3.5 h-3.5 text-[#3A6FE8]" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-pos-ink font-mono">
+            <span className="text-2xl font-semibold text-pos-ink font-mono">
               ₹{totalAllocatedTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -569,7 +535,7 @@ export default function TdsPage() {
             <Clock className="w-3.5 h-3.5 text-[#C2410C]" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-pos-ink font-mono">
+            <span className="text-2xl font-semibold text-pos-ink font-mono">
               {returnSummary.daysToCorrectionExpiry}d
             </span>
             <span className="text-xs font-semibold text-pos-ink/60">remaining</span>
@@ -587,7 +553,7 @@ export default function TdsPage() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span className="font-mono font-semibold">{csiFeedback}</span>
           </div>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-600 text-white">
+          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
             OLTAS Verified
           </span>
         </div>
@@ -596,7 +562,7 @@ export default function TdsPage() {
       {/* FVU Dispatch Notification Card */}
       {fvuFeedback && (
         <div role="status" className="p-4 rounded-xl bg-pos-surface border border-amber-500/40 shadow-lg">
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-600">
+          <div className="flex items-center gap-2 text-xs font-semibold text-amber-600">
             <ShieldCheck className="w-4 h-4" />
             <span>Queued for Protean FVU {fvuFeedback.fvuVersion}, not validated yet</span>
           </div>
@@ -609,13 +575,13 @@ export default function TdsPage() {
         
         {/* Left Column: Live Statutory TDS & Rule 269 Calculator (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 space-y-4 shadow-xl">
+          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-pos-line pb-3">
               <div className="flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-pos-accent" />
-                <h2 className="font-bold text-sm text-pos-ink">Statutory TDS Calculator</h2>
+                <h2 className="font-semibold text-sm text-pos-ink">Statutory TDS Calculator</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface border border-pos-line text-pos-accent font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface border border-pos-line text-pos-accent font-semibold">
                 Section 516 Compliant
               </span>
             </div>
@@ -633,7 +599,7 @@ export default function TdsPage() {
                   value={calcPan}
                   onChange={(e) => setCalcPan(e.target.value.toUpperCase())}
                   placeholder="e.g. AABCP1332L"
-                  className="flex-1 bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-bold text-pos-ink uppercase focus:outline-none focus:border-pos-accent"
+                  className="flex-1 bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-semibold text-pos-ink uppercase focus:outline-none focus:border-pos-accent"
                 />
                 <button
                   type="button"
@@ -645,7 +611,7 @@ export default function TdsPage() {
               </div>
 
               {/* PAN Validation Feedback */}
-              <div className="flex items-center gap-2 text-[11px] font-mono pt-1">
+              <div className="flex items-center gap-2 text-[11px] pt-1">
                 {isCompany ? (
                   <span className="inline-flex items-center gap-1 text-[#3A6FE8]">
                     <Building2 className="w-3 h-3" />
@@ -688,7 +654,7 @@ export default function TdsPage() {
                   value={effectiveRate}
                   onChange={(e) => setCalcRate(e.target.value)}
                   disabled={isProteanLiteral}
-                  className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-bold text-pos-ink focus:outline-none focus:border-pos-accent disabled:opacity-50"
+                  className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-semibold text-pos-ink focus:outline-none focus:border-pos-accent disabled:opacity-50"
                 />
               </div>
             </div>
@@ -700,7 +666,7 @@ export default function TdsPage() {
                 value={calcAmount}
                 onChange={(e) => setCalcAmount(e.target.value)}
                 placeholder="149994.70"
-                className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-bold text-pos-ink focus:outline-none focus:border-pos-accent"
+                className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-semibold text-pos-ink focus:outline-none focus:border-pos-accent"
               />
             </div>
 
@@ -716,12 +682,12 @@ export default function TdsPage() {
                 max={24}
                 value={delayMonths}
                 onChange={(e) => setDelayMonths(parseInt(e.target.value) || 0)}
-                className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-bold text-pos-ink focus:outline-none focus:border-pos-accent"
+                className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs font-mono font-semibold text-pos-ink focus:outline-none focus:border-pos-accent"
               />
             </div>
 
             {/* Statutory Calculation Breakdown Box */}
-            <div className="bg-pos-surface border border-pos-line rounded-lg p-3.5 space-y-2 text-xs font-mono">
+            <div className="bg-pos-surface border border-pos-line rounded-lg p-3.5 space-y-2 text-xs">
               <div className="flex justify-between text-pos-ink/60">
                 <span>Raw TDS (Unrounded):</span>
                 <span>₹{rawTds.toFixed(2)}</span>
@@ -730,7 +696,7 @@ export default function TdsPage() {
                 <span>Step 1 Truncated Paise:</span>
                 <span>₹{truncatedRupees}.00</span>
               </div>
-              <div className="flex justify-between text-pos-accent font-bold border-t border-pos-line pt-2">
+              <div className="flex justify-between text-pos-accent font-semibold border-t border-pos-line pt-2">
                 <span>Section 516 Statutory TDS:</span>
                 <span>₹{roundedTdsSection516.toFixed(2)}</span>
               </div>
@@ -742,7 +708,7 @@ export default function TdsPage() {
                 <span>Rule 269 Interest (1.5%/mo):</span>
                 <span>₹{statutoryInterest.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-pos-ink font-extrabold border-t border-pos-line pt-2 text-sm">
+              <div className="flex justify-between text-pos-ink font-semibold border-t border-pos-line pt-2 text-sm">
                 <span>Total Tax & Interest Payable:</span>
                 <span>₹{totalPayableWithInterest.toFixed(2)}</span>
               </div>
@@ -753,10 +719,10 @@ export default function TdsPage() {
 
         {/* Right Column: Multi-Section ITNS 281N Challan Builder (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 space-y-4 shadow-xl">
+          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-pos-line pb-3">
               <div>
-                <h2 className="font-bold text-sm text-pos-ink">
+                <h2 className="font-semibold text-sm text-pos-ink">
                   {statutoryRegime === 'IT_ACT_2025'
                     ? 'ITNS 281N Multi-Section Challan Builder'
                     : 'ITNS 281 Single-Section Challan'}
@@ -770,7 +736,7 @@ export default function TdsPage() {
 
               <div className="flex items-center gap-2">
                 {csiMatched ? (
-                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1">
                     <Check className="w-3 h-3" /> CSI Matched
                   </span>
                 ) : (
@@ -778,21 +744,21 @@ export default function TdsPage() {
                     CSI Pending
                   </span>
                 )}
-                <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-pos-surface border border-pos-line text-[#3A6FE8]">
+                <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-pos-surface border border-pos-line text-[#3A6FE8]">
                   TAN: {tan}
                 </span>
               </div>
             </div>
 
             {/* Challan Metadata Fields */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="space-y-1">
                 <span className="text-pos-ink/60">Challan No</span>
                 <input
                   type="text"
                   value={challanNo}
                   onChange={(e) => setChallanNo(e.target.value)}
-                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-bold"
+                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-semibold"
                 />
               </div>
 
@@ -803,7 +769,7 @@ export default function TdsPage() {
                   maxLength={7}
                   value={bsrCode}
                   onChange={(e) => setBsrCode(e.target.value)}
-                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-bold"
+                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-semibold"
                 />
               </div>
 
@@ -813,7 +779,7 @@ export default function TdsPage() {
                   type="date"
                   value={depositDate}
                   onChange={(e) => setDepositDate(e.target.value)}
-                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-bold"
+                  className="w-full bg-pos-surface border border-pos-line rounded px-2.5 py-1.5 text-pos-ink font-semibold"
                 />
               </div>
 
@@ -854,7 +820,7 @@ export default function TdsPage() {
               <div className="border border-pos-line rounded-lg overflow-hidden">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-pos-surface text-pos-ink/60 font-mono text-[11px] border-b border-pos-line">
+                    <tr className="bg-pos-surface text-pos-ink/60 text-[11px] border-b border-pos-line">
                       <th className="py-2.5 px-3">Section</th>
                       <th className="py-2.5 px-3 text-right">Income Tax (₹)</th>
                       <th className="py-2.5 px-3 text-right">Surcharge/Cess (₹)</th>
@@ -899,11 +865,11 @@ export default function TdsPage() {
                                 )
                               );
                             }}
-                            className="bg-pos-surface border border-pos-line rounded px-2 py-1 text-right text-xs text-pos-ink font-bold w-24"
+                            className="bg-pos-surface border border-pos-line rounded px-2 py-1 text-right text-xs text-pos-ink font-semibold w-24"
                           />
                         </td>
                         <td className="py-2.5 px-3 text-right text-pos-ink/60">₹0.00</td>
-                        <td className="py-2.5 px-3 text-right font-bold text-pos-accent">
+                        <td className="py-2.5 px-3 text-right font-semibold text-pos-accent">
                           ₹{parseFloat(alloc.totalSectionAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-2.5 px-2 text-center">
@@ -924,10 +890,10 @@ export default function TdsPage() {
             </div>
 
             {/* Challan Total & CSI Match Action Footer */}
-            <div className="bg-pos-surface border border-pos-line rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+            <div className="bg-pos-surface border border-pos-line rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 text-xs">
               <div>
                 <span className="text-pos-ink/60">Total Challan Amount: </span>
-                <span className="text-pos-ink font-extrabold text-sm">
+                <span className="text-pos-ink font-semibold text-sm">
                   ₹{totalAllocatedTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] text-pos-accent ml-2">({allocations.length} Section lines)</span>
@@ -938,7 +904,7 @@ export default function TdsPage() {
                   type="button"
                   onClick={handleCsiMatch}
                   disabled={isMatchingCsi}
-                  className="px-3 py-1.5 rounded-lg bg-pos-muted hover:bg-pos-line text-pos-ink font-bold transition-colors flex items-center gap-1.5 border border-pos-line disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-lg bg-pos-muted hover:bg-pos-line text-pos-ink font-semibold transition-colors flex items-center gap-1.5 border border-pos-line disabled:opacity-50"
                 >
                   <UploadCloud className="w-3.5 h-3.5 text-[#3A6FE8]" />
                   <span>{isMatchingCsi ? 'Matching...' : 'Match NSDL CSI File'}</span>
@@ -947,7 +913,7 @@ export default function TdsPage() {
                   type="button"
                   onClick={handleFvuDispatch}
                   disabled={isDispatchingFvu}
-                  className="px-3.5 py-1.5 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-bold transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3.5 py-1.5 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-semibold transition-colors shadow-md flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <FileCheck2 className="w-3.5 h-3.5" />
                   <span>{isDispatchingFvu ? 'Processing...' : 'Prepare FVU File'}</span>
@@ -964,7 +930,7 @@ export default function TdsPage() {
       <div className="bg-pos-surface border border-pos-line rounded-xl p-5 space-y-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-3">
           <div>
-            <h2 className="font-bold text-sm text-pos-ink flex items-center gap-2">
+            <h2 className="font-semibold text-sm text-pos-ink flex items-center gap-2">
               <User className="w-4 h-4 text-pos-accent" />
               <span>Deductee Compliance Master Grid ({deductees.length} Records)</span>
             </h2>
@@ -991,7 +957,7 @@ export default function TdsPage() {
         <div className="overflow-x-auto border border-pos-line rounded-lg">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-pos-muted text-pos-ink/60 font-mono text-[11px] border-b border-pos-line">
+              <tr className="bg-pos-muted text-pos-ink/60 text-[11px] border-b border-pos-line">
                 <th className="py-2.5 px-3">PAN</th>
                 <th className="py-2.5 px-3">Deductee Name</th>
                 <th className="py-2.5 px-2 text-center">Section</th>
@@ -1005,13 +971,13 @@ export default function TdsPage() {
             <tbody className="divide-y divide-pos-line font-mono">
               {filteredDeductees.map((d) => (
                 <tr key={d.id} className="hover:bg-pos-tint transition-colors">
-                  <td className="py-2.5 px-3 font-bold text-pos-ink">
+                  <td className="py-2.5 px-3 font-semibold text-pos-ink">
                     {d.pan}
                   </td>
                   <td className="py-2.5 px-3 font-sans text-pos-ink">
                     {d.name}
                   </td>
-                  <td className="py-2.5 px-2 text-center font-bold text-pos-accent">
+                  <td className="py-2.5 px-2 text-center font-semibold text-pos-accent">
                     {d.sectionCode}
                   </td>
                   <td className="py-2.5 px-3 text-pos-ink/70">
@@ -1023,16 +989,16 @@ export default function TdsPage() {
                   <td className="py-2.5 px-2 text-right text-pos-ink/80">
                     {d.rate}
                   </td>
-                  <td className="py-2.5 px-3 text-right font-bold text-pos-ink">
+                  <td className="py-2.5 px-3 text-right font-semibold text-pos-ink">
                     ₹{parseFloat(d.tdsDeducted).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="py-2.5 px-3 text-center">
                     {d.status === 'OPERATIVE' ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                         <Check className="w-3 h-3" /> Valid PAN
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20">
                         <AlertCircle className="w-3 h-3" /> Sec 206AA (20%)
                       </span>
                     )}
@@ -1044,7 +1010,7 @@ export default function TdsPage() {
         </div>
 
         {/* Deductee Summary Footnote */}
-        <div className="flex flex-wrap items-center justify-between text-xs font-mono text-pos-ink/70 pt-2 border-t border-pos-line">
+        <div className="flex flex-wrap items-center justify-between text-xs text-pos-ink/70 pt-2 border-t border-pos-line">
           <div>
             Showing {filteredDeductees.length} of {deductees.length} deductee line items
           </div>

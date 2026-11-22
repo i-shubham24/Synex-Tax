@@ -9,7 +9,7 @@ export type LifecycleStatus = z.infer<typeof LifecycleStatusEnum>;
 export const LoginRequestSchema = z.object({
   email: z.string().trim().email('Invalid email address').max(254),
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
-  firmId: z.string().uuid('Invalid firm ID').optional(),
+  firmId: z.guid('Invalid firm ID').optional(),
 });
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
@@ -37,8 +37,8 @@ export const AuthTokenResponseSchema = z.object({
   tokenType: z.literal('Bearer'),
   expiresInSeconds: z.number().int().positive(),
   user: z.object({
-    id: z.string().uuid(),
-    firmId: z.string().uuid(),
+    id: z.guid(),
+    firmId: z.guid(),
     email: z.string().email(),
     displayName: z.string(),
     role: UserRoleEnum,
@@ -48,9 +48,9 @@ export const AuthTokenResponseSchema = z.object({
 export type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
 
 export const UserSessionPayloadSchema = z.object({
-  userId: z.string().uuid(),
-  firmId: z.string().uuid(),
-  identityId: z.string().uuid(),
+  userId: z.guid(),
+  firmId: z.guid(),
+  identityId: z.guid(),
   role: UserRoleEnum,
   email: z.string().email(),
   displayName: z.string(),

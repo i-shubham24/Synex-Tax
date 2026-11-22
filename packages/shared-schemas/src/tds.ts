@@ -37,8 +37,8 @@ export type TdsSectionAllocation = z.infer<typeof TdsSectionAllocationSchema>;
 // TDS Challan Schema
 // ---------------------------------------------------------------------
 export const TdsChallanCreateSchema = z.object({
-  entityId: z.string().uuid(),
-  tanRegistrationId: z.string().uuid(),
+  entityId: z.guid(),
+  tanRegistrationId: z.guid(),
   statutoryRegime: StatutoryRegimeEnum,
   taxYear: z.number().int().min(2000).max(2100),
   quarter: QuarterEnum,
@@ -71,10 +71,10 @@ export type TdsChallanCreate = z.infer<typeof TdsChallanCreateSchema>;
 // TDS Deductee Record Schema
 // ---------------------------------------------------------------------
 export const TdsDeducteeCreateSchema = z.object({
-  entityId: z.string().uuid(),
-  tanRegistrationId: z.string().uuid(),
-  challanId: z.string().uuid(),
-  sectionAllocationId: z.string().uuid(),
+  entityId: z.guid(),
+  tanRegistrationId: z.guid(),
+  challanId: z.guid(),
+  sectionAllocationId: z.guid(),
   deducteePan: DeducteePanSchema,
   deducteeName: z.string().trim().min(2).max(150),
   panStatus: z.enum(['OPERATIVE', 'INOPERATIVE', 'INVALID', 'UNAVAILABLE']).default('OPERATIVE'),

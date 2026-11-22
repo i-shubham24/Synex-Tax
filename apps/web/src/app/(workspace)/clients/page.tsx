@@ -122,7 +122,7 @@ export default function ClientsMasterPage() {
       {/* Top Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-[#0E0F10] dark:text-white">
+          <h2 className="text-2xl font-semibold tracking-tight text-[#0E0F10] dark:text-white">
             Client Master Directory
           </h2>
           <p className="text-xs text-[#646A73] dark:text-[#9BA1AA]">
@@ -133,7 +133,7 @@ export default function ClientsMasterPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/gst"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2F8AE0] hover:bg-[#1F73C4] text-white font-mono text-xs font-bold transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2F8AE0] hover:bg-[#1F73C4] text-white font-mono text-xs font-semibold transition-colors shadow-sm"
           >
             <Receipt className="w-3.5 h-3.5" />
             <span>Open Invoices Register</span>
@@ -141,7 +141,7 @@ export default function ClientsMasterPage() {
 
           <Link
             href="/clients/import"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-mono text-xs font-bold transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-mono text-xs font-semibold transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>Add or import clients</span>
@@ -152,7 +152,7 @@ export default function ClientsMasterPage() {
       {/* Filter Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-[#17191C] p-3 sm:p-4 rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm">
         
-        <div className="flex items-center gap-2 overflow-x-auto text-xs font-mono">
+        <div className="flex items-center gap-2 overflow-x-auto text-xs">
           {[
             { id: 'ALL', label: 'All Groups (4)' },
             { id: 'TEXTILE', label: 'Textiles Group' },
@@ -161,7 +161,7 @@ export default function ClientsMasterPage() {
             <button
               key={tab.id}
               onClick={() => setFilterGroup(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-colors whitespace-nowrap ${
                 filterGroup === tab.id
                   ? 'bg-[#2F8AE0] text-white shadow-sm'
                   : 'text-[#646A73] dark:text-[#9BA1AA] hover:bg-[#FAFAFB] dark:hover:bg-slate-800'
@@ -206,7 +206,7 @@ export default function ClientsMasterPage() {
               
               {/* Solid Obsidian Header */}
               <thead>
-                <tr className="bg-[#141619] text-white font-mono text-[11px] uppercase tracking-wider">
+                <tr className="bg-[#141619] text-white text-[11px] tracking-wider">
                   <th className="py-3 px-4 rounded-tl-xl">Entity Name & Group</th>
                   <th className="py-3 px-3">PAN & Constitution</th>
                   <th className="py-3 px-3">Primary Contact</th>
@@ -233,22 +233,22 @@ export default function ClientsMasterPage() {
                       className={`cursor-pointer transition-colors h-14 ${rowBg} hover:bg-[#ECF4FD]/70`}
                     >
                       <td className="py-3 px-4">
-                        <div className="font-bold text-xs text-[#0E0F10] dark:text-white leading-tight">
+                        <div className="font-semibold text-xs text-[#0E0F10] dark:text-white leading-tight">
                           {cl.entityName}
                         </div>
-                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA] font-mono mt-0.5">
+                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA] mt-0.5">
                           {cl.groupName}
                         </div>
                       </td>
 
                       <td className="py-3 px-3">
-                        <div className="font-mono font-bold text-[#0E0F10] dark:text-white">{maskPan(cl.pan)}</div>
+                        <div className=" font-semibold text-[#0E0F10] dark:text-white">{maskPan(cl.pan)}</div>
                         <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{cl.constitution}</div>
                       </td>
 
                       <td className="py-3 px-3">
                         <div className="text-[#0E0F10] dark:text-white font-medium">{cl.primaryContact}</div>
-                        <div className="text-[10px] font-mono text-[#646A73] dark:text-[#9BA1AA]">
+                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">
                           {cl.contactMobile}
                         </div>
                       </td>
@@ -263,7 +263,7 @@ export default function ClientsMasterPage() {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${statusPill}`}>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold ${statusPill}`}>
                           {cl.statusLabel}
                         </span>
                       </td>
@@ -274,21 +274,21 @@ export default function ClientsMasterPage() {
             </table>
           </div>
 
-          <div className="p-3 bg-white dark:bg-[#17191C] border-t border-[#E5E7EB] dark:border-[#24272B] text-xs font-mono text-[#646A73] dark:text-[#9BA1AA] flex justify-between items-center">
+          <div className="p-3 bg-white dark:bg-[#17191C] border-t border-[#E5E7EB] dark:border-[#24272B] text-xs text-[#646A73] dark:text-[#9BA1AA] flex justify-between items-center">
             <span>4 Client Entities registered under Verma & Associates CA</span>
-            <span className="text-[#16A34A] font-bold">DPDP Consent Artifacts Verified</span>
+            <span className="text-[#16A34A] font-semibold">DPDP Consent Artifacts Verified</span>
           </div>
 
         </div>
 
         {/* Right Floating Client Inspector (4 cols) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-xl overflow-hidden space-y-4">
+        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
           
           {/* Header Bar */}
-          <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between font-mono">
+          <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">
             <div>
-              <span className="text-[10px] uppercase font-bold text-white/80 block">Selected Client Profile</span>
-              <span className="text-sm font-black text-white">{selectedClient.entityName}</span>
+              <span className="text-[10px] font-semibold text-white/80 block">Selected client</span>
+              <span className="text-sm font-semibold text-white">{selectedClient.entityName}</span>
             </div>
             <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white">
               <Building className="w-4 h-4" />
@@ -298,27 +298,27 @@ export default function ClientsMasterPage() {
           <div className="p-4 space-y-4">
             
             {/* Quick Details Box */}
-            <div className="p-3 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-1.5 font-mono text-xs">
+            <div className="p-3 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-1.5 text-xs">
               <div className="flex justify-between text-[#646A73] dark:text-[#9BA1AA]">
                 <span>Constitution:</span>
-                <span className="text-[#0E0F10] dark:text-white font-bold">{selectedClient.constitution}</span>
+                <span className="text-[#0E0F10] dark:text-white font-semibold">{selectedClient.constitution}</span>
               </div>
               <div className="flex justify-between text-[#646A73] dark:text-[#9BA1AA]">
                 <span>Permanent PAN:</span>
-                <span className="text-[#0E0F10] dark:text-white font-bold">{maskPan(selectedClient.pan)}</span>
+                <span className="text-[#0E0F10] dark:text-white font-semibold">{maskPan(selectedClient.pan)}</span>
               </div>
               <div className="flex justify-between text-[#646A73] dark:text-[#9BA1AA]">
                 <span>Accounting Stack:</span>
-                <span className="text-[#2F8AE0] font-bold">{selectedClient.accountingSoftware}</span>
+                <span className="text-[#2F8AE0] font-semibold">{selectedClient.accountingSoftware}</span>
               </div>
               <div className="flex justify-between text-[#646A73] dark:text-[#9BA1AA]">
                 <span>Filing Frequency:</span>
-                <span className="text-[#16A34A] font-bold">Monthly GSTR-1 & 3B</span>
+                <span className="text-[#16A34A] font-semibold">Monthly GSTR-1 & 3B</span>
               </div>
             </div>
 
             {/* Quick Action Navigation Grid */}
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <Link
                 href="/gst"
                 className="p-2.5 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] hover:border-[#2F8AE0] transition-colors flex items-center justify-between"
@@ -356,7 +356,7 @@ export default function ClientsMasterPage() {
             <div className="pt-2">
               <Link
                 href="/gst"
-                className="w-full py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-mono font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-mono font-semibold transition-colors shadow-md flex items-center justify-center gap-2"
               >
                 <span>Open Active GSTR-3B Workspace</span>
                 <ExternalLink className="w-3.5 h-3.5" />

@@ -82,6 +82,74 @@ export const DEDUCTOR_TYPES: Record<string, string> = {
 
 export const GOVERNMENT_DEDUCTOR_TYPES = new Set(['A', 'S', 'D', 'E', 'G', 'H', 'L', 'N']);
 
+/** Annexure 3: ministry codes for government deductors (Form 140 file format v1.2). */
+export const MINISTRY_CODES: Record<string, string> = {
+  '01': 'Agriculture',
+  '02': 'Atomic Energy',
+  '03': 'Fertilizers',
+  '04': 'Chemicals and Petrochemicals',
+  '05': 'Civil Aviation and Tourism',
+  '06': 'Coal',
+  '07': 'Consumer Affairs, Food and Public Distribution',
+  '08': 'Commerce and Textiles',
+  '09': 'Environment and Forests and Ministry of Earth Science',
+  '10': 'External Affairs and Overseas Indian Affairs',
+  '11': 'Finance',
+  '12': 'Central Board of Direct Taxes',
+  '13': 'Central Board of Excise and Customs',
+  '14': 'Controller of Aid Accounts and Audit',
+  '15': 'Central Pension Accounting Office',
+  '16': 'Food Processing Industries',
+  '17': 'Health and Family Welfare',
+  '18': 'Home Affairs and Development of North Eastern Region',
+  '19': 'Human Resource Development',
+  '20': 'Industry',
+  '21': 'Information and Broadcasting',
+  '22': 'Telecommunication and Information Technology',
+  '23': 'Labour',
+  '24': 'Law and Justice and Company Affairs',
+  '25': 'Personnel, Public Grievances and Pensions',
+  '26': 'Petroleum and Natural Gas',
+  '27': 'Planning, Statistics and Programme Implementation',
+  '28': 'Power',
+  '29': 'New and Renewable Energy',
+  '30': 'Rural Development and Panchayati Raj',
+  '31': 'Science And Technology',
+  '32': 'Space',
+  '33': 'Steel',
+  '34': 'Mines',
+  '35': 'Social Justice and Empowerment',
+  '36': 'Tribal Affairs',
+  '37': 'D/o Commerce (Supply Division)',
+  '38': 'Shipping and Road Transport and Highways',
+  '39': 'Urban Development, Urban Employment and Poverty Alleviation',
+  '40': 'Water Resources',
+  '41': "President's Secretariat",
+  '42': 'Lok Sabha Secretariat',
+  '43': 'Rajya Sabha Secretariat',
+  '44': 'Election Commission',
+  '45': 'Ministry of Defence (Controller General of Defence Accounts)',
+  '46': 'Ministry of Railways',
+  '47': 'Department of Posts',
+  '48': 'Department of Telecommunications',
+  '49': 'Andaman and Nicobar Islands Administration',
+  '50': 'Chandigarh Administration',
+  '51': 'Dadra and Nagar Haveli',
+  '52': 'Goa, Daman and Diu',
+  '53': 'Lakshadweep',
+  '54': 'Pondicherry Administration',
+  '55': 'Pay and Accounts Officers (Audit)',
+  '56': 'Ministry of Non-conventional energy sources',
+  '57': 'Government Of NCT of Delhi',
+  '99': 'Others',
+};
+
+/** Deductor types whose batch header needs the state (field 54). */
+export const STATE_GOVERNMENT_TYPES = new Set(['S', 'E', 'H', 'N']);
+/** Deductor types that must give a ministry (field 57), and those that may. */
+export const MINISTRY_REQUIRED_TYPES = new Set(['A', 'D', 'G']);
+export const MINISTRY_OPTIONAL_TYPES = new Set(['E', 'H', 'L', 'N']);
+
 /** Annexure 7: minor head of challan. */
 export const MINOR_HEADS: Record<string, string> = {
   '200': 'TDS payable by taxpayer',

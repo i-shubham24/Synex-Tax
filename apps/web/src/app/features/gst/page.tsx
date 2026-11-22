@@ -48,6 +48,7 @@ export default function GstFeaturesPage() {
               { title: 'Rate-wise GSTR-1 summary', body: 'Taxable value and tax by table and rate, B2C others by place of supply, for checking before you upload.', status: 'live' },
               { title: 'CMP-08 and GSTR-4', body: 'Composition tax for each quarter by kind of supplier, with interest for late payment, and the year’s total for GSTR-4.', status: 'live' },
               { title: 'ITC-04', body: 'Goods sent to and back from job workers, what is still out, and what has turned into a supply after one year (three for capital goods), with the period and due date.', status: 'live' },
+              { title: 'MIS and party master', body: 'Sales, output tax, purchases and input credit month by month, top customers and suppliers, and every party with its GSTIN checked.', status: 'live' },
               { title: 'GSTR-3B for the year', body: 'Each month’s 3B against GSTR-1 and GSTR-2B, cash paid and filing dates, with differences settled across the year.', status: 'live' },
               { title: 'GSTR-3B set-off', body: 'IGST credit used first, CGST and SGST never crossed, and the split chosen to keep cash outflow lowest. Rule 86B and the credit reclaim ledger are checked.', status: 'live' },
               { title: 'GSTR-1A and IFF', body: 'Single amendment window after GSTR-1, and invoice furnishing for QRMP clients.', status: 'coming' },

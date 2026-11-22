@@ -2,6 +2,7 @@ import type pg from 'pg';
 import { Decimal } from 'decimal.js';
 import { tdsCorrectionDeadline, tdsStatementDueDate, type QuarterChallan, type StatementForm } from '@synextax/tax-engine';
 import { ImportError } from './statementImport.js';
+import { insertRows } from '../../db/batchInsert.js';
 
 /**
  * Saves a quarter sheet (already checked by parseQuarterSheet) as challans, section allocations and
@@ -49,20 +50,20 @@ export async function commitQuarter(
           [tan.entity_id, challanId, code, amount],
         )
       ).rows[0].id;
-      for (const r of list) {
-        const literal = ['PANNOTAVBL', 'PANAPPLIED', 'PANINVALID'].includes(r.pan);
-        await client.query(
-          `INSERT INTO public.tds_deductees (firm_id, entity_id, tan_registration_id, challan_id, section_allocation_id, deductee_pan, deductee_name, pan_status,
-             payment_credit_date, amount_paid, tds_rate, tds_deducted, total_tds_deposited, deduction_date, certificate_no, reason_for_non_deduction, created_by, form_code)
-           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
-          [
+      rows += await insertRows(
+        client,
+        `INSERT INTO public.tds_deductees (firm_id, entity_id, tan_registration_id, challan_id, section_allocation_id, deductee_pan, deductee_name, pan_status,
+           payment_credit_date, amount_paid, tds_rate, tds_deducted, total_tds_deposited, deduction_date, certificate_no, reason_for_non_deduction, created_by, form_code)`,
+        `(app.current_firm_id(), ${Array(17).fill('?').join(', ')})`,
+        list.map((r) => {
+          const literal = ['PANNOTAVBL', 'PANAPPLIED', 'PANINVALID'].includes(r.pan);
+          return [
             tan.entity_id, tan.id, challanId, allocId, r.pan, r.name.slice(0, 75), literal ? 'UNAVAILABLE' : 'OPERATIVE', r.paidOn, r.amountPaid,
             new Decimal(r.ratePercent || 0).div(100).toFixed(4), r.tax, r.deposited, r.deductedOn ?? r.paidOn, r.certificate || null,
             /^[A-Z0-9]{1,8}$/.test(r.reason) ? r.reason : null, userId, input.form,
-          ],
-        );
-        rows += 1;
-      }
+          ];
+        }),
+      );
     }
   }
 

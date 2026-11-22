@@ -56,6 +56,10 @@ export async function enforceMakerCheckerGuard(
     return reply.status(401).send({ error: 'Unauthorized' });
   }
 
+  // Clients never sign or file; staff prepare and a partner or manager signs and files.
+  if (request.user.role === 'CLIENT') {
+    return reply.status(403).send({ error: 'Forbidden', message: `A client login cannot perform ${action}.` });
+  }
   if (request.user.role === 'STAFF') {
     return reply.status(403).send({
       statusCode: 403,

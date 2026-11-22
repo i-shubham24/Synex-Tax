@@ -132,9 +132,9 @@ function ItcCard() {
         ))}
       </div>
       <div className="mt-2 flex h-1.5 overflow-hidden rounded-full">
-        <span className="bg-mint transition-all duration-700" style={{ width: `${d.split[0]}%` }} />
-        <span className="bg-sky transition-all duration-700" style={{ width: `${d.split[1]}%` }} />
-        <span className="bg-ink transition-all duration-700" style={{ width: `${d.split[2]}%` }} />
+        <span className="bg-mint transition-colors duration-700" style={{ width: `${d.split[0]}%` }} />
+        <span className="bg-sky transition-colors duration-700" style={{ width: `${d.split[1]}%` }} />
+        <span className="bg-ink transition-colors duration-700" style={{ width: `${d.split[2]}%` }} />
       </div>
     </div>
   );
@@ -213,7 +213,7 @@ export function ProductGlance() {
             <a
               href="#contact"
               aria-label="Jump to site navigation"
-              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition-transform hover:scale-105"
+              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition-transform"
             >
               <Menu className="h-4 w-4" />
             </a>

@@ -1,5 +1,7 @@
 // Package backup copies a client's accounting data (Tally, Busy or Marg) into dated zip files on
-// the CA's own machine, with a SHA-256 manifest so a restore can be checked. Nothing is uploaded.
+// the CA's own machine, with a SHA-256 manifest so a restore can be checked. For Zoho Books and
+// Vyapar, whose own software writes the backup file, it finds the newest such file (files.go).
+// Uploading to SynexTax is done by the uploader package, on the firm's schedule.
 //
 // Only folders of the known products are backed up, never a path chosen by the browser, so the
 // agent cannot be used to read arbitrary files. Files the accounting software holds open are
@@ -100,7 +102,7 @@ func (c Config) folders(p Product) ([]string, error) {
 // Detect returns the product data folders that exist on this machine.
 func (c Config) Detect() map[Product][]string {
 	out := map[Product][]string{}
-	for _, p := range []Product{Tally, Busy, Marg} {
+	for _, p := range AllProducts {
 		list, _ := c.folders(p)
 		for _, f := range list {
 			if st, err := os.Stat(f); err == nil && st.IsDir() {
@@ -113,6 +115,9 @@ func (c Config) Detect() map[Product][]string {
 
 // Run backs up one product's data folder. `source` must be one of its folders, or empty for the first that exists.
 func (c Config) Run(p Product, source string, now time.Time) (Result, error) {
+	if IsFileProduct(p) {
+		return Result{}, ErrFileProduct
+	}
 	list, err := c.folders(p)
 	if err != nil {
 		return Result{}, err

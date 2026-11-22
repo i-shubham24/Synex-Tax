@@ -27,3 +27,23 @@ test('a quarter sheet groups rows into challans and checks each row', () => {
 test('missing columns are named', () => {
   assert.deepEqual(parseQuarterSheet('PAN\tName\n', { form: '140', taxYear: 2026, quarter: 3 }).missing, ['bsr', 'challanNo', 'depositedOn', 'section', 'amountPaid', 'paidOn', 'tax']);
 });
+
+test('payments without challan columns are linked to a separate challan list by month', async () => {
+  const { parseChallanList } = await import('./quarterImport.js');
+  const list = parseChallanList(['BSR Code\tChallan No\tDate\tTax', '0510308\t417\t07/11/2026\t7,000', '0510308\t418\t07/12/2026\t7,500'].join('\n'));
+  assert.deepEqual(list.errors, []);
+  const r = parseQuarterSheet(
+    [
+      'Section\tPAN\tName\tAmount Paid\tPaid On\tTDS',
+      '1027\tABCPK1234L\tDr Kaur\t60,000\t15/10/2026\t6,000',
+      '1023\tBQRPS4410K\tSingh Transport\t1,00,000\t20/10/2026\t1,000',
+      '1009\tAAKFR2290D\tRana Estates\t75,000\t05/11/2026\t7,500',
+      '1009\tAAKFR2290D\tRana Estates\t75,000\t05/12/2026\t7,500',
+    ].join('\n'),
+    { form: '140', taxYear: 2026, quarter: 3, challanList: list.challans },
+  );
+  assert.deepEqual(r.missing, []);
+  assert.deepEqual(r.challans.map((c) => [c.challanNo, c.rows.length, c.tax]), [['417', 2, '7000.00'], ['418', 1, '7500.00']]);
+  // December's 7,500 has no challan from December onwards.
+  assert.deepEqual(r.errors.map((e) => e.line), [5]);
+});

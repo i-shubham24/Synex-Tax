@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { itrComputation, type ItrInput, type ItrRegimeResult } from '@synextax/tax-engine';
+import { ItrFormPicker } from '../../../components/itr/ItrFormPicker';
 
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const input = 'h-9 w-full rounded-[10px] border border-pos-line bg-pos-surface px-3 text-right text-[13px] tabular-nums text-pos-ink outline-none focus:border-pos-accent';
@@ -74,7 +75,7 @@ export default function ItrPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">Income tax computation</h1>
-        <p className="mt-1 max-w-3xl text-[14px] text-pos-ink/60">A resident individual&apos;s tax for Tax Year 2026-27 under both regimes. Check it against the Income-tax Department&apos;s utility before filing. The return file (ITR JSON) follows once the Department publishes its schema for this year.</p>
+        <p className="mt-1 max-w-3xl text-[14px] text-pos-ink/60">A resident individual&apos;s tax for Tax Year 2026-27 under both regimes. Check it against the Income-tax Department&apos;s utility before filing. The Department has not yet published return schemas for Tax Year 2026-27; the return files below are for Assessment Year 2026-27 (income of 2025-26), whose slabs, rebate and standard deduction are the same.</p>
       </div>
       <div className="grid gap-5 xl:grid-cols-[1fr_minmax(0,720px)]">
         <div className="space-y-3">
@@ -107,6 +108,7 @@ export default function ItrPage() {
           <p className="text-[13px] text-pos-ink/65">{Number(result.saving) > 0 ? `The ${result.lower === 'NEW' ? 'new' : 'old'} regime saves ${inr(result.saving)}.` : 'Both regimes come to the same tax.'} A taxpayer with business income can leave the new regime only once.</p>
         </div>
       </div>
+      <ItrFormPicker values={values} age={age ?? 'BELOW_60'} />
     </div>
   );
 }

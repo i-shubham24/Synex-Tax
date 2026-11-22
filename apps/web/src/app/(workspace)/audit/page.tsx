@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShieldCheck,
   Lock,
   Eye,
-  KeyRound,
   FileCheck2,
   Calendar,
   AlertOctagon,
   Clock,
-  CheckCircle2,
   AlertTriangle,
   Usb,
   Activity,
@@ -25,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { CustomDropdown, CustomSelect } from '../../../components/ui/CustomSelect';
+import { DscSigningPanel } from '../../../components/audit/DscSigningPanel';
 
 interface AuditLogEntry {
   id: string;
@@ -51,26 +50,6 @@ interface ExpiryItem {
   workflowStatus?: string;
 }
 
-interface DscTokenInfo {
-  id: string;
-  tokenModel: string;
-  manufacturer: string;
-  serialNumber: string;
-  tokenProfile: string;
-  fipsLevel: string;
-  status: string;
-  certificate: {
-    subject: string;
-    holderName: string;
-    holderPan: string;
-    issuer: string;
-    serialNumberHex: string;
-    validTo: string;
-    keyAlgorithm: string;
-    certificateClass: string;
-  };
-}
-
 interface PortalStatus {
   portal: string;
   name: string;
@@ -80,7 +59,8 @@ interface PortalStatus {
 }
 
 export default function AuditRadarPage() {
-  const { token } = useAuth();
+  const { authFetch } = useAuth();
+  const [chain, setChain] = useState<{ checked: number; firstBroken: number | null; headOk: boolean; intact: boolean } | 'checking' | 'error'>('checking');
   const [activeTab, setActiveTab] = useState<'RADAR' | 'DSC' | 'DPDP' | 'LEDGER'>('RADAR');
 
   // Logs state
@@ -90,19 +70,6 @@ export default function AuditRadarPage() {
 
   // Expiry items
   const [expiryItems, setExpiryItems] = useState<ExpiryItem[]>([]);
-
-  // DSC Bridge state
-  const [dscToken, setDscToken] = useState<DscTokenInfo | null>(null);
-  const [isSigningDsc, setIsSigningDsc] = useState<boolean>(false);
-  const [selectedFilingForSign, setSelectedFilingForSign] = useState<string>('GSTR-3B (102025)');
-  const [signingReceipt, setSigningReceipt] = useState<{
-    status: string;
-    signatureHex: string;
-    timestamp: string;
-    certSubject: string;
-    tokenModel: string;
-    statutoryStandards: string;
-  } | null>(null);
 
   // Portal Health state
   const [portals, setPortals] = useState<PortalStatus[]>([]);
@@ -114,141 +81,73 @@ export default function AuditRadarPage() {
   const [piiError, setPiiError] = useState<string | null>(null);
   const [isRevealingPii, setIsRevealingPii] = useState<boolean>(false);
 
-  // Helper to get active JWT token
-  const getValidAuthToken = async (): Promise<string | null> => {
-    let activeToken = token;
-    if (activeToken && !activeToken.startsWith('mem_session_')) {
-      return activeToken;
-    }
-    const cached = typeof window !== 'undefined' ? sessionStorage.getItem('synextax_token') : null;
-    if (cached && !cached.startsWith('mem_session_')) {
-      return cached;
-    }
+  // Recomputes the change-log hash chain on the server.
+  const checkChain = useCallback(async () => {
+    setChain('checking');
     try {
-      let csrf = '';
-      const cRes = await fetch('/api/v1/auth/csrf');
-      if (cRes.ok) {
-        const cData = await cRes.json();
-        csrf = cData.csrfToken || '';
-      }
-      const dHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrf) dHeaders['x-csrf-token'] = csrf;
-      const dRes = await fetch('/api/v1/auth/demo', {
-        method: 'POST',
-        headers: dHeaders,
-        body: JSON.stringify({ role: 'PARTNER' }),
-      });
-      if (dRes.ok) {
-        const dData = await dRes.json();
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('synextax_token', dData.accessToken);
-        }
-        return dData.accessToken;
-      }
-    } catch {}
-    return null;
-  };
+      const r = await authFetch('/api/v1/audit/chain');
+      setChain(r.ok ? await r.json() : 'error');
+    } catch {
+      setChain('error');
+    }
+  }, [authFetch]);
 
-  // Load live data on mount
+  // Load live data on mount. The session's own token is used; nothing is kept in web storage.
   useEffect(() => {
     let cancelled = false;
-
-    async function loadInitialData() {
+    const load = async (url: string, apply: (b: any) => void) => {
       try {
-        const activeToken = await getValidAuthToken();
-        const headers: Record<string, string> = {};
-        if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-
-        // 1. Expiry radar
-        const radarRes = await fetch('/api/v1/audit/expiry-radar', { headers, credentials: 'include' });
-        if (radarRes.ok) {
-          const rData = await radarRes.json();
-          if (!cancelled && rData.expiryItems) setExpiryItems(rData.expiryItems);
-        }
-
-        // 2. Audit logs
-        const logsRes = await fetch('/api/v1/audit/logs', { headers, credentials: 'include' });
-        if (logsRes.ok) {
-          const lData = await logsRes.json();
-          if (!cancelled && lData.logs) setLogs(lData.logs);
-        }
-
-        // 3. DSC Tokens
-        const dscRes = await fetch('/api/v1/dsc/tokens', { headers, credentials: 'include' });
-        if (dscRes.ok) {
-          const dData = await dscRes.json();
-          if (!cancelled && dData.tokens && dData.tokens.length > 0) setDscToken(dData.tokens[0]);
-        }
-
-        // 4. Portal Health
-        const pRes = await fetch('/api/v1/compliance/portal-health', { headers, credentials: 'include' });
-        if (pRes.ok) {
-          const pData = await pRes.json();
-          if (!cancelled && pData.portals) setPortals(pData.portals);
-        }
-      } catch (err) {
-        console.warn('Initial audit load notice:', err);
+        const r = await authFetch(url);
+        if (r.ok && !cancelled) apply(await r.json());
+      } catch {
+        /* each panel shows its own empty state */
       }
-    }
-
-    loadInitialData();
+    };
+    load('/api/v1/audit/expiry-radar', (b) => setExpiryItems(b.expiryItems ?? []));
+    load('/api/v1/audit/logs', (b) => setLogs(b.logs ?? []));
+    load('/api/v1/compliance/portal-health', (b) => setPortals(b.portals ?? []));
+    checkChain();
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [authFetch, checkChain]);
 
   // Refresh logs on filter change
   const refreshLogs = async () => {
     setIsLoadingLogs(true);
     try {
-      const activeToken = await getValidAuthToken();
-      const headers: Record<string, string> = {};
-      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-
-      const queryParam = filterTable !== 'ALL' ? `?tableName=${filterTable}` : '';
-      const logsRes = await fetch(`/api/v1/audit/logs${queryParam}`, { headers, credentials: 'include' });
+      const queryParam = filterTable !== 'ALL' ? `?tableName=${encodeURIComponent(filterTable)}` : '';
+      const logsRes = await authFetch(`/api/v1/audit/logs${queryParam}`);
       if (logsRes.ok) {
         const lData = await logsRes.json();
-        if (lData.logs) setLogs(lData.logs);
+        setLogs(lData.logs ?? []);
       }
-    } catch (err) {
-      console.warn('Refresh logs notice:', err);
     } finally {
       setIsLoadingLogs(false);
     }
+    checkChain();
   };
 
   // PII Reveal Handler
   const handleRevealPii = async () => {
     if (justification.trim().length < 10) {
-      setPiiError('DPDP Act 2023 statutory mandate: Minimum 10 characters legal purpose required.');
+      setPiiError('Say why you need the full PAN (at least 10 characters). It is recorded with your name.');
       return;
     }
 
     setIsRevealingPii(true);
     setPiiError(null);
     try {
-      const csrfRes = await fetch('/api/v1/auth/csrf');
-      const { csrfToken } = await csrfRes.json();
-
-      const activeToken = await getValidAuthToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'x-csrf-token': csrfToken,
-      };
-      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-
       // Reveal the PAN of the first client this user can see; the server logs it before returning it.
-      const entRes = await fetch('/api/v1/client-master/entities', { headers, credentials: 'include' });
+      const entRes = await authFetch('/api/v1/client-master/entities');
       const entities = entRes.ok ? ((await entRes.json()) as Array<{ id: string }>) : [];
       if (!entities[0]) {
         setPiiError('There is no client to reveal a PAN for yet.');
         return;
       }
-      const res = await fetch('/api/v1/audit/reveal-pii', {
+      const res = await authFetch('/api/v1/audit/reveal-pii', {
         method: 'POST',
-        headers,
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           targetTable: 'entities',
           targetColumn: 'pan',
@@ -266,97 +165,9 @@ export default function AuditRadarPage() {
         setPiiError(json.message || 'The value was not revealed.');
       }
     } catch (err: any) {
-      setPiiError('Error executing DPDP decryption: ' + err.message);
+      setPiiError('The PAN could not be shown. Try again.');
     } finally {
       setIsRevealingPii(false);
-    }
-  };
-
-  // Hardware DSC Signing Handler
-  const handleSignDsc = async () => {
-    setIsSigningDsc(true);
-    setSigningReceipt(null);
-    try {
-      const csrfRes = await fetch('/api/v1/auth/csrf');
-      const { csrfToken } = await csrfRes.json();
-
-      const activeToken = await getValidAuthToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'x-csrf-token': csrfToken,
-      };
-      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-
-      // Step 1: Pick a real open return in this firm, then request a single-use challenge
-      const signableRes = await fetch('/api/v1/dsc/signable', { headers, credentials: 'include' });
-      const signable = ((await signableRes.json()).data ?? []) as Array<{ id: string; form: string; period: string; client: string }>;
-      const wantGst = selectedFilingForSign.includes('GSTR');
-      const target = signable.find((f) => f.form.startsWith('GSTR') === wantGst) ?? signable[0];
-      if (!target) {
-        alert('There is no open return to sign in this firm.');
-        setIsSigningDsc(false);
-        return;
-      }
-      const challengeRes = await fetch('/api/v1/dsc/challenge', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          filingId: target.id,
-          signatoryPan: dscToken?.certificate.holderPan || 'AAAPV8912K',
-          formType: target.form,
-          digestSha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
-        }),
-      });
-
-      const challengeJson = await challengeRes.json();
-      if (!challengeJson.success || !challengeJson.data?.challengeNonce) {
-        alert('Failed to generate DSC cryptographic challenge: ' + (challengeJson.message || 'Unknown error'));
-        setIsSigningDsc(false);
-        return;
-      }
-
-      const nonce = challengeJson.data.challengeNonce;
-
-      // Step 2: Simulate USB PKCS#11 hardware token signing (ePass2003 / Go bridge)
-      const mockSignature = '3045022100' + nonce.slice(0, 32) + '0220' + nonce.slice(32, 64);
-      const timestamp = new Date().toISOString();
-
-      // Step 3: Verify and record signature in backend audit trail
-      const verifyRes = await fetch('/api/v1/dsc/verify', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          challengeNonce: nonce,
-          filingId: target.id,
-          certificateSubject: dscToken?.certificate.subject || 'CN=CA Amrinder Verma, SERIALNUMBER=014289N, OID.2.5.4.45=AAAPV8912K',
-          certificateSerialNumber: dscToken?.certificate.serialNumberHex || '3A4B892F10E401',
-          certificateIssuer: dscToken?.certificate.issuer || 'e-Mudhra Sub-CA for Class 3 Individual 2024',
-          signatureHex: mockSignature,
-          signingTimestamp: timestamp,
-        }),
-      });
-
-      const verifyJson = await verifyRes.json();
-      if (verifyJson.success) {
-        setSigningReceipt({
-          status: verifyJson.data?.status ?? 'SIGNED_UNVERIFIED',
-          signatureHex: mockSignature,
-          timestamp,
-          certSubject: dscToken?.certificate.subject || 'CN=CA Amrinder Verma',
-          tokenModel: dscToken?.tokenModel || 'ePass2003 Auto / mToken CryptoID',
-          statutoryStandards: `${target.form} ${target.period}, ${target.client}. Test signing: the local signer is a simulator, so this return is not DSC-signed and must not be filed with it.`,
-        });
-        // Refresh logs to show new DSC signing entry
-        refreshLogs();
-      } else {
-        alert('DSC verification failed: ' + verifyJson.message);
-      }
-    } catch (err: any) {
-      alert('Error during DSC signing: ' + err.message);
-    } finally {
-      setIsSigningDsc(false);
     }
   };
 
@@ -369,94 +180,86 @@ export default function AuditRadarPage() {
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-pos-accent">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Audit, Governance & DSC Signing Hub (DPDP Act 2023 & MCA Rule 3)</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-pos-ink tracking-tight mt-1">
-            Tamper-Evident Audit Ledger & Filing Expiry Radar
+          <h1 className="text-xl sm:text-2xl font-semibold text-pos-ink tracking-tight">
+            Audit trail, deadlines and DSC sign-off
           </h1>
           <p className="text-xs text-pos-ink/70 mt-0.5">
-            Cryptographically sealed under PostgreSQL 17 fail-closed triggers. Hardware DSC Class 3 signing bridge.
+            Every change is recorded, chained to the one before and cannot be edited. Returns are signed off with the partner&apos;s DSC.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-pos-accent animate-pulse"></span>
-            <span className="text-pos-ink/80">HMAC-SHA256 Hash Chain: </span>
-            <span className="text-pos-accent font-bold">VERIFIED</span>
-          </div>
-          <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md flex items-center gap-2">
-            <Usb className="w-3.5 h-3.5 text-[#3A6FE8]" />
-            <span className="text-pos-ink/80">DSC Bridge (127.0.0.1:18531): </span>
-            <span className="text-emerald-600 font-bold">ONLINE</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            type="button"
+            onClick={checkChain}
+            title="Recompute the SHA-256 chain linking every change-log entry"
+            className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md flex items-center gap-2 hover:bg-pos-line"
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                chain === 'checking' ? 'bg-pos-ink/30' : chain === 'error' ? 'bg-amber-500' : chain.intact ? 'bg-emerald-500' : 'bg-red-500'
+              }`}
+            ></span>
+            <span className="text-pos-ink/80">Change log chain:</span>
+            <span
+              className={`font-semibold ${
+                chain === 'checking' || chain === 'error' ? 'text-pos-ink/60' : chain.intact ? 'text-emerald-600' : 'text-red-600'
+              }`}
+            >
+              {chain === 'checking'
+                ? 'Checking…'
+                : chain === 'error'
+                  ? 'Could not check'
+                  : chain.intact
+                    ? `Intact, ${chain.checked.toLocaleString('en-IN')} entries`
+                    : chain.firstBroken !== null
+                      ? `Broken at entry ${chain.firstBroken}`
+                      : 'Entries missing at the end'}
+            </span>
+          </button>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-pos-line pb-2">
-        <button
-          onClick={() => setActiveTab('RADAR')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeTab === 'RADAR'
-              ? 'bg-pos-accent text-white shadow-sm'
-              : 'bg-pos-muted text-pos-ink/70 hover:text-pos-ink hover:bg-pos-line'
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Section 39 Expiry Radar</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('DSC')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeTab === 'DSC'
-              ? 'bg-pos-accent text-white shadow-sm'
-              : 'bg-pos-muted text-pos-ink/70 hover:text-pos-ink hover:bg-pos-line'
-          }`}
-        >
-          <Usb className="w-3.5 h-3.5" />
-          <span>Hardware DSC Signing Console</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('DPDP')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeTab === 'DPDP'
-              ? 'bg-pos-accent text-white shadow-sm'
-              : 'bg-pos-muted text-pos-ink/70 hover:text-pos-ink hover:bg-pos-line'
-          }`}
-        >
-          <Lock className="w-3.5 h-3.5" />
-          <span>DPDP Act 2023 PII Gate</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('LEDGER')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeTab === 'LEDGER'
-              ? 'bg-pos-accent text-white shadow-sm'
-              : 'bg-pos-muted text-pos-ink/70 hover:text-pos-ink hover:bg-pos-line'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Immutable Audit Ledger ({logs.length})</span>
-        </button>
+      {/* Tabs */}
+      <div role="tablist" aria-label="Audit sections" className="flex flex-wrap items-center gap-2 border-b border-pos-line pb-2">
+        {(
+          [
+            { id: 'RADAR', label: 'Deadlines', icon: Calendar },
+            { id: 'DSC', label: 'DSC signing', icon: Usb },
+            { id: 'DPDP', label: 'Reveal PAN', icon: Lock },
+            { id: 'LEDGER', label: `Audit trail (${logs.length})`, icon: FileText },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`audit-tab-${tab.id}`}
+            aria-selected={activeTab === tab.id}
+            aria-controls="audit-panel"
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pos-accent ${
+              activeTab === tab.id ? 'bg-pos-accent text-white' : 'bg-pos-muted text-pos-ink/70 hover:bg-pos-line hover:text-pos-ink'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" aria-hidden="true" />
+            <span>{tab.label}</span>
+          </button>
+        ))}
       </div>
 
+      <div id="audit-panel" role="tabpanel" aria-labelledby={`audit-tab-${activeTab}`} className="space-y-6">
       {/* Tab 1: Section 39 Statutory Expiry Radar */}
       {activeTab === 'RADAR' && (
         <div className="space-y-4">
-          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 shadow-xl space-y-4">
+          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-pos-line pb-3">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#3A6FE8]" />
-                <h2 className="font-bold text-sm text-pos-ink">Section 39 Statutory Expiry Radar</h2>
+                <h2 className="font-semibold text-sm text-pos-ink">Correction windows and time bars</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-bold border border-pos-line">
-                Sec 39(9) & 39(11) Hard Bar
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-semibold border border-pos-line">
+                Section 39(9) and 39(11)
               </span>
             </div>
 
@@ -465,39 +268,39 @@ export default function AuditRadarPage() {
               Section 39(11) (introduced by Finance Act 2023) after which the GSTN portal permanently rejects return filings.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               {expiryItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={`p-4 rounded-xl border transition-colors ${
                     item.status === 'WARNING_CORRECTION_NEAR'
                       ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
                       : 'bg-pos-surface border-pos-line shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center justify-between font-bold text-pos-ink">
+                  <div className="flex items-center justify-between font-semibold text-pos-ink">
                     <span className="truncate max-w-[200px]" title={item.taxpayerName}>{item.taxpayerName}</span>
-                    <span className="text-pos-accent font-bold px-2 py-0.5 rounded bg-pos-muted text-[11px]">
+                    <span className="text-pos-accent font-semibold px-2 py-0.5 rounded bg-pos-muted text-[11px]">
                       {item.formType}
                     </span>
                   </div>
 
                   <div className="text-[11px] text-pos-ink/60 mt-1">
-                    GSTIN / TAN: <span className="font-bold text-pos-ink">{item.gstin}</span>
+                    GSTIN / TAN: <span className="font-semibold text-pos-ink">{item.gstin}</span>
                   </div>
                   <div className="text-[11px] text-pos-ink/60">
-                    Period: <span className="font-bold">{item.returnPeriod}</span> | Status: <span className="text-emerald-600 font-bold">{item.workflowStatus || 'DRAFT'}</span>
+                    Period: <span className="font-semibold">{item.returnPeriod}</span> | Status: <span className="text-emerald-600 font-semibold">{item.workflowStatus || 'DRAFT'}</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-pos-line text-[11px]">
                     <div>
                       <span className="text-pos-ink/50 text-[10px] block">Amendment Cutoff:</span>
-                      <span className="text-[#C2410C] font-bold">{item.correctionWindowCutoff}</span>
+                      <span className="text-[#C2410C] font-semibold">{item.correctionWindowCutoff}</span>
                       <div className="text-pos-ink/70 font-sans text-[10px]">({item.daysRemainingCorrection} days left)</div>
                     </div>
                     <div>
                       <span className="text-pos-ink/50 text-[10px] block">3-Year Statutory Bar:</span>
-                      <span className="text-pos-red font-bold">{item.threeYearStatutoryBar}</span>
+                      <span className="text-pos-red font-semibold">{item.threeYearStatutoryBar}</span>
                       <div className="text-pos-ink/70 font-sans text-[10px]">(Portal Hard Block)</div>
                     </div>
                   </div>
@@ -514,11 +317,11 @@ export default function AuditRadarPage() {
           {/* Government Portal Health Ribbon */}
           <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-pos-line pb-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-pos-ink">
+              <div className="flex items-center gap-2 text-xs font-semibold text-pos-ink">
                 <Activity className="w-4 h-4 text-pos-accent" />
-                <span>Live Government Portal Health & Gateway Telemetry</span>
+                <span>Government portals</span>
               </div>
-              <span className="text-[10px] font-mono text-pos-ink/70 font-bold px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
+              <span className="text-[10px] font-mono text-pos-ink/70 font-semibold px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
                 {portals.length === 0
                   ? 'Not checked yet'
                   : portals.every((p) => p.status === 'OPERATIONAL')
@@ -527,12 +330,12 @@ export default function AuditRadarPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               {portals.map((p) => (
                 <div key={p.portal} className="p-3 rounded-lg bg-pos-muted border border-pos-line space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-pos-ink">{p.portal}</span>
-                    <span className={`font-bold text-[10px] flex items-center gap-1 ${p.status === 'OPERATIONAL' ? 'text-emerald-600' : p.status === 'UNKNOWN' ? 'text-pos-ink/50' : 'text-amber-600'}`}>
+                    <span className="font-semibold text-pos-ink">{p.portal}</span>
+                    <span className={`font-semibold text-[10px] flex items-center gap-1 ${p.status === 'OPERATIONAL' ? 'text-emerald-600' : p.status === 'UNKNOWN' ? 'text-pos-ink/50' : 'text-amber-600'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${p.status === 'OPERATIONAL' ? 'bg-emerald-500' : p.status === 'UNKNOWN' ? 'bg-pos-ink/30' : 'bg-amber-500'}`}></span>
                       {p.status === 'UNKNOWN' ? 'Unknown' : `${p.latencyMs} ms`}
                     </span>
@@ -544,193 +347,34 @@ export default function AuditRadarPage() {
             </div>
           </div>
 
-          {/* Token Card & Signing Actions */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: Detected Hardware USB Token Card (5 cols) */}
-            <div className="lg:col-span-5 space-y-4">
-              <div className="bg-pos-muted border border-pos-line rounded-xl p-5 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-pos-line pb-3">
-                  <div className="flex items-center gap-2">
-                    <Usb className="w-4 h-4 text-[#3A6FE8]" />
-                    <h2 className="font-bold text-sm text-pos-ink">Class 3 USB Hardware Token</h2>
-                  </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-bold border border-emerald-500/20 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Inserted
-                  </span>
-                </div>
-
-                {dscToken ? (
-                  <div className="space-y-3 font-mono text-xs">
-                    <div className="bg-pos-surface border border-pos-line rounded-lg p-3 space-y-2">
-                      <div className="text-[11px] text-pos-ink/60">Token Model & Manufacturer:</div>
-                      <div className="font-bold text-pos-ink">{dscToken.tokenModel}</div>
-                      <div className="text-[10px] text-pos-ink/50">{dscToken.manufacturer} | Serial: {dscToken.serialNumber}</div>
-                      <div className="text-[10px] font-bold text-pos-accent">{dscToken.fipsLevel} Profile</div>
-                    </div>
-
-                    <div className="bg-pos-surface border border-pos-line rounded-lg p-3 space-y-2">
-                      <div className="text-[11px] text-pos-ink/60">Signatory Certificate Subject:</div>
-                      <div className="font-bold text-pos-ink text-[11px] break-all">{dscToken.certificate.subject}</div>
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-pos-line text-[10px]">
-                        <div>
-                          <span className="text-pos-ink/50">Holder PAN:</span>
-                          <span className="font-bold text-pos-ink block">{dscToken.certificate.holderPan}</span>
-                        </div>
-                        <div>
-                          <span className="text-pos-ink/50">Serial Hex:</span>
-                          <span className="font-bold text-pos-accent block">{dscToken.certificate.serialNumberHex}</span>
-                        </div>
-                        <div>
-                          <span className="text-pos-ink/50">Key Algorithm:</span>
-                          <span className="text-pos-ink block">{dscToken.certificate.keyAlgorithm}</span>
-                        </div>
-                        <div>
-                          <span className="text-pos-ink/50">Valid Until:</span>
-                          <span className="text-emerald-600 font-bold block">{new Date(dscToken.certificate.validTo).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-xs text-pos-ink/50 font-mono">
-                    Scanning USB ports for PKCS#11 cryptographic token...
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right: Return Signing Console & Cryptographic Nonce Execution (7 cols) */}
-            <div className="lg:col-span-7 space-y-4">
-              <div className="bg-pos-muted border border-pos-line rounded-xl p-5 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-pos-line pb-3">
-                  <div>
-                    <h2 className="font-bold text-sm text-pos-ink">Desktop DSC Hardware Signing Console</h2>
-                    <p className="text-[11px] text-pos-ink/60">
-                      Sign statutory filings using local Go bridge daemon with single-use cryptographic challenge nonces.
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-pos-surface text-pos-accent border border-pos-line">
-                    Section 39 / Rule 26
-                  </span>
-                </div>
-
-                <div className="space-y-3 font-mono text-xs">
-                  <div className="space-y-1.5">
-                    <label className="text-pos-ink/70 font-semibold block">Select Filing for Digital Signing:</label>
-                    <CustomDropdown
-                      variant="form"
-                      value={selectedFilingForSign}
-                      onChange={(val) => setSelectedFilingForSign(val)}
-                      className="w-full"
-                      buttonClassName="w-full h-10 font-bold"
-                      options={[
-                        {
-                          value: 'GSTR-3B (102025)',
-                          label: 'Amritsar Phulkari Textiles | GSTR-3B',
-                          description: 'GSTIN: 03AAFCP4821K1Z5 | Period: 102025 | ITC Set-off Complete',
-                          badge: 'GSTR-3B',
-                        },
-                        {
-                          value: 'GSTR-1 (102025)',
-                          label: 'Amritsar Phulkari Textiles | GSTR-1',
-                          description: 'GSTIN: 03AAFCP4821K1Z5 | Period: 102025 | Outward Invoices Validated',
-                          badge: 'GSTR-1',
-                        },
-                        {
-                          value: 'FORM_140 (Q3 2026)',
-                          label: 'Golden Gate Hardware | Form 140 TDS',
-                          description: 'TAN: AMRG04217D | Q3 2026 | Dual-Act ITNS 281N Reconciled',
-                          badge: 'Form 140',
-                        },
-                      ]}
-                    />
-                  </div>
-
-                  <div className="p-3.5 rounded-lg bg-pos-surface border border-pos-line space-y-2 text-[11px]">
-                    <div className="flex justify-between text-pos-ink/70">
-                      <span>Signatory Identity:</span>
-                      <span className="font-bold text-pos-ink">CA Amrinder Verma, FCA (Partner)</span>
-                    </div>
-                    <div className="flex justify-between text-pos-ink/70">
-                      <span>Maker-Checker Guard:</span>
-                      <span className="font-bold text-emerald-600">AUTHORIZED (Senior Partner Sign-off)</span>
-                    </div>
-                    <div className="flex justify-between text-pos-ink/70">
-                      <span>Signing Mechanism:</span>
-                      <span>PKCS#11 C_SignInit / C_Sign with Class 3 Token</span>
-                    </div>
-                    <div className="flex justify-between text-pos-ink/70">
-                      <span>Nonce TTL:</span>
-                      <span>120 Seconds (Anti-Replay Protection)</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
-                      onClick={handleSignDsc}
-                      disabled={isSigningDsc}
-                      className="px-4 py-2 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-bold transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
-                    >
-                      <KeyRound className="w-4 h-4" />
-                      <span>{isSigningDsc ? 'Recording test signing...' : 'Test signing (simulated token)'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Signing Receipt Card */}
-                {signingReceipt && (
-                  <div className="p-4 rounded-xl bg-pos-surface border border-amber-500/40 shadow-lg space-y-2.5 font-mono text-xs">
-                    <div className="flex items-center justify-between border-b border-pos-line pb-2">
-                      <div className="flex items-center gap-1.5 text-amber-600 font-bold">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Test signing recorded, signature not verified</span>
-                      </div>
-                      <span className="text-[10px] font-bold text-pos-accent px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
-                        Signing trail logged
-                      </span>
-                    </div>
-
-                    <div className="text-pos-ink/70 space-y-1 text-[11px]">
-                      <div>Certificate: <span className="font-bold text-pos-ink">{signingReceipt.certSubject}</span></div>
-                      <div>Hardware Token: <span className="text-pos-ink">{signingReceipt.tokenModel}</span></div>
-                      <div>Timestamp: <span className="text-pos-ink">{new Date(signingReceipt.timestamp).toLocaleString('en-IN')}</span></div>
-                      <div className="truncate">Digital Signature (PKCS#7): <span className="text-[#3A6FE8]">{signingReceipt.signatureHex}</span></div>
-                      <div className="text-[10px] text-pos-ink/50 pt-1">{signingReceipt.statutoryStandards}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <DscSigningPanel onSigned={refreshLogs} />
         </div>
       )}
 
       {/* Tab 3: DPDP Act 2023 PII Access Gate */}
       {activeTab === 'DPDP' && (
         <div className="space-y-4">
-          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 shadow-xl space-y-4">
+          <div className="bg-pos-muted border border-pos-line rounded-xl p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-pos-line pb-3">
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-pos-accent" />
-                <h2 className="font-bold text-sm text-pos-ink">DPDP Act 2023 PII Access Gate</h2>
+                <h2 className="font-semibold text-sm text-pos-ink">Reveal a client's full PAN</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-bold border border-pos-line">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-semibold border border-pos-line">
                 Every reveal logged
               </span>
             </div>
 
             <p className="text-xs text-pos-ink/60 leading-relaxed">
-              Under the Digital Personal Data Protection Act 2023 and CERT-In VAPT guidelines, direct PII access
-              (PAN, bank account, mobile) is masked. Decryption requires explicit statutory purpose
-              logging and Partner-level authorization recorded in the immutable audit schema.
+              PANs, bank accounts and mobile numbers are masked everywhere (Digital Personal Data Protection Act 2023).
+              Showing one in full records who asked, when and why in the audit trail before the value is shown.
             </p>
 
-            <div className="bg-pos-surface border border-pos-line rounded-lg p-4 space-y-3 font-mono text-xs">
+            <div className="bg-pos-surface border border-pos-line rounded-lg p-4 space-y-3 text-xs">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-pos-ink/60 block text-[11px]">Client PAN:</span>
-                  <span className="text-pos-ink font-bold text-sm">
+                  <span className="text-pos-ink font-semibold text-sm">
                     {revealedValue || 'XXXXX####X'}
                   </span>
                 </div>
@@ -740,7 +384,7 @@ export default function AuditRadarPage() {
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pos-muted hover:bg-pos-line text-pos-ink text-xs font-semibold transition-colors border border-pos-line"
                   >
                     <Eye className="w-3.5 h-3.5 text-[#3A6FE8]" />
-                    <span>Statutory Reveal</span>
+                    <span>Reveal</span>
                   </button>
                 )}
               </div>
@@ -754,11 +398,11 @@ export default function AuditRadarPage() {
                     type="text"
                     value={justification}
                     onChange={(e) => setJustification(e.target.value)}
-                    placeholder="e.g. GST REG-01 verification for Punjab tax office"
+                    placeholder="For example: checking PAN for the GST registration application"
                     className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs text-pos-ink focus:outline-none focus:border-pos-accent font-mono"
                   />
-                  {piiError && <p className="text-[11px] text-pos-red font-mono">{piiError}</p>}
-                  <div className="flex justify-end gap-2 pt-1 font-mono">
+                  {piiError && <p className="text-[11px] text-pos-red">{piiError}</p>}
+                  <div className="flex justify-end gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setPiiTarget(null)}
@@ -770,9 +414,9 @@ export default function AuditRadarPage() {
                       type="button"
                       onClick={handleRevealPii}
                       disabled={isRevealingPii}
-                      className="px-3.5 py-1.5 bg-pos-accent hover:bg-pos-accent-deep text-white font-bold text-xs rounded-lg transition-colors disabled:opacity-50"
+                      className="px-3.5 py-1.5 bg-pos-accent hover:bg-pos-accent-deep text-white font-semibold text-xs rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {isRevealingPii ? 'Logging Decryption...' : 'Confirm & Decrypt'}
+                      {isRevealingPii ? 'Recording' : 'Record and show'}
                     </button>
                   </div>
                 </div>
@@ -780,7 +424,7 @@ export default function AuditRadarPage() {
 
               {revealedValue && (
                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 font-sans flex items-center justify-between">
-                  <span>Decryption logged in audit.pii_access_logs with HMAC signature and Partner identity.</span>
+                  <span>Recorded in the audit trail under your name.</span>
                   <button
                     onClick={() => {
                       setRevealedValue(null);
@@ -800,32 +444,32 @@ export default function AuditRadarPage() {
 
       {/* Tab 4: Immutable Audit Trail Ledger */}
       {activeTab === 'LEDGER' && (
-        <div className="bg-pos-muted border border-pos-line rounded-xl overflow-hidden shadow-xl space-y-4 p-5">
+        <div className="bg-pos-muted border border-pos-line rounded-xl overflow-hidden shadow-sm space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-pos-ink uppercase font-mono">Immutable Audit Trail Ledger</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent border border-pos-line font-bold">
+                <span className="text-sm font-semibold text-pos-ink font-mono">Audit trail</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent border border-pos-line font-semibold">
                   MCA Rule 3 & CGST Rule 56(15)
                 </span>
               </div>
               <p className="text-[11px] text-pos-ink/60 mt-0.5">
-                Every write, DSC signing, and PII reveal is cryptographically sealed in PostgreSQL 17.
+                Every change, DSC signing and PII reveal, newest first. Entries cannot be edited or deleted.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-mono">
+            <div className="flex items-center gap-2 text-xs">
               <CustomDropdown
                 variant="table"
                 value={filterTable}
                 onChange={(val) => setFilterTable(val)}
                 className="min-w-[170px]"
                 options={[
-                  { value: 'ALL', label: 'All Event Types', badge: 'ALL' },
+                  { value: 'ALL', label: 'All events', badge: 'ALL' },
                   { value: 'entities', label: 'Legal Entities', badge: 'Entities' },
                   { value: 'gst_registrations', label: 'GST Registrations', badge: 'GSTIN' },
                   { value: 'gst_invoices_purchase', label: 'Purchase Invoices', badge: 'Invoices' },
-                  { value: 'signing_audit_logs', label: 'DSC Signing Logs', badge: 'PKCS#7' },
+                  { value: 'signing_audit_logs', label: 'DSC signing', badge: 'DSC' },
                 ]}
               />
               <button
@@ -840,38 +484,38 @@ export default function AuditRadarPage() {
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-pos-surface border border-pos-line text-xs font-mono text-pos-ink/70 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-pos-accent font-bold">
+          <div className="p-3 rounded-lg bg-pos-surface border border-pos-line text-xs text-pos-ink/70 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-pos-accent font-semibold">
               <ShieldCheck className="w-4 h-4" />
-              <span>Hard Immutability Protection Active</span>
+              <span>Entries cannot be changed</span>
             </span>
             <span className="text-[11px]">
-              TRUNCATE, UPDATE, and DELETE operations hard-blocked by trigger prevent_audit_tampering()
+              The database refuses any edit or deletion of an entry, even by its owner, and each entry carries the hash of the one before it.
             </span>
           </div>
 
           <div className="overflow-x-auto border border-pos-line rounded-lg">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-pos-surface text-pos-ink/60 font-mono text-[11px] border-b border-pos-line uppercase">
-                  <th className="py-2.5 px-3">Event Type</th>
+                <tr className="bg-pos-surface text-pos-ink/60 text-[11px] border-b border-pos-line">
+                  <th className="py-2.5 px-3">Event</th>
                   <th className="py-2.5 px-3">Performed By</th>
                   <th className="py-2.5 px-3">IP Address</th>
                   <th className="py-2.5 px-3">Timestamp (IST)</th>
-                  <th className="py-2.5 px-3">HMAC Hash</th>
-                  <th className="py-2.5 px-3">Audit Details</th>
+                  <th className="py-2.5 px-3">Chain hash</th>
+                  <th className="py-2.5 px-3">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-pos-line font-mono">
                 {filteredLogs.map((entry) => (
                   <tr key={entry.id} className="hover:bg-pos-tint transition-colors">
                     <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-pos-surface text-pos-accent border border-pos-line">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-pos-surface text-pos-accent border border-pos-line">
                         {entry.eventType}
                       </span>
                     </td>
                     <td className="py-2.5 px-3">
-                      <div className="text-pos-ink font-bold">{entry.performedBy}</div>
+                      <div className="text-pos-ink font-semibold">{entry.performedBy}</div>
                       <div className="text-[10px] text-pos-ink/60">{entry.userRole}</div>
                     </td>
                     <td className="py-2.5 px-3 text-pos-ink/60">{entry.ipAddress}</td>
@@ -884,11 +528,12 @@ export default function AuditRadarPage() {
             </table>
           </div>
 
-          <div className="text-[11px] font-mono text-pos-ink/50 text-right pt-1">
-            Displaying {filteredLogs.length} verified events from PostgreSQL 17 audit schema
+          <div className="text-[11px] text-pos-ink/50 text-right pt-1">
+            {filteredLogs.length} entries
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

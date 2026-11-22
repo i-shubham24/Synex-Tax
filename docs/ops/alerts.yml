@@ -1,0 +1,58 @@
+# SynexTax alert rules (Prometheus format; Grafana Cloud, Amazon Managed Prometheus and others
+# load this file as is). They read GET /metrics from the API (set METRICS_TOKEN and give the
+# scraper that token) and the readiness probe.
+#
+# Service level objectives these alerts protect:
+#   Availability: 99.5% of API requests answer without a 5xx, per 30 days (error budget 0.5%).
+#   Latency: 99% of API requests finish within 1 second, per 30 days.
+
+groups:
+  - name: synextax-api
+    rules:
+      # Burning the monthly error budget 14 times too fast: it would be gone in about two days.
+      - alert: ApiErrorBudgetFastBurn
+        expr: |
+          sum(rate(synextax_http_requests_total{status="5xx"}[5m]))
+            / sum(rate(synextax_http_requests_total[5m])) > 14 * 0.005
+          and
+          sum(rate(synextax_http_requests_total{status="5xx"}[1h]))
+            / sum(rate(synextax_http_requests_total[1h])) > 14 * 0.005
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: More than 7% of API requests are failing
+          runbook: Check the API logs for the request ids in the 5xx responses, then /health/readiness.
+
+      - alert: ApiErrorBudgetSlowBurn
+        expr: |
+          sum(rate(synextax_http_requests_total{status="5xx"}[6h]))
+            / sum(rate(synextax_http_requests_total[6h])) > 2 * 0.005
+        for: 30m
+        labels: { severity: ticket }
+        annotations:
+          summary: API errors are using the monthly budget twice as fast as allowed
+
+      - alert: ApiLatencyP99High
+        expr: |
+          histogram_quantile(0.99, sum by (le) (rate(synextax_http_request_duration_ms_bucket[10m]))) > 1000
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: p99 API latency above 1 second for 15 minutes
+          runbook: Look for the slowest routes with histogram_quantile by route; check database statement timeouts in the logs.
+
+      - alert: SignInFailuresSpike
+        expr: |
+          sum(rate(synextax_http_requests_total{route=~"/api/v1/auth/(login|mfa/verify)",status="4xx"}[10m])) > 1
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: Many failed sign-ins or MFA codes (possible password guessing)
+
+      - alert: ApiNotReady
+        # From a blackbox or uptime probe of https://<site>/health/readiness.
+        expr: probe_success{job="synextax-readiness"} == 0
+        for: 3m
+        labels: { severity: page }
+        annotations:
+          summary: The API cannot reach its database

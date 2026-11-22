@@ -1,160 +1,68 @@
-import {
-  AgentHealthStatus,
-  TokenCertificateInfo,
-  SignDigestPayload,
-  SignDigestResult,
-} from './types.js';
+import { AgentCertificate, AgentHealthStatus, SignDigestPayload, SignDigestResult } from './types.js';
 
 export interface DscBridgeClientOptions {
   agentBaseUrl?: string;
   timeoutMs?: number;
-  mockMode?: boolean;
+  /** Signing waits for the user to enter the PIN in the token's window. */
+  signTimeoutMs?: number;
 }
 
 const DEFAULT_AGENT_URL = 'http://127.0.0.1:18531';
-const DEFAULT_TIMEOUT_MS = 15000;
 
+/** Talks to the SynexTax desktop agent on this computer (apps/dsc-agent). */
 export class DscBridgeClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
-  private readonly mockMode: boolean;
+  private readonly signTimeoutMs: number;
 
   constructor(options: DscBridgeClientOptions = {}) {
     this.baseUrl = (options.agentBaseUrl || DEFAULT_AGENT_URL).replace(/\/$/, '');
-    this.timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
-    this.mockMode = !!options.mockMode;
+    this.timeoutMs = options.timeoutMs || 15_000;
+    this.signTimeoutMs = options.signTimeoutMs || 120_000;
   }
 
-  /**
-   * Checks whether the local desktop USB bridge daemon is running on 127.0.0.1:18531.
-   */
-  public async checkHealth(): Promise<AgentHealthStatus> {
-    if (this.mockMode) {
-      return {
-        status: 'ONLINE',
-        version: '0.1.0-mock',
-        daemon: 'SynexTax Local Desktop DSC Bridge (Mock)',
-        listenAddress: this.baseUrl,
-        tokensDetected: 1,
-        tallyReachable: true,
-        tallyStatus: 'CONNECTED',
-        currentTimestamp: new Date().toISOString(),
-      };
-    }
-
+  private async call(path: string, init: RequestInit, ms: number): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-
-      const res = await fetch(`${this.baseUrl}/health`, {
-        signal: controller.signal,
-        headers: { Accept: 'application/json' },
-      });
+      return await fetch(`${this.baseUrl}${path}`, { ...init, signal: controller.signal, headers: { Accept: 'application/json', ...(init.headers as Record<string, string>) } });
+    } finally {
       clearTimeout(timer);
+    }
+  }
 
-      if (!res.ok) {
-        return {
-          status: 'OFFLINE',
-          tokensDetected: 0,
-          tallyReachable: false,
-        };
-      }
-
+  /** Whether the agent is running on this computer. */
+  public async checkHealth(): Promise<AgentHealthStatus> {
+    try {
+      const res = await this.call('/health', {}, this.timeoutMs);
+      if (!res.ok) return { status: 'OFFLINE', tokensDetected: 0, tallyReachable: false };
       return (await res.json()) as AgentHealthStatus;
     } catch {
-      return {
-        status: 'OFFLINE',
-        tokensDetected: 0,
-        tallyReachable: false,
-      };
+      return { status: 'OFFLINE', tokensDetected: 0, tallyReachable: false };
     }
   }
 
-  /**
-   * Discovers connected FIPS 140-2 / FIPS 140-3 Class 3 USB DSC tokens.
-   */
-  public async listTokens(): Promise<TokenCertificateInfo[]> {
-    if (this.mockMode) {
-      return [
-        {
-          subjectName: 'CN=Amrinder Verma, SERIALNUMBER=AABCP1332L, O=Personal, C=IN',
-          signatoryPan: 'AABCP1332L',
-          commonName: 'Amrinder Verma',
-          issuerName: 'CN=e-Mudhra Sub-CA for Class 3 Individual, O=e-Mudhra Consumer Services Limited, C=IN',
-          serialNumber: '4B89F2A10984E4',
-          validFrom: '2024-04-01T00:00:00Z',
-          validTo: '2027-04-01T23:59:59Z',
-          isClass3: true,
-          hardwareTokenModel: 'Feitian ePass2003 (FIPS 140-2 Level 3 Mock)',
-        },
-      ];
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-
-    const res = await fetch(`${this.baseUrl}/api/v1/tokens`, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-    });
-    clearTimeout(timer);
-
-    if (!res.ok) {
-      throw new Error(`DSC Agent returned HTTP ${res.status} when listing tokens`);
-    }
-
-    const data = (await res.json()) as { tokens: TokenCertificateInfo[] };
-    return data.tokens;
+  /** Signing certificates on this computer whose key can be used now. */
+  public async listCertificates(): Promise<AgentCertificate[]> {
+    const res = await this.call('/api/v1/tokens', {}, this.timeoutMs);
+    if (!res.ok) throw new Error(`The agent returned HTTP ${res.status} when listing certificates`);
+    return ((await res.json()) as { tokens: AgentCertificate[] }).tokens ?? [];
   }
 
-  /**
-   * Prompts user for token PIN and signs the return filing SHA-256 digest on physical USB token.
-   */
+  /** Signs a server-built digest. The token's own driver asks for the PIN. */
   public async signDigest(payload: SignDigestPayload): Promise<SignDigestResult> {
-    if (!payload.challengeNonce || payload.challengeNonce.length !== 64) {
-      throw new Error('Invalid challenge nonce: Must be 64-character SHA-256 hex string');
-    }
-    if (!payload.digestSha256 || payload.digestSha256.length !== 64) {
-      throw new Error('Invalid digest: Must be 64-character SHA-256 hex string');
-    }
-    if (!payload.tokenPin) {
-      throw new Error('Token PIN is required for hardware PKCS#11 signing');
-    }
-
-    if (this.mockMode) {
-      const tokens = await this.listTokens();
-      const cert = tokens[0];
-
-      if (payload.expectedPan && cert.signatoryPan !== payload.expectedPan.toUpperCase()) {
-        throw new Error(
-          `DSC token PAN ${cert.signatoryPan} does not match expected signatory PAN ${payload.expectedPan}`
-        );
-      }
-
-      return {
-        signatureHex: '30450221008f1b62...' + payload.digestSha256 + payload.challengeNonce.substring(0, 16),
-        certificate: cert,
-        signingTimestamp: new Date().toISOString(),
-        algorithm: 'SHA256withRSA/PKCS1Padding',
-      };
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-
-    const res = await fetch(`${this.baseUrl}/api/v1/sign`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-
+    if (!/^[0-9a-f]{64}$/i.test(payload.digestSha256)) throw new Error('The digest must be 64 hex characters (SHA-256)');
+    if (!payload.challengeToken) throw new Error('A server-signed challenge token is required');
+    if (!payload.certificateId) throw new Error('Choose a certificate');
+    const res = await this.call(
+      '/api/v1/sign',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
+      this.signTimeoutMs,
+    );
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'UNKNOWN_AGENT_ERROR' }));
-      throw new Error(`Signing failed (${res.status}): ${(err as { error?: string }).error || 'Agent error'}`);
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(`Signing failed (${res.status}): ${(err.error || 'agent error').replace(/^dsc: /, '')}`);
     }
-
     return (await res.json()) as SignDigestResult;
   }
 }

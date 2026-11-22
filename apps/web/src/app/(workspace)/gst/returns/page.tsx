@@ -2,13 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Calculator, CalendarRange, ClipboardPaste, FileStack, PackageCheck } from 'lucide-react';
+import { ArrowLeft, BarChart3, Calculator, CalendarRange, ClipboardPaste, FileStack, PackageCheck } from 'lucide-react';
 import { COMPOSITION_RATE, cmp08, gstr4Annual, type CompositionKind, type Gstr1SummaryLine, type SalesRowResult } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
 import { Itc04Panel } from '../../../../components/gst/Itc04Panel';
 import { Gstr3bYearPanel } from '../../../../components/gst/Gstr3bYearPanel';
+import { MisPanel } from '../../../../components/gst/MisPanel';
+import { TemplateLink } from '../../../../components/TemplateLink';
 
-type Tab = 'register' | 'gstr1' | 'gstr3b' | 'composition' | 'itc04';
+type Tab = 'register' | 'gstr1' | 'gstr3b' | 'mis' | 'composition' | 'itc04';
 interface Registration { gstin: string; category: string; name: string }
 interface Summary { lines: Gstr1SummaryLine[]; totals: { taxableValue: string; igst: string; cgst: string; sgst: string; cess: string; tax: string } }
 
@@ -133,7 +135,7 @@ export default function GstReturnsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="tablist">
-          {([['register', 'Sales register', ClipboardPaste], ['gstr1', 'GSTR-1 summary', FileStack], ['gstr3b', '3B for the year', CalendarRange], ['composition', 'CMP-08 and GSTR-4', Calculator], ['itc04', 'ITC-04 job work', PackageCheck]] as const).map(([id, label, Icon]) => (
+          {([['register', 'Sales register', ClipboardPaste], ['gstr1', 'GSTR-1 summary', FileStack], ['gstr3b', '3B for the year', CalendarRange], ['mis', 'MIS and parties', BarChart3], ['composition', 'CMP-08 and GSTR-4', Calculator], ['itc04', 'ITC-04 job work', PackageCheck]] as const).map(([id, label, Icon]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}><Icon className="h-4 w-4" /> {label}</button>
           ))}
@@ -154,6 +156,7 @@ export default function GstReturnsPage() {
       {tab === 'register' && (
         <section className="pos-card space-y-3 p-4">
           <p className="text-[13px] text-pos-ink/65">Copy the sales register from Excel, or open the CSV your billing software exports, and paste it here. Columns are matched by their headings: invoice number, date, party GSTIN, place of supply, taxable value, rate, IGST, CGST, SGST, and optionally cess, invoice value, type (credit or debit note), reverse charge and export type. Every row is checked before anything is saved.</p>
+          <TemplateLink fileName="sales-register-template.csv" label="Sales register template" headers={['Invoice No', 'Date', 'Party Name', 'GSTIN', 'Place of Supply', 'Taxable Value', 'Rate', 'IGST', 'CGST', 'SGST', 'Cess', 'Invoice Value', 'Type', 'Reverse Charge', 'Export Type']} example={['GG/101', '05/10/2026', 'Ludhiana Traders', '03AABCL1234F1Z8', '03', '10000', '18', '0', '900', '900', '0', '11800', 'INV', 'N', '']} />
           <textarea aria-label="Sales register" value={text} onChange={(e) => { setText(e.target.value); setPreview(null); }} rows={8} className="w-full rounded-[10px] border border-pos-line bg-pos-surface p-3 font-mono text-[12px] text-pos-ink outline-none focus:border-pos-accent" placeholder="Invoice No	Date	Party Name	GSTIN	Place of Supply	Taxable Value	Rate	IGST	CGST	SGST" />
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={!text.trim() || !gstin || busy} onClick={() => send('preview')} className="rounded-full border border-pos-line px-4 py-2 text-[13px] text-pos-ink disabled:opacity-40">Check</button>
@@ -183,6 +186,7 @@ export default function GstReturnsPage() {
 
       {tab === 'itc04' && <Itc04Panel />}
       {tab === 'gstr3b' && <Gstr3bYearPanel gstin={gstin} />}
+      {tab === 'mis' && <MisPanel gstin={gstin} />}
 
       {tab === 'composition' && (
         <section className="space-y-4">

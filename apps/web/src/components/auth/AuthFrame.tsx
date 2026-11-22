@@ -147,6 +147,14 @@ export function Field({
           {error}
         </p>
       )}
+      {/* Every sign-in password field offers the way back in. */}
+      {isPassword && props.autoComplete === 'current-password' && (
+        <p className="mt-1.5 pr-2 text-right font-display text-[12.5px]">
+          <Link href="/forgot-password" className="text-ink/55 underline decoration-ink/20 underline-offset-4 hover:text-ink hover:decoration-ink">
+            Forgot your password?
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -210,7 +218,7 @@ export function DemoPill({ children, ...props }: React.ButtonHTMLAttributes<HTML
     <button
       type="button"
       {...props}
-      className="group inline-flex h-9 items-center gap-2 rounded-full bg-white/70 pl-3.5 pr-1 font-display text-[13.5px] font-medium tracking-[-0.01em] text-ink shadow-[0_0_0_1px_rgba(20,20,22,0.09)] transition-all hover:bg-white hover:shadow-[0_0_0_1px_rgba(20,20,22,0.15),0_8px_18px_-10px_rgba(20,20,22,0.35)] disabled:opacity-60"
+      className="group inline-flex h-9 items-center gap-2 rounded-full bg-white/70 pl-3.5 pr-1 font-display text-[13.5px] font-medium tracking-[-0.01em] text-ink shadow-[0_0_0_1px_rgba(20,20,22,0.09)] transition-colors hover:bg-white hover:shadow-[0_0_0_1px_rgba(20,20,22,0.15),0_8px_18px_-10px_rgba(20,20,22,0.35)] disabled:opacity-60"
     >
       {children}
       <ArrowChip tone="light" size="sm" />

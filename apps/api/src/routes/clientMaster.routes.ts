@@ -8,6 +8,7 @@ import {
 } from '@synextax/shared-schemas';
 import { validateGstin, validatePan } from '@synextax/tax-engine';
 import { db } from '../db/pool.js';
+import { publicMessage } from '../plugins/publicError.js';
 
 export async function clientMasterRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
   fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -139,7 +140,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
 
       return reply.send(tree);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Database Error', message: err.message });
+      return reply.status(500).send({ error: 'Database Error', message: publicMessage(err) });
     }
   });
 
@@ -157,7 +158,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.send(list);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Database Error', message: err.message });
+      return reply.status(500).send({ error: 'Database Error', message: publicMessage(err) });
     }
   });
 
@@ -184,7 +185,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.status(201).send(created);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Database Error', message: err.message });
+      return reply.status(500).send({ error: 'Database Error', message: publicMessage(err) });
     }
   });
 
@@ -203,7 +204,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.send(list);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Database Error', message: err.message });
+      return reply.status(500).send({ error: 'Database Error', message: publicMessage(err) });
     }
   });
 
@@ -250,7 +251,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.status(201).send(created);
     } catch (err: any) {
-      return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: err.message });
+      return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: publicMessage(err) });
     }
   });
 
@@ -269,7 +270,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.send(list);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Database Error', message: err.message });
+      return reply.status(500).send({ error: 'Database Error', message: publicMessage(err) });
     }
   });
 
@@ -326,7 +327,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.status(201).send(created);
     } catch (err: any) {
-      return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: err.message });
+      return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: publicMessage(err) });
     }
   });
 
@@ -344,7 +345,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.send(list);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Database Error', message: err.message });
+      return reply.status(500).send({ error: 'Database Error', message: publicMessage(err) });
     }
   });
 
@@ -383,7 +384,7 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       });
       return reply.status(201).send(created);
     } catch (err: any) {
-      return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: err.message });
+      return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: publicMessage(err) });
     }
   });
 }

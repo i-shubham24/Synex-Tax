@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Known high or critical advisories in production dependencies fail the build.
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Build
+        run: npx turbo run build
+      - name: Type check web
+        run: npx tsc --noEmit -p apps/web
+      - name: Tax engine tests
+        run: npm test -w @synextax/tax-engine
+      - name: Database migrations and RLS tests
+        run: |
+          npm run migrate:test -w @synextax/db
+          npm run migrate:check -w @synextax/db
+      - name: API tests
+        run: npm test -w @synextax/api
+      - name: DSC client tests
+        run: npm test -w @synextax/dsc-client
+
+  agent:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/dsc-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/dsc-agent/go.mod
+      - run: go vet ./...
+      # Windows runs the signing tests through CNG and CryptoAPI with in-memory keys.
+      - run: go test ./...
+      - run: go build ./...
+        env:
+          GOOS: linux

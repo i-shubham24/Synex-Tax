@@ -8,10 +8,11 @@
     "build": "npm run build:deps && tsc",
     "build:deps": "npm run build --prefix ../../packages/shared-schemas && npm run build --prefix ../../packages/tax-engine && npm run build --prefix ../../workers/queue-worker",
     "start": "node dist/server.js",
-    "dev": "tsx watch src/server.ts",
-    "test": "node --test dist/**/*.test.js",
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "test": "node --env-file=test.env --test dist/**/*.test.js",
     "lint": "tsc --noEmit",
-    "dev:local": "tsx watch --env-file=dev.env src/server.ts"
+    "dev:local": "tsx watch --env-file=dev.env src/server.ts",
+    "agent-key": "node scripts/agent-key.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.2",
@@ -24,16 +25,17 @@
     "@synextax/tax-engine": "*",
     "decimal.js": "^10.5.0",
     "fastify": "^5.2.1",
+    "ioredis": "^5.11.1",
     "pg": "^8.13.3",
     "qrcode": "1.5.4",
-    "zod": "^3.24.2"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@synextax/db": "*",
     "@types/node": "^22.13.4",
     "@types/pg": "^8.11.11",
     "@types/qrcode": "^1.5.6",
     "tsx": "^4.19.3",
-    "typescript": "^5.7.3",
-    "@synextax/db": "*"
+    "typescript": "^5.7.3"
   }
 }

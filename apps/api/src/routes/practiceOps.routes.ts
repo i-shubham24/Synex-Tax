@@ -2,9 +2,11 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { PRACTICE_SERVICES, clientLedger, feeInvoiceNumber, feeInvoiceTax, generateTasks, type TaskClient, type TdsForm } from '@synextax/tax-engine';
 import { db } from '../db/pool.js';
+import { expectedVersion, versionTag, VERSION_MATCHES } from '../plugins/concurrency.js';
+import { insertRows } from '../db/batchInsert.js';
 
 const ISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const UUID = z.string().uuid();
+const UUID = z.guid();
 const GenerateBody = z.object({ from: ISO, to: ISO });
 const TaskQuery = z.object({ from: ISO, to: ISO, status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'NOT_APPLICABLE', 'PENDING']).optional() });
 const TaskPatch = z.object({ status: z.enum(['OPEN', 'IN_PROGRESS', 'DONE', 'NOT_APPLICABLE']).optional(), assignedTo: UUID.nullable().optional(), note: z.string().max(500).optional() });
@@ -53,16 +55,13 @@ export async function practiceOpsRoutes(fastify: FastifyInstance) {
             return { tan: t.tan, forms: used.length ? used : (['140'] as TdsForm[]) };
           }),
       }));
-      let n = 0;
-      for (const t of generateTasks(clients, b.data.from, b.data.to)) {
-        const r = await c.query(
-          `INSERT INTO public.practice_tasks (firm_id, entity_id, task_key, kind, reference, title, period_label, due_date)
-           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7) ON CONFLICT (firm_id, task_key) DO NOTHING`,
-          [t.entityId, t.key, t.kind, t.reference, t.title, t.periodLabel, t.dueDate],
-        );
-        n += r.rowCount ?? 0;
-      }
-      return n;
+      return insertRows(
+        c,
+        'INSERT INTO public.practice_tasks (firm_id, entity_id, task_key, kind, reference, title, period_label, due_date)',
+        '(app.current_firm_id(), ?, ?, ?, ?, ?, ?, ?)',
+        generateTasks(clients, b.data.from, b.data.to).map((t) => [t.entityId, t.key, t.kind, t.reference, t.title, t.periodLabel, t.dueDate]),
+        'ON CONFLICT (firm_id, task_key) DO NOTHING',
+      );
     });
     return reply.send({ added });
   });
@@ -75,7 +74,7 @@ export async function practiceOpsRoutes(fastify: FastifyInstance) {
       (
         await c.query(
           `SELECT t.id, t.entity_id, e.legal_name AS client, t.kind, t.reference, t.title, t.period_label, t.due_date, t.status, t.assigned_to,
-                  u.display_name AS assignee, t.completed_at, t.note
+                  u.display_name AS assignee, t.completed_at, t.note, t.updated_at
            FROM public.practice_tasks t JOIN public.entities e ON e.id = t.entity_id LEFT JOIN public.users u ON u.id = t.assigned_to
            WHERE t.due_date BETWEEN $1 AND $2 AND ($3::text IS NULL OR t.status = $3) AND (NOT $4 OR t.status IN ('OPEN','IN_PROGRESS'))
            ORDER BY t.due_date, e.legal_name, t.title LIMIT 2000`,
@@ -94,21 +93,27 @@ export async function practiceOpsRoutes(fastify: FastifyInstance) {
     const b = TaskPatch.safeParse(request.body);
     if (!UUID.safeParse(id).success || !b.success) return reply.status(400).send({ error: 'Invalid' });
     if (b.data.assignedTo !== undefined && !lead(request)) return reply.status(403).send({ error: 'Forbidden', message: 'Partners and managers assign tasks.' });
-    const n = await db.withTenantTransaction(ctx(request), async (c) =>
-      (
-        await c.query(
-          `UPDATE public.practice_tasks SET
-             status = COALESCE($2, status),
-             assigned_to = CASE WHEN $3 THEN $4::uuid ELSE assigned_to END,
-             note = COALESCE($5, note),
-             completed_at = CASE WHEN $2 = 'DONE' THEN now() WHEN $2 IS NOT NULL THEN NULL ELSE completed_at END,
-             completed_by = CASE WHEN $2 = 'DONE' THEN app.current_user_id() WHEN $2 IS NOT NULL THEN NULL ELSE completed_by END
-           WHERE id = $1`,
-          [id, b.data.status ?? null, b.data.assignedTo !== undefined, b.data.assignedTo ?? null, b.data.note ?? null],
-        )
-      ).rowCount,
-    );
-    return n ? reply.send({ ok: true }) : reply.status(404).send({ error: 'Not found' });
+    const expected = expectedVersion(request);
+    const out = await db.withTenantTransaction(ctx(request), async (c) => {
+      const r = await c.query<{ updated_at: Date }>(
+        `UPDATE public.practice_tasks SET
+           status = COALESCE($2, status),
+           assigned_to = CASE WHEN $3 THEN $4::uuid ELSE assigned_to END,
+           note = COALESCE($5, note),
+           completed_at = CASE WHEN $2 = 'DONE' THEN now() WHEN $2 IS NOT NULL THEN NULL ELSE completed_at END,
+           completed_by = CASE WHEN $2 = 'DONE' THEN app.current_user_id() WHEN $2 IS NOT NULL THEN NULL ELSE completed_by END
+         WHERE id = $1 AND ${VERSION_MATCHES('$6')}
+         RETURNING updated_at`,
+        [id, b.data.status ?? null, b.data.assignedTo !== undefined, b.data.assignedTo ?? null, b.data.note ?? null, expected],
+      );
+      if (r.rows[0]) return { kind: 'ok' as const, version: r.rows[0].updated_at as Date };
+      const exists = expected ? (await c.query('SELECT 1 FROM public.practice_tasks WHERE id = $1', [id])).rowCount : 0;
+      return { kind: exists ? ('stale' as const) : ('missing' as const), version: undefined as unknown as Date };
+    });
+    if (out.kind === 'stale') return reply.status(409).send({ error: 'Changed', message: 'Someone changed this task after you opened it. Reload to see the latest.' });
+    if (out.kind === 'missing') return reply.status(404).send({ error: 'Not found' });
+    reply.header('ETag', versionTag(out.version));
+    return reply.send({ ok: true, version: new Date(out.version).toISOString() });
   });
 
   // ------------------------------------------------------------------ fees

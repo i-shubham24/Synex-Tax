@@ -65,8 +65,8 @@ export const TaxRateSchema = z
 // Sales Register Invoice Schema (GSTR-1 / e-Invoice)
 // ---------------------------------------------------------------------
 export const SalesInvoiceCreateSchema = z.object({
-  entityId: z.string().uuid(),
-  gstRegistrationId: z.string().uuid(),
+  entityId: z.guid(),
+  gstRegistrationId: z.guid(),
   invoiceNum: z.string().trim().regex(/^[A-Za-z0-9\-\/]{1,16}$/, 'Rule 46(b) maximum 16 chars: A-Z, 0-9, -, /'),
   invoiceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD'),
   docType: DocTypeEnum.default('INV'),
@@ -96,8 +96,8 @@ export type SalesInvoiceCreate = z.infer<typeof SalesInvoiceCreateSchema>;
 // Purchase Register Invoice Schema (GSTR-2B Recon)
 // ---------------------------------------------------------------------
 export const PurchaseInvoiceCreateSchema = z.object({
-  entityId: z.string().uuid(),
-  gstRegistrationId: z.string().uuid(),
+  entityId: z.guid(),
+  gstRegistrationId: z.guid(),
   vendorGstin: GstinStringSchema,
   vendorTradeName: z.string().trim().max(200).optional(),
   invoiceNum: z.string().trim().max(32),
@@ -120,8 +120,8 @@ export type PurchaseInvoiceCreate = z.infer<typeof PurchaseInvoiceCreateSchema>;
 // GST Filing State Machine Schema
 // ---------------------------------------------------------------------
 export const GstFilingStatusSchema = z.object({
-  id: z.string().uuid(),
-  gstRegistrationId: z.string().uuid(),
+  id: z.guid(),
+  gstRegistrationId: z.guid(),
   returnPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   returnType: z.enum(['GSTR1', 'GSTR1A', 'GSTR3B', 'CMP08', 'GSTR9', 'GSTR9C', 'IFF']),
   workflowStatus: FilingWorkflowStatusEnum,

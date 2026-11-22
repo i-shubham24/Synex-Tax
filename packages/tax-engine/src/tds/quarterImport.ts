@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import { parseDelimited, parseIndianAmount } from '../import/clientImport.js';
 import { formHasSection, type StatementForm } from './statementWriter.js';
+import { linkRowsToChallans } from './challanLink.js';
 
 /**
  * A quarter's TDS (or TCS) payments pasted from Excel: one row per payee payment, with the challan
@@ -70,7 +71,49 @@ export interface QuarterChallan {
   rows: QuarterRow[];
 }
 
-export function parseQuarterSheet(text: string, opts: { form: StatementForm; taxYear: number; quarter: 1 | 2 | 3 | 4 }): { challans: QuarterChallan[]; errors: Array<{ line: number; message: string }>; missing: Field[] } {
+/** A challan list pasted separately: BSR code, challan number, date, tax, and optionally interest and fee. */
+export interface ChallanListEntry { bsr: string; challanNo: string; depositedOn: string; tax: string; interest: string; fee: string }
+
+export function parseChallanList(text: string): { challans: ChallanListEntry[]; errors: Array<{ line: number; message: string }> } {
+  const heads: Array<[keyof ChallanListEntry, RegExp]> = [
+    ['bsr', /^(bsr|bsr\s*code)$/],
+    ['challanNo', /^(challan|challan\s*(no|number|serial))\.?$/],
+    ['depositedOn', /^((challan|deposit)\s*)?date$|^deposited\s*on$/],
+    ['tax', /^(tax|income\s*tax|tds|amount)$/],
+    ['interest', /^interest$/],
+    ['fee', /^(late\s*)?fee$/],
+  ];
+  const t = parseDelimited(text);
+  let hi = 0;
+  let best = -1;
+  const keyOf = (h: string) => heads.find(([, re]) => re.test(h.toLowerCase().replace(/[_.]+/g, ' ').replace(/\s+/g, ' ').trim()))?.[0] ?? null;
+  for (let i = 0; i < Math.min(15, t.length); i++) {
+    const n = t[i].filter((c) => keyOf(c)).length;
+    if (n > best) { best = n; hi = i; }
+  }
+  const map = (t[hi] ?? []).map(keyOf);
+  const challans: ChallanListEntry[] = [];
+  const errors: Array<{ line: number; message: string }> = [];
+  for (let r = hi + 1; r < t.length; r++) {
+    const raw: Partial<Record<keyof ChallanListEntry, string>> = {};
+    t[r].forEach((c, i) => { const k = map[i]; if (k && raw[k] === undefined) raw[k] = c.trim(); });
+    if (!raw.bsr && !raw.tax) continue;
+    const bsr = (raw.bsr ?? '').replace(/\D/g, '');
+    const challanNo = (raw.challanNo ?? '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    const depositedOn = isoDate(raw.depositedOn ?? '');
+    const tax = parseIndianAmount(raw.tax ?? '');
+    const e: string[] = [];
+    if (!/^\d{7}$/.test(bsr)) e.push('BSR code must be 7 digits.');
+    if (!/^\d{1,5}$/.test(challanNo)) e.push('Challan number must be up to 5 digits.');
+    if (!depositedOn) e.push('Date is not a date (dd/mm/yyyy).');
+    if (tax === null || !new Decimal(tax).gt(0)) e.push('Tax must be more than zero.');
+    if (e.length) { errors.push({ line: r + 1, message: e.join(' ') }); continue; }
+    challans.push({ bsr, challanNo, depositedOn: depositedOn!, tax: new Decimal(tax!).toFixed(2), interest: new Decimal(parseIndianAmount(raw.interest || '0') ?? 0).toFixed(2), fee: new Decimal(parseIndianAmount(raw.fee || '0') ?? 0).toFixed(2) });
+  }
+  return { challans, errors };
+}
+
+export function parseQuarterSheet(text: string, opts: { form: StatementForm; taxYear: number; quarter: 1 | 2 | 3 | 4; challanList?: ChallanListEntry[] }): { challans: QuarterChallan[]; errors: Array<{ line: number; message: string }>; missing: Field[] } {
   const table = parseDelimited(text);
   let hi = 0;
   let best = -1;
@@ -79,7 +122,9 @@ export function parseQuarterSheet(text: string, opts: { form: StatementForm; tax
     if (n > best) { best = n; hi = i; }
   }
   const map = (table[hi] ?? []).map(match);
-  const required: Field[] = ['bsr', 'challanNo', 'depositedOn', 'section', 'pan', 'name', 'amountPaid', 'paidOn', 'tax'];
+  // With a separate challan list, rows need no challan columns: they are linked by month.
+  const linking = !!opts.challanList && !map.includes('bsr');
+  const required: Field[] = linking ? ['section', 'pan', 'name', 'amountPaid', 'paidOn', 'tax'] : ['bsr', 'challanNo', 'depositedOn', 'section', 'pan', 'name', 'amountPaid', 'paidOn', 'tax'];
   const missing = required.filter((f) => !map.includes(f));
   const errors: Array<{ line: number; message: string }> = [];
   if (missing.length) return { challans: [], errors, missing };
@@ -88,6 +133,7 @@ export function parseQuarterSheet(text: string, opts: { form: StatementForm; tax
   const ends = [`${opts.taxYear}-06-30`, `${opts.taxYear}-09-30`, `${opts.taxYear}-12-31`, `${opts.taxYear + 1}-03-31`];
   const [qs, qe] = [starts[opts.quarter - 1], ends[opts.quarter - 1]];
   const groups = new Map<string, QuarterChallan>();
+  const pending: QuarterRow[] = [];
 
   for (let r = hi + 1; r < table.length; r++) {
     const raw: Partial<Record<Field, string>> = {};
@@ -98,11 +144,11 @@ export function parseQuarterSheet(text: string, opts: { form: StatementForm; tax
     const before = errors.length;
 
     const bsr = (raw.bsr ?? '').replace(/\D/g, '');
-    if (!/^\d{7}$/.test(bsr)) err('BSR code must be 7 digits.');
+    if (!linking && !/^\d{7}$/.test(bsr)) err('BSR code must be 7 digits.');
     const challanNo = (raw.challanNo ?? '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-    if (!/^\d{1,5}$/.test(challanNo)) err('Challan serial number must be up to 5 digits.');
-    const depositedOn = isoDate(raw.depositedOn ?? '');
-    if (!depositedOn) err(`Challan date "${raw.depositedOn ?? ''}" is not a date (dd/mm/yyyy).`);
+    if (!linking && !/^\d{1,5}$/.test(challanNo)) err('Challan serial number must be up to 5 digits.');
+    const depositedOn = linking ? '' : isoDate(raw.depositedOn ?? '');
+    if (!linking && !depositedOn) err(`Challan date "${raw.depositedOn ?? ''}" is not a date (dd/mm/yyyy).`);
     const section = (raw.section ?? '').trim();
     if (!formHasSection(opts.form, section)) err(`Code ${section || '(blank)'} is not in Annexure 2 of Form ${opts.form}.`);
     const pan = (raw.pan ?? '').toUpperCase().replace(/\s/g, '');
@@ -121,14 +167,38 @@ export function parseQuarterSheet(text: string, opts: { form: StatementForm; tax
     if (tax && new Decimal(tax).gt(0) && !deductedOn) err('Date of deduction is not a date.');
     if (errors.length > before) continue;
 
+    const rate = raw.rate ? String(raw.rate).replace('%', '').trim() : new Decimal(amountPaid!).gt(0) ? new Decimal(tax!).div(amountPaid!).mul(100).toFixed(4) : '0';
+    const qrow: QuarterRow = { line, section, pan, name, amountPaid: new Decimal(amountPaid!).toFixed(2), paidOn: paidOn!, tax: new Decimal(tax!).toFixed(2), deposited: new Decimal(deposited!).toFixed(2), deductedOn: new Decimal(tax!).gt(0) ? deductedOn : null, ratePercent: rate, reason: (raw.reason ?? '').toUpperCase(), certificate: (raw.certificate ?? '').toUpperCase() };
+    if (linking) {
+      pending.push(qrow);
+      continue;
+    }
     const key = `${bsr}|${challanNo}|${depositedOn}`;
     const g = groups.get(key) ?? { key, bsr, challanNo, depositedOn: depositedOn!, interest: '0.00', fee: '0.00', tax: '0.00', rows: [] };
     if (raw.interest && new Decimal(parseIndianAmount(raw.interest) ?? 0).gt(0)) g.interest = new Decimal(parseIndianAmount(raw.interest)!).toFixed(2);
     if (raw.fee && new Decimal(parseIndianAmount(raw.fee) ?? 0).gt(0)) g.fee = new Decimal(parseIndianAmount(raw.fee)!).toFixed(2);
     g.tax = new Decimal(g.tax).add(deposited!).toFixed(2);
-    const rate = raw.rate ? String(raw.rate).replace('%', '').trim() : new Decimal(amountPaid!).gt(0) ? new Decimal(tax!).div(amountPaid!).mul(100).toFixed(4) : '0';
-    g.rows.push({ line, section, pan, name, amountPaid: new Decimal(amountPaid!).toFixed(2), paidOn: paidOn!, tax: new Decimal(tax!).toFixed(2), deposited: new Decimal(deposited!).toFixed(2), deductedOn: new Decimal(tax!).gt(0) ? deductedOn : null, ratePercent: rate, reason: (raw.reason ?? '').toUpperCase(), certificate: (raw.certificate ?? '').toUpperCase() });
+    g.rows.push(qrow);
     groups.set(key, g);
+  }
+
+  if (linking && opts.challanList) {
+    const list = opts.challanList;
+    const keyOf = (c: ChallanListEntry) => `${c.bsr}|${c.challanNo}|${c.depositedOn}`;
+    const res = linkRowsToChallans(
+      pending.map((r) => ({ key: String(r.line), deductedOn: r.deductedOn ?? r.paidOn, tax: r.deposited })),
+      list.map((c) => ({ key: keyOf(c), depositedOn: c.depositedOn, tax: c.tax })),
+    );
+    for (const u of res.unlinked) errors.push({ line: Number(u.key), message: u.reason });
+    for (const r of pending) {
+      const ck = res.links[String(r.line)];
+      if (!ck) continue;
+      const c = list.find((x) => keyOf(x) === ck)!;
+      const g = groups.get(ck) ?? { key: ck, bsr: c.bsr, challanNo: c.challanNo, depositedOn: c.depositedOn, interest: c.interest, fee: c.fee, tax: '0.00', rows: [] };
+      g.tax = new Decimal(g.tax).add(r.deposited).toFixed(2);
+      g.rows.push(r);
+      groups.set(ck, g);
+    }
   }
   return { challans: [...groups.values()], errors, missing };
 }

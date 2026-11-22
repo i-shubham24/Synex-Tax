@@ -4,6 +4,7 @@ import { Decimal } from 'decimal.js';
 import { db } from '../db/pool.js';
 import { activeGstPeriod } from '../modules/tenancy/trialBootstrapper.js';
 import { GstItcSetOffEngine } from '@synextax/tax-engine';
+import { publicMessage } from '../plugins/publicError.js';
 
 export async function gstRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
   fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -180,7 +181,7 @@ export async function gstRoutes(fastify: FastifyInstance, _opts: FastifyPluginOp
 
       return reply.send({ success: true, source: 'POSTGRESQL_RLS', data: result });
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Sales Fetch Failed', message: err.message });
+      return reply.status(500).send({ error: 'Sales Fetch Failed', message: publicMessage(err) });
     }
   });
 

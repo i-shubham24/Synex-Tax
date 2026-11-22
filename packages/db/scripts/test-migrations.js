@@ -256,6 +256,54 @@ test('Audit: even the table owner is stopped by the immutability trigger', async
   }
 });
 
+test('Audit chain: every change-log row links to the one before it, per firm', async () => {
+  await asApp(ctx(F.A, U.pA), (tx) => tx.query(`UPDATE public.entities SET legal_name = legal_name || ' ' WHERE id = $1`, [E.A1]));
+  await asApp(ctx(F.A, U.pA), (tx) => tx.query(`UPDATE public.entities SET legal_name = rtrim(legal_name) WHERE id = $1`, [E.A1]));
+  const v = await asApp(ctx(F.A, U.pA), async (tx) => (await tx.query('SELECT * FROM audit.verify_chain()')).rows[0]);
+  assert.ok(Number(v.checked) >= 2);
+  assert.equal(v.first_broken, null);
+  assert.equal(v.head_ok, true);
+  // Firm B's chain is its own and starts at 1.
+  const b = await asApp(ctx(F.B, U.pB), async (tx) => (await tx.query('SELECT min(chain_seq)::int AS s FROM audit.immutable_audit_logs')).rows[0].s);
+  assert.ok(b === null || b === 1);
+});
+
+test('Audit chain: a row changed, removed or cut from the end is detected', async () => {
+  const rows = (await db.query(`SELECT id, chain_seq FROM audit.immutable_audit_logs WHERE firm_id = $1 ORDER BY chain_seq`, [F.A])).rows;
+  assert.ok(rows.length >= 3);
+  const mid = rows[Math.floor(rows.length / 2)];
+  const last = rows[rows.length - 1];
+  // Each scenario bypasses the immutability trigger as a database superuser would, then rolls back.
+  const tampered = async (sql, params) => {
+    let result;
+    await db
+      .transaction(async (tx) => {
+        await tx.query('ALTER TABLE audit.immutable_audit_logs DISABLE TRIGGER trg_no_update_delete_audit_logs');
+        await tx.query(sql, params);
+        await tx.query('ALTER TABLE audit.immutable_audit_logs ENABLE TRIGGER trg_no_update_delete_audit_logs');
+        await tx.query('SET LOCAL ROLE synextax_app');
+        const c = ctx(F.A, U.pA);
+        await tx.query(
+          `SELECT app.set_request_context($1::uuid, $2::uuid, $3::text, $4::inet, $5::text, $6::text, $7::bigint, $8::varchar, $9::text)`,
+          [c.firmId, c.userId, c.actorKind, '10.0.0.7', 'req-test', 'verify-suite', c.exp, c.kid, c.sig],
+        );
+        result = (await tx.query('SELECT * FROM audit.verify_chain()')).rows[0];
+        throw new Error('ROLLBACK');
+      })
+      .catch((e) => {
+        if (e.message !== 'ROLLBACK') throw e;
+      });
+    return result;
+  };
+  const edited = await tampered(`UPDATE audit.immutable_audit_logs SET new_data = '{"legal_name":"Someone Else"}' WHERE id = $1`, [mid.id]);
+  assert.equal(Number(edited.first_broken), Number(mid.chain_seq));
+  const removed = await tampered(`DELETE FROM audit.immutable_audit_logs WHERE id = $1`, [mid.id]);
+  assert.equal(Number(removed.first_broken), Number(mid.chain_seq) + 1);
+  const cut = await tampered(`DELETE FROM audit.immutable_audit_logs WHERE id = $1`, [last.id]);
+  assert.equal(cut.first_broken, null);
+  assert.equal(cut.head_ok, false);
+});
+
 test('Audit: a PII reveal is logged for the caller and cannot be filed under another firm', async () => {
   const logId = await asApp(ctx(F.A, U.sA), async (tx) =>
     (await tx.query(`SELECT audit.log_pii_access($1, $2, 'entities', 'pan', $2, 'Verifying PAN for GSTR-1 filing') AS id`, [F.A, E.A1])).rows[0].id,

@@ -104,3 +104,95 @@ Re-read on 21 Nov 2026 from new.smartbizindia.com (Smart GST and Smart e-TDS pag
 - Government portal status in the header and audit page was hard-coded as normal; it is now a real five-minute check.
 - Payee and health responses sent full PANs; they are masked now.
 - The MFA challenge secret had no production guard; production now refuses the development default.
+
+## 6. Update, 21 Nov 2026 (evening)
+
+Closed since section 5, each tested (tax-engine 116, DB 43, API 31, agent 4 packages) and checked in the browser:
+
+| SmartBiz has | SynexTax now |
+|---|---|
+| Client upload by phone (Assist, Android app) | Upload link per checklist: the client photographs or picks each document on a phone page that can be added to the home screen; files checked by type and checksum, items marked received |
+| TDS at each section's rate and threshold | Every Form 140 code from the department's Tax Year 2026-27 chart and section 393: short rate, missed deduction past the threshold, wrong below-threshold claims |
+| Lower deduction certificates (197 / 395) | Register with rate, limit and dates; reason A rows checked, limit used in date order |
+| Government deductors, Form 24G reports | State, ministry and AIN written to the statement; book adjustments listed with 24G receipt and DDO serial |
+| Salary summaries, Form 124 report | Salary register per employee with tax, TDS so far and monthly TDS; Form 124 report |
+| Bulk challan linking | Payments and challans pasted as two lists, linked by month |
+| FVU inside the software | Agent prepares the folder, opens Protean's FVU and reads the result |
+| Certificates for every PAN, signed | Check of the TRACES converter's PDFs: one PAN each, signed or not |
+| Whole folder of past filings, Excel templates | Several statement files at once; CSV templates for each paste import |
+| Person register, MIS reports | Party master and MIS by month |
+| Function keys | F2 to F10 jump between screens |
+
+Fixed along the way: the desktop agent accepted any web page whose address merely started with an allowed one (for example `https://app.synextax.com.attacker.net`); origins are now matched exactly. The CSRF signing secret had no production guard; it has one now.
+
+Still waiting on outside inputs: GSP (GST filing, GSTR-2 download, ledgers), FVU download consent and a TRACES route (corrections, certificate download, bulk PAN checks, compliance inbox), sample CSI, TRACES consolidated and 26AS files (their layouts are not published), Protean's Form 138 Q4 format, ITD's ITR schemas, mail and WhatsApp providers (sending certificates and reminders, staff invitations), S3 storage in Mumbai (uploads on Vercel), an India-hosted AI model. Also to do: server-signed challenge codes for the agent (today it checks codes only for reuse).
+
+## 7. Update, 21 Nov 2026 (night): what could be built without outside help
+
+Checked against Protean's and the Income Tax Department's sites on 21 Nov 2026.
+
+| Gap | Now |
+|---|---|
+| TDS corrections (SmartBiz: online correction, conso file) | Built. Protean published correction formats v1.2 (4 Aug 2026) for Forms 138 (Q1 to Q3), 140, 143 and 144. SynexTax reads the TRACES consolidated file and writes C5 (PAN), C3 (challan and rows, placeholder PANs) and C9 (missed challan) files, one type per file. Tested on Protean's sample layout; to be confirmed on a real consolidated file. |
+| ITR filing files | Built for ITR-1, AY 2026-27: written to the Department's schema ITR-1_2026_Main_V1.1 and checked against it in tests, with 234A, 234B and 234F worked out. Writing the file needs the software ID the Department gives a registered e-return intermediary. ITR-2, 3 and 4 follow the same way. |
+| Signed agent requests | Built. The agent acts only on Ed25519 tokens signed by the server, one action each, two minutes, used once. |
+| Uploads on Vercel, email, WhatsApp, AI | Built and tested against recorded requests: S3 and SES in Mumbai or Hyderabad, Meta's WhatsApp template messages, Bedrock in India with identifiers masked. Each turns on with its settings. |
+| Settings page | The "API & GSP Connections" tab showed GSTN, IRP, TRACES and e-filing as "CONNECTED" with response times; none was real. It now shows what is actually set up. |
+
+Still needing something from outside: a GSP contract (GST filing, GSTR-2B, ledgers); e-return intermediary registration (ITR software ID, direct filing); Protean's PAN verification registration (bulk PAN checks, Rs 14,160 a year); sample CSI, 26AS and GSTR-2B files; Protean's Form 138 Q4 formats; an AWS account in Mumbai and a Meta business account.
+
+DSC signing (added the same night): the Audit page's signing was simulated, and so was the agent's. The agent now signs through the Windows certificate store with the token's own PIN window, the server builds what is signed and checks the signature against the certificate, and production requires the CCA India roots (`DSC_TRUSTED_ROOTS`). Tested with in-memory keys through the same Windows calls; not yet tried with a physical token.
+
+## 8. Comparison, 22 Nov 2026
+
+Re-read on 22 Nov 2026 from new.smartbizindia.com: home, Smart e-TDS, Smart GST, Smartbiz Assist, Smartbiz AI and the Updates pages. Their product pages are unchanged since 21 Nov. Their update logs list "AY 2026-27 added" and "FVU 9.0" for Smart e-TDS, "Financial Year 2025-26" for Smart GST, and ITR-1 to 7 and Form 3CA/3CB/3CD for AY 2025-26 as the latest Smart Tax update (Service Pack 40, 2 Sep 2025).
+
+### Ahead of SmartBiz
+
+| Area | SmartBiz (from their pages) | SynexTax |
+|---|---|---|
+| GST input credit | 3B compared with GSTR-1 and GSTR-2A | GSTR-2B reconciliation, IMS actions, GSTR-1A, the pre-14th guard and the 3B lock; nothing on their pages covers 2B or IMS |
+| Installation | Windows software with SQL Server, Java, .NET and AnyDesk for remote help | Browser, plus a small signer on the computer that holds the DSC |
+| Control and audit | "Audit log of every action" (Assist only) | Maker-checker on signing and filing; row-level security per firm and per assigned client; every change in a SHA-256 hash chain that the Audit page rechecks, exported for auditors; PANs masked with every reveal logged |
+| DSC sign-off | emBridge | Server builds what is signed; the signature is checked against the certificate and the CCA India roots; each attempt recorded |
+| Security | Not described | MFA for every account, session-bound CSRF, strict per-request CSP, India-only hosting, signed agent requests, CI with dependency audit |
+| Corrections | C1, C2, C3, C5 | C3, C5 and C9 (missed challan); C1 and C2 are the gap below |
+| ITR year | Latest published update: AY 2025-26 | ITR-1 for AY 2026-27 checked against the Department's schema (file written once the ERI software ID is set) |
+| Trial | Request form (except AI) | Open demo workspace |
+
+### Level
+
+TDS statements for Forms 138 (Q1 to Q3), 140, 143 and 144 in both Acts; imports of past FVU files and pasted sheets; health view with section 398 interest and the 427 fee; salary TDS in both regimes with Form 124; Form 121 register; lower deduction certificates; 24G and government deductor data; deposit, payee and clause 34 reports; challan linking; Protean FVU run through the agent; user rights by screen and by client; document checklists with phone upload; tasks from the due-date calendar; fee invoices, receipts and ledger; Ctrl+K and function keys; What's New.
+
+### Behind, needing outside access
+
+| Gap | What unblocks it |
+|---|---|
+| e-filing GSTR-1, 3B, 4, ITC-04; GSTR-2 download; cash and credit ledgers; challan history; filed cases | A GST Suvidha Provider contract |
+| TDS e-filing prepared on the portal, CSI download, conso and certificate download, justification reports, compliance inbox, e-Pay Tax filled in, bulk PAN checks | A TRACES or e-filing route that does not store portal passwords; Protean PAN verification registration for bulk checks |
+| ITR filing, AIS, TIS and 26AS fetch, e-verify | E-return intermediary registration (software ID and API) |
+| Form 138 Q4 | Protean's Q4 format |
+| Sending email and WhatsApp, file storage on Vercel, the AI model | AWS account in Mumbai and a Meta business account (the adapters are built and tested) |
+| Android app with push | A Play Console account; can start as an installable web app |
+| Proof on real data | One real TRACES consolidated file and one physical DSC token to confirm the correction reader and token signing |
+
+### Behind, buildable now
+
+| Gap | SmartBiz has |
+|---|---|
+| C1 and C2 corrections; Excel import and export of deductees in a correction; drafts, versions and revert | Smart e-TDS B |
+| ITR-2, 3 and 4 return files from the Department's published schemas; Form 3CA, 3CB, 3CD | Smart Tax |
+| Reminders that send themselves on day 1 and day 5, a note to the firm on day 10, pause when everything is in | Assist B |
+| Documents: client folders, versions with restore, previews, an open log; deliverable locked until the fee is paid | Assist C and E |
+| Client logins and client messages with attachments | Assist A and D |
+| Staff invited by email; password reset by code; signed-in devices listed and signed out | Assist A and F |
+| Task board, calendar of deadlines and meetings | Assist D |
+| Backup agent uploading on a schedule with an alert when one is late, plus Zoho and Vyapar | Assist backup agent (ours keeps backups on the computer) |
+| Certificates sent to payees by email and WhatsApp after the TRACES PDFs are checked | Smart e-TDS C |
+| AI: questions answered with 2025 and 1961 sections, notice reply drafts with citation checks, deeds and resolutions, calculators, daily CBDT and GST notification feed | Smartbiz AI (ours explains FVU errors only) |
+| Bank statements from PDF and scans, ten bank layouts; ledger scrutiny; two-party reconciliation | Smartbiz AI D (ours: pasted statements, rules, Tally vouchers) |
+| Billing with a stock register; single-entry VAT accounts | Smart Billing, Smart My Account (outside the GST and TDS workspace; not planned) |
+
+### Not planned
+
+Local network installation, and portal automation that stores client passwords.

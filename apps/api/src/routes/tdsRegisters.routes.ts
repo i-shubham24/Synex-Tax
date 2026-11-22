@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import {
+  checkCertificates,
+  checkRates,
   defaultAnalysis,
   depositRegister,
   formHasSection,
@@ -27,6 +29,18 @@ const Form121Body = z.object({
   incomeNature: z.string().trim().max(120).optional(),
   estimatedIncome: z.number().min(0).max(1e13),
   estimatedTotalIncome: z.number().min(0).max(1e13),
+});
+
+const CertificateBody = z.object({
+  tan: z.string().regex(/^[A-Z]{4}\d{5}[A-Z]$/),
+  certificateNo: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{10}([A-Z0-9]{5})?$/, 'The certificate number is 10 or 15 letters and digits.'),
+  pan: z.string().regex(/^[A-Z]{5}\d{4}[A-Z]$/),
+  name: z.string().trim().min(1).max(75),
+  sectionCode: z.string().regex(/^\d{4}$/),
+  ratePercent: z.number().min(0).max(100),
+  amountLimit: z.number().positive().max(1e13),
+  validFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  validTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
 const istToday = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
@@ -68,14 +82,14 @@ export async function tdsRegistersRoutes(fastify: FastifyInstance) {
       const t = (await c.query<{ id: string }>('SELECT id FROM public.tan_registrations WHERE tan = $1', [tan])).rows[0];
       if (!t) return null;
       const challans = await c.query(
-        `SELECT id, bsr_code, challan_no, deposit_date, interest_allocation::text AS interest
+        `SELECT id, bsr_code, challan_no, deposit_date, interest_allocation::text AS interest, payment_mode, total_challan_amount::text AS total
          FROM public.tds_challans WHERE tan_registration_id = $1 AND tax_year = $2 AND status = 'ACTIVE'`,
         [t.id, year],
       );
       const rows = await c.query(
         `SELECT d.id, d.form_code, d.challan_id, d.deductee_pan, d.deductee_name, a.section_code, d.payment_credit_date, d.amount_paid::text AS paid,
                 d.tds_deducted::text AS ded, d.total_tds_deposited::text AS dep, d.deduction_date, (d.tds_rate * 100)::text AS rate,
-                d.reason_for_non_deduction, d.form121_uin
+                d.reason_for_non_deduction, d.form121_uin, d.certificate_no
          FROM public.tds_deductees d
          JOIN public.tds_challans ch ON ch.id = d.challan_id
          JOIN public.tds_challan_section_allocations a ON a.id = d.section_allocation_id
@@ -93,7 +107,12 @@ export async function tdsRegistersRoutes(fastify: FastifyInstance) {
          FROM public.form121_declarations WHERE tan_registration_id = $1 AND tax_year = $2 ORDER BY received_on DESC`,
         [t.id, year],
       );
-      return { challans: challans.rows, rows: rows.rows, returns: returns.rows, form121: form121.rows };
+      const certificates = await c.query(
+        `SELECT id, certificate_no, deductee_pan, deductee_name, section_code, rate_percent::text AS rate, amount_limit::text AS amount_limit, valid_from, valid_to
+         FROM public.lower_deduction_certificates WHERE tan_registration_id = $1 AND valid_to >= $2 AND valid_from <= $3 ORDER BY valid_from`,
+        [t.id, `${year}-04-01`, `${year + 1}-03-31`],
+      );
+      return { challans: challans.rows, rows: rows.rows, returns: returns.rows, form121: form121.rows, certificates: certificates.rows };
     });
     if (!data) return reply.status(404).send({ error: 'Not found', message: `TAN ${tan} is not in Client Master.` });
 
@@ -113,17 +132,30 @@ export async function tdsRegistersRoutes(fastify: FastifyInstance) {
       ratePercent: r.rate,
       reasonCode: r.reason_for_non_deduction,
       form121Uin: r.form121_uin,
+      certificateNo: r.certificate_no,
     }));
     const active = data.form121.filter((f) => f.status === 'ACTIVE');
     const analysis = defaultAnalysis({ rows, challans, form121: active.map((f) => ({ pan: f.declarant_pan, uin: f.identification_no })) });
 
+    // Section rates and thresholds (Form 140 codes, Tax Year 2026-27 chart); earlier years are not judged.
+    const rateFindings = year >= 2026 ? checkRates(rows.filter((r) => r.form === '140').map((r) => ({ id: r.id, pan: r.pan, name: r.name, sectionCode: r.sectionCode, paidOn: r.paidOn, amountPaid: r.amountPaid, taxDeducted: r.taxDeducted, reasonCode: r.reasonCode }))) : [];
+
+    const certs = data.certificates.map((c) => ({ id: c.id, certificateNo: c.certificate_no, pan: c.deductee_pan, name: c.deductee_name, sectionCode: c.section_code, ratePercent: c.rate, amountLimit: c.amount_limit, validFrom: iso(c.valid_from)!, validTo: iso(c.valid_to)! }));
+    const certCheck = checkCertificates(rows.map((r) => ({ id: r.id, pan: r.pan, name: r.name, sectionCode: r.sectionCode, paidOn: r.paidOn, amountPaid: r.amountPaid, taxDeducted: r.taxDeducted, reasonCode: r.reasonCode, certificateNo: (r as { certificateNo?: string | null }).certificateNo })), certs);
+    for (const f of certCheck.findings) f.pan = maskPan(f.pan);
+
     // PANs leave the server masked; the audited reveal endpoint shows a full one when needed.
-    for (const list of [analysis.noPanLowRate, analysis.declarationsMissing]) for (const x of list) x.pan = maskPan(x.pan);
+    for (const list of [analysis.noPanLowRate, analysis.declarationsMissing, rateFindings]) for (const x of list) x.pan = maskPan(x.pan);
 
     return reply.send({
       tan,
       year,
       analysis,
+      rateFindings,
+      // Form 24G: tax paid by book adjustment, with the 24G receipt number and DDO serial for each transfer voucher.
+      bookAdjustments: data.challans.filter((c) => c.payment_mode === 'B').map((c) => ({ month: iso(c.deposit_date)!.slice(0, 7), date: iso(c.deposit_date), receiptNo24G: c.bsr_code, ddoSerial: c.challan_no, amount: c.total })).sort((a, b) => a.date!.localeCompare(b.date!)),
+      certificates: certs.map((c) => ({ ...c, pan: maskPan(c.pan), ...certCheck.usage.find((u) => u.certificateId === c.id) })),
+      certificateFindings: certCheck.findings,
       deposits: depositRegister({ rows, challans }),
       sections: sectionRegister(rows),
       statements: statementRegister(
@@ -143,6 +175,31 @@ export async function tdsRegistersRoutes(fastify: FastifyInstance) {
         status: f.status,
       })),
     });
+  });
+
+  fastify.post('/certificates', async (request, reply) => {
+    const b = CertificateBody.safeParse(request.body);
+    if (!b.success) return reply.status(400).send({ error: 'Invalid', message: b.error.issues[0]?.message ?? 'Check the certificate.' });
+    const d = b.data;
+    if (d.validTo < d.validFrom) return reply.status(400).send({ error: 'Invalid', message: 'The certificate ends before it starts.' });
+    try {
+      const id = await db.withTenantTransaction(ctx(request), async (c) => {
+        const t = (await c.query<{ id: string; entity_id: string }>('SELECT id, entity_id FROM public.tan_registrations WHERE tan = $1', [d.tan])).rows[0];
+        if (!t) return null;
+        return (
+          await c.query<{ id: string }>(
+            `INSERT INTO public.lower_deduction_certificates (firm_id, entity_id, tan_registration_id, certificate_no, deductee_pan, deductee_name, section_code, rate_percent, amount_limit, valid_from, valid_to, created_by)
+             VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, app.current_user_id()) RETURNING id`,
+            [t.entity_id, t.id, d.certificateNo, d.pan, d.name, d.sectionCode, d.ratePercent, d.amountLimit, d.validFrom, d.validTo],
+          )
+        ).rows[0].id;
+      });
+      if (!id) return reply.status(404).send({ error: 'Not found', message: `TAN ${d.tan} is not in Client Master.` });
+      return reply.status(201).send({ id });
+    } catch (err: any) {
+      if (err.code === '23505') return reply.status(409).send({ error: 'Duplicate', message: 'That certificate is already in the register for this TAN.' });
+      throw err;
+    }
   });
 
   fastify.post('/form121', async (request, reply) => {

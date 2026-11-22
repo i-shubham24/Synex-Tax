@@ -36,32 +36,23 @@ export function verifyWebhookSignature(options: WebhookVerificationOptions): Web
     return { isValid: false, error: 'Missing webhook signature header' };
   }
 
-  // 1. Replay attack protection via timestamp check
-  if (timestampHeader) {
-    const timestamp = parseInt(timestampHeader, 10);
-    if (isNaN(timestamp)) {
-      return { isValid: false, error: 'Invalid webhook timestamp header format' };
-    }
-
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const ageSeconds = nowSeconds - timestamp;
-
-    if (ageSeconds > maxAgeSeconds) {
-      return { isValid: false, error: `Webhook payload expired (${ageSeconds}s old, max ${maxAgeSeconds}s)` };
-    }
-
-    // Reject timestamps more than 60 seconds in the future
-    if (timestamp - nowSeconds > 60) {
-      return { isValid: false, error: 'Webhook timestamp is in the future' };
-    }
+  // 1. Replay protection: the timestamp is required, signed, and must be recent.
+  if (!timestampHeader || !/^\d{9,11}$/.test(timestampHeader)) {
+    return { isValid: false, error: 'Missing or invalid webhook timestamp header' };
+  }
+  const timestamp = parseInt(timestampHeader, 10);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (nowSeconds - timestamp > maxAgeSeconds) {
+    return { isValid: false, error: `Webhook payload expired (max ${maxAgeSeconds}s)` };
+  }
+  if (timestamp - nowSeconds > 60) {
+    return { isValid: false, error: 'Webhook timestamp is in the future' };
   }
 
   // 2. Compute expected HMAC-SHA256 signature
-  const rawPayload = typeof payload === 'string' ? payload : payload.toString('utf8');
-  const signatureInput = timestampHeader ? `${timestampHeader}.${rawPayload}` : rawPayload;
-
   const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(signatureInput, 'utf8');
+  hmac.update(`${timestampHeader}.`, 'utf8');
+  hmac.update(typeof payload === 'string' ? Buffer.from(payload, 'utf8') : payload);
   const expectedHex = hmac.digest('hex');
 
   // Strip optional 'sha256=' or 'v1=' prefix from provided header
@@ -85,5 +76,16 @@ export function verifyWebhookSignature(options: WebhookVerificationOptions): Web
     return { isValid: false, error: 'Signature verification failed: invalid signature' };
   }
 
+  // 4. Each signed message is accepted once within its window.
+  const now = Date.now();
+  for (const [sig, until] of seenSignatures) if (until < now) seenSignatures.delete(sig);
+  if (seenSignatures.has(cleanReceivedHex.toLowerCase())) {
+    return { isValid: false, error: 'Webhook already received (replay)' };
+  }
+  seenSignatures.set(cleanReceivedHex.toLowerCase(), now + (maxAgeSeconds + 60) * 1000);
+
   return { isValid: true };
 }
+
+/** Signatures accepted within the replay window. Per instance; a shared store is needed across many. */
+const seenSignatures = new Map<string, number>();

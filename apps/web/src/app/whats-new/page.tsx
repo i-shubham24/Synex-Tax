@@ -12,6 +12,13 @@ const RELEASES: Array<{ date: string; title: string; items: Array<[string, strin
     date: '21 November 2026',
     title: 'Statement files for salaries, residents, non-residents and TCS',
     items: [
+      ['TDS correction statements', 'From the consolidated file downloaded from TRACES: PAN corrections (C5), challan and row changes (C3) and missed challans (C9), for Forms 138, 140, 143 and 144.', '/features/tds'],
+      ['ITR-1 for 2025-26', 'The return file for Assessment Year 2026-27, written to the Income Tax Department’s schema, with interest and late fee worked out.'],
+      ['Client upload link', 'Send a client a link; they photograph or pick each document on their phone and it lands on their checklist.', '/features/tds'],
+      ['TDS rates, certificates and government deductors', 'Rows checked against each section’s rate and threshold, lower deduction certificates tracked, and statements for government deductors with Form 24G details.', '/features/tds'],
+      ['Salary register', 'Employees with their tax for the year, TDS so far and monthly TDS, and a Form 124 report.', '/features/tds'],
+      ['GST MIS', 'Month-by-month sales, purchases and tax, with a party master.', '/features/gst'],
+      ['Function keys', 'F2 GST returns, F3 TDS, F4 Practice, F6 Bank, F7 Income tax, F8 Documents, F9 Clients, F10 Control Tower.'],
       ['Salary TDS, fuller', 'Perquisites, salary from an earlier employer, LTA and home-loan interest in the calculator, and Form 124 checks on each claim.', '/tools'],
       ['ITC-04 and the 3B year', 'Job work positions with deemed supplies flagged, and every month’s GSTR-3B set against GSTR-1 and GSTR-2B.', '/features/gst'],
       ['Backups of Tally, Busy and Marg data', 'The SynexTax desktop agent zips a client’s accounting data on your machine, with a checksum for every file. Nothing is uploaded.'],

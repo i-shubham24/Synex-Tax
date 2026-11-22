@@ -9,9 +9,10 @@ import {
   Gstr2BRecord,
   ImsPre14AlertEngine,
 } from '@synextax/queue-worker';
+import { publicMessage } from '../plugins/publicError.js';
 
 const ReconRunInputSchema = z.object({
-  entityId: z.string().uuid(),
+  entityId: z.guid(),
   gstin: z.string().length(15),
   period: z.string().regex(/^\d{2}\d{4}$/, 'Period must be MMYYYY format'),
   purchaseInvoices: z
@@ -348,7 +349,7 @@ export async function reconRoutes(app: FastifyInstance) {
 
       return reply.send({ success: true, source: 'POSTGRESQL_RLS', data: result });
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Recon Fetch Failed', message: err.message });
+      return reply.status(500).send({ error: 'Recon Fetch Failed', message: publicMessage(err) });
     }
   });
 

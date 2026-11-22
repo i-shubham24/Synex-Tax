@@ -1,6 +1,16 @@
 import Decimal from 'decimal.js';
 import { form140Section } from './form140Codes.js';
-import { DEDUCTOR_TYPES, GOVERNMENT_DEDUCTOR_TYPES, IN_KIND_SECTION_CODES, PROTEAN_STATE_CODES, REASON_FLAGS } from './form140Annexures.js';
+import {
+  DEDUCTOR_TYPES,
+  GOVERNMENT_DEDUCTOR_TYPES,
+  IN_KIND_SECTION_CODES,
+  MINISTRY_CODES,
+  MINISTRY_OPTIONAL_TYPES,
+  MINISTRY_REQUIRED_TYPES,
+  PROTEAN_STATE_CODES,
+  REASON_FLAGS,
+  STATE_GOVERNMENT_TYPES,
+} from './form140Annexures.js';
 import {
   COUNTRY_CODES,
   FORM_143_COLLECTION_CODES,
@@ -100,7 +110,12 @@ export interface StatementInput {
   preparedWith: string;
   tan: string;
   deductorPan: string;
-  deductor: StatementParty & { type: string; gstin?: string };
+  deductor: StatementParty & {
+    type: string;
+    gstin?: string;
+    /** Government deductors: state (Protean code), ministry (Annexure 3), and AIN of the PAO, TO or CDDO. */
+    government?: { stateCode?: string; ministryCode?: string; ministryOther?: string; ain?: string };
+  };
   responsible: StatementParty & { designation: string; pan: string };
   taxYear: number;
   quarter: 1 | 2 | 3 | 4;
@@ -167,7 +182,23 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
   if (!PAN_RE.test(dPan) && dPan !== 'PANNOTREQD') err('Deductor PAN', 'Give the deductor PAN, or PANNOTREQD if it is not required to have one.');
   if (input.taxYear < 2026) err('Tax year', `${FORM_LABEL[form]} applies from Tax Year 2026-27. Earlier years use Form ${EARLIER_FORM[form]}.`);
   if (!DEDUCTOR_TYPES[input.deductor.type]) err('Deductor type', 'Choose a deductor category from Annexure 4.');
-  if (GOVERNMENT_DEDUCTOR_TYPES.has(input.deductor.type)) err('Deductor type', 'Government deductors need AIN, state and ministry details, which SynexTax does not prepare yet.');
+  // Government deductors: fields 54, 57, 58 and 68 of the batch header.
+  const gov = input.deductor.government ?? {};
+  const type = input.deductor.type;
+  const isGov = GOVERNMENT_DEDUCTOR_TYPES.has(type);
+  const govState = clean(gov.stateCode);
+  const ministry = clean(gov.ministryCode).padStart(gov.ministryCode ? 2 : 0, '0');
+  if (STATE_GOVERNMENT_TYPES.has(type) && !STATE_CODES.has(govState)) err('Deductor state', 'A State Government deductor must give its state (Annexure 5).');
+  if (!STATE_GOVERNMENT_TYPES.has(type) && govState) err('Deductor state', 'Only State Government deductors give a state in this field.');
+  if (MINISTRY_REQUIRED_TYPES.has(type) && !MINISTRY_CODES[ministry]) err('Ministry', 'A Central Government deductor must give its ministry (Annexure 3).');
+  if (ministry && !MINISTRY_REQUIRED_TYPES.has(type) && !MINISTRY_OPTIONAL_TYPES.has(type)) err('Ministry', 'This deductor type gives no ministry.');
+  if (ministry && !MINISTRY_CODES[ministry]) err('Ministry', `Ministry code ${ministry} is not in Annexure 3.`);
+  if (ministry === '99' && !clean(gov.ministryOther)) err('Ministry', 'Name the ministry when the code is 99 (Others).');
+  const bookEntry = input.challans.some((c) => c.mode === 'B' && !c.nil);
+  const ain = clean(gov.ain).toUpperCase();
+  if (bookEntry && !isGov) err('Challans', 'Only government deductors pay by book adjustment (transfer voucher).');
+  if (bookEntry && (type === 'A' || type === 'S') && !/^[A-Z0-9]{7}$/.test(ain)) err('AIN', 'Tax paid by book adjustment needs the 7-character AIN of the PAO, TO or CDDO.');
+  if (ain && !isGov) err('AIN', 'Only government deductors give an AIN.');
   if (form === '138' && input.quarter === 4) err('Quarter', 'Protean has not yet published the Form 138 Q4 file format, which carries the annual salary details. Q4 files can be written once it is released.');
   if (input.earlierRegularFiled && !/^\d{15}$/.test(clean(input.previousToken))) err('Previous token', `Give the 15-digit token of the previous regular ${FORM_LABEL[form]} statement.`);
   if (input.deductor.gstin && !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(clean(input.deductor.gstin).toUpperCase())) err('Deductor GSTIN', 'GSTIN is not valid.');
@@ -210,6 +241,8 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
     if (!c.nil) {
       if (!/^\d{7}$/.test(clean(c.bsrCode))) err(at, 'BSR code (or Form 24G receipt number) must be 7 digits.');
       if (c.mode === 'C' && !/^\d{1,5}$/.test(clean(c.challanNo))) err(at, 'Bank challan number must be up to 5 digits.');
+      if (c.mode === 'B' && !/^\d{1,5}$/.test(clean(c.challanNo))) err(at, 'DDO serial number must be up to 5 digits (book adjustment).');
+      if (c.mode === 'B' && c.deductees.some((d) => ['1059', '1034', '1038', '1061'].includes(clean(d.sectionCode)))) err(at, 'Codes 1059, 1034, 1038 and 1061 are paid by challan, not by book adjustment.');
     }
     if (!isIso(c.depositedOn)) err(at, 'Deposit date is missing or invalid.');
     else {
@@ -349,7 +382,11 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
   bh[39] = r.address.stateCode; bh[40] = clean(r.address.pin); bh[41] = clean(r.email).toUpperCase(); bh[42] = 'INDIA'; bh[43] = clean(r.phoneCountryCode || '91'); bh[44] = clean(r.phone);
   bh[46] = batchTotal.toFixed(2);
   bh[51] = input.earlierRegularFiled ? 'Y' : 'N';
+  bh[53] = STATE_GOVERNMENT_TYPES.has(type) ? govState : '';
+  bh[56] = MINISTRY_REQUIRED_TYPES.has(type) || MINISTRY_OPTIONAL_TYPES.has(type) ? ministry : '';
+  bh[57] = ministry === '99' ? clean(gov.ministryOther).slice(0, 150) : '';
   bh[58] = clean(r.pan).toUpperCase();
+  bh[67] = bookEntry && (type === 'A' || type === 'S') ? ain : '';
   bh[68] = clean(d.gstin).toUpperCase();
 
   records.push(fh, bh);

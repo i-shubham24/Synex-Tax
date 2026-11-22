@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { gstr1Summary, gstr3bYear, parseSalesRegister, type SalesInvoice } from '@synextax/tax-engine';
+import { gstMis, gstr1Summary, gstr3bYear, parseSalesRegister, type MisDoc, type SalesInvoice } from '@synextax/tax-engine';
 import { db } from '../db/pool.js';
+import { insertRows } from '../db/batchInsert.js';
 
 const GSTIN = z.string().regex(/^\d{2}[A-Z0-9]{13}$/);
 const PERIOD = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -66,20 +67,21 @@ export async function gstReturnsRoutes(fastify: FastifyInstance) {
       const n = await db.withTenantTransaction(ctx(request), async (c) => {
         const reg = (await c.query<{ id: string; entity_id: string }>('SELECT id, entity_id FROM public.gst_registrations WHERE gstin = $1', [b.data.gstin])).rows[0];
         if (!reg) return null;
-        for (const i of invoices) {
-          const rate = i.rate / 100;
-          const inter = i.igst !== '0.00' || i.pos !== b.data.gstin.slice(0, 2);
-          await c.query(
-            `INSERT INTO public.gst_invoices_sales (firm_id, entity_id, gst_registration_id, invoice_num, invoice_date, doc_type, supply_type, customer_gstin,
-               customer_legal_name, pos_state_code, reverse_charge, table_section, taxable_value, igst_rate, igst_amount, cgst_rate, cgst_amount,
-               sgst_rate, sgst_amount, cess_amount, total_invoice_value, return_period, created_by, import_batch)
-             VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
-            [
+        await insertRows(
+          c,
+          `INSERT INTO public.gst_invoices_sales (firm_id, entity_id, gst_registration_id, invoice_num, invoice_date, doc_type, supply_type, customer_gstin,
+             customer_legal_name, pos_state_code, reverse_charge, table_section, taxable_value, igst_rate, igst_amount, cgst_rate, cgst_amount,
+             sgst_rate, sgst_amount, cess_amount, total_invoice_value, return_period, created_by, import_batch)`,
+          `(app.current_firm_id(), ${Array(23).fill('?').join(', ')})`,
+          invoices.map((i) => {
+            const rate = i.rate / 100;
+            const inter = i.igst !== '0.00' || i.pos !== b.data.gstin.slice(0, 2);
+            return [
               reg.entity_id, reg.id, i.invoiceNo, i.invoiceDate, i.docType, SUPPLY_TYPE[i.section], i.customerGstin, i.customerName || null, i.pos, i.reverseCharge, i.table,
               i.taxableValue, inter ? rate : 0, i.igst, inter ? 0 : rate / 2, i.cgst, inter ? 0 : rate / 2, i.sgst, i.cess, i.invoiceValue, b.data.period, request.user.userId, batch,
-            ],
-          );
-        }
+            ];
+          }),
+        );
         return invoices.length;
       });
       if (n === null) return reply.status(404).send({ error: 'Not found', message: `GSTIN ${b.data.gstin} is not in Client Master.` });
@@ -89,6 +91,39 @@ export async function gstReturnsRoutes(fastify: FastifyInstance) {
       if (/locked|LOCK/i.test(err.message ?? '')) return reply.status(409).send({ error: 'Not imported', message: 'This month is locked because its return has been filed.' });
       throw err;
     }
+  });
+
+  // MIS and party master for a GSTIN and financial year, from the sales and purchase registers.
+  fastify.get('/mis', async (request, reply) => {
+    const q = YearQuery.safeParse(request.query);
+    if (!q.success) return reply.status(400).send({ error: 'Pass ?gstin= and ?fy=' });
+    const from = `${q.data.fy}-04`;
+    const to = `${q.data.fy + 1}-03`;
+    const docs = await db.withTenantTransaction(ctx(request), async (c) => {
+      const reg = (await c.query<{ id: string }>('SELECT id FROM public.gst_registrations WHERE gstin = $1', [q.data.gstin])).rows[0];
+      if (!reg) return null;
+      const sales = (
+        await c.query(
+          `SELECT return_period, customer_gstin, customer_legal_name, doc_type, taxable_value::text AS taxable, (igst_amount + cgst_amount + sgst_amount + cess_amount)::text AS tax
+           FROM public.gst_invoices_sales WHERE gst_registration_id = $1 AND return_period BETWEEN $2 AND $3 AND is_amendment = false`,
+          [reg.id, from, to],
+        )
+      ).rows;
+      const purchases = (
+        await c.query(
+          `SELECT return_period, vendor_gstin, vendor_trade_name, doc_type, taxable_value::text AS taxable, (igst_amount + cgst_amount + sgst_amount + cess_amount)::text AS tax,
+                  (CASE WHEN itc_eligibility = 'ELIGIBLE' THEN itc_reversal_amount ELSE igst_amount + cgst_amount + sgst_amount + cess_amount END)::text AS ineligible
+           FROM public.gst_invoices_purchase WHERE gst_registration_id = $1 AND return_period BETWEEN $2 AND $3`,
+          [reg.id, from, to],
+        )
+      ).rows;
+      return [
+        ...sales.map((r) => ({ side: 'SALE', period: r.return_period, partyGstin: r.customer_gstin, partyName: r.customer_legal_name ?? '', docType: r.doc_type, taxable: r.taxable, tax: r.tax })),
+        ...purchases.map((r) => ({ side: 'PURCHASE', period: r.return_period, partyGstin: r.vendor_gstin, partyName: r.vendor_trade_name ?? '', docType: r.doc_type, taxable: r.taxable, tax: r.tax, ineligibleTax: r.ineligible })),
+      ] as MisDoc[];
+    });
+    if (!docs) return reply.status(404).send({ error: 'Not found', message: `GSTIN ${q.data.gstin} is not in Client Master.` });
+    return reply.send(gstMis(q.data.fy, docs));
   });
 
   // GSTR-3B for a year against the sales register and GSTR-2B, month by month.

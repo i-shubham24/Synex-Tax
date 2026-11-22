@@ -1,5 +1,6 @@
 import { URL } from 'node:url';
 import net from 'node:net';
+import { promises as dns } from 'node:dns';
 
 export interface SafeUrlResult {
   isSafe: boolean;
@@ -54,19 +55,43 @@ export function isPrivateIpv4(ip: string): boolean {
   return false;
 }
 
+/** Turns an IPv4-mapped IPv6 address (::ffff:a.b.c.d or ::ffff:aabb:ccdd) into its IPv4 form. */
+function mappedIpv4(ip: string): string | null {
+  const m = /^(?:0{0,4}:){0,5}:?ffff:(.+)$/i.exec(ip);
+  if (!m) return null;
+  const tail = m[1];
+  if (net.isIPv4(tail)) return tail;
+  const hex = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(tail);
+  if (!hex) return null;
+  const hi = parseInt(hex[1], 16);
+  const lo = parseInt(hex[2], 16);
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+}
+
+const PRIVATE_V6 = new net.BlockList();
+for (const [prefix, bits] of [
+  ['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8],
+  ['64:ff9b::', 96], ['64:ff9b:1::', 48], ['2001:db8::', 32], ['2002::', 16], ['100::', 64],
+] as Array<[string, number]>) PRIVATE_V6.addSubnet(prefix, bits, 'ipv6');
+
 /**
- * Checks whether an IPv6 address belongs to private or link-local ranges.
+ * Checks whether an IPv6 address is loopback, private, link-local, multicast, a translation
+ * prefix, or an IPv4-mapped form of a private IPv4 address.
  */
 export function isPrivateIpv6(ip: string): boolean {
-  const lower = ip.toLowerCase();
-  if (lower === '::1' || lower === '::') return true;
-  if (lower.startsWith('fe80:') || lower.startsWith('fc') || lower.startsWith('fd')) return true;
-  if (lower.startsWith('::ffff:')) {
-    // IPv4-mapped IPv6
-    const mappedIpv4 = lower.replace('::ffff:', '');
-    return isPrivateIpv4(mappedIpv4);
-  }
-  return false;
+  const bare = ip.replace(/^\[|\]$/g, '').split('%')[0].toLowerCase();
+  const v4 = mappedIpv4(bare);
+  if (v4) return isPrivateIpv4(v4);
+  if (!net.isIPv6(bare)) return true;
+  return PRIVATE_V6.check(bare, 'ipv6');
+}
+
+/** True for any address an outbound request must not reach. */
+export function isPrivateAddress(ip: string): boolean {
+  const bare = ip.replace(/^\[|\]$/g, '');
+  if (net.isIPv4(bare)) return isPrivateIpv4(bare);
+  if (net.isIPv6(bare)) return isPrivateIpv6(bare);
+  return true;
 }
 
 /**
@@ -93,7 +118,8 @@ export function validateSafeOutboundUrl(rawUrl: string, allowedHosts?: string[])
     };
   }
 
-  const hostname = parsed.hostname.toLowerCase();
+  // URL keeps the brackets around IPv6 literals ("[::1]"); strip them before checking.
+  const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
 
   // 2. Reject known blocked hostnames and suffix patterns
   if (BLOCKED_HOSTNAMES.has(hostname)) {
@@ -114,6 +140,9 @@ export function validateSafeOutboundUrl(rawUrl: string, allowedHosts?: string[])
   if (ipType === 4 && isPrivateIpv4(hostname)) {
     return { isSafe: false, error: `Destination IP '${hostname}' belongs to a private network.` };
   }
+  if (parsed.username || parsed.password) {
+    return { isSafe: false, error: 'Credentials in the URL are not allowed.' };
+  }
   if (ipType === 6 && isPrivateIpv6(hostname)) {
     return { isSafe: false, error: `Destination IPv6 '${hostname}' belongs to a private network.` };
   }
@@ -130,4 +159,25 @@ export function validateSafeOutboundUrl(rawUrl: string, allowedHosts?: string[])
   }
 
   return { isSafe: true, sanitizedUrl: parsed.toString() };
+}
+
+/**
+ * The full check for a URL that came from outside: the URL rules above, then every address the
+ * name resolves to must be public (a public name can point at 127.0.0.1). Fetch the result with
+ * redirect: 'manual' and check any Location again, or a redirect can lead inside.
+ */
+export async function resolveSafeOutboundUrl(rawUrl: string, allowedHosts?: string[]): Promise<SafeUrlResult & { addresses?: string[] }> {
+  const first = validateSafeOutboundUrl(rawUrl, allowedHosts);
+  if (!first.isSafe) return first;
+  const host = new URL(rawUrl).hostname.replace(/^\[|\]$/g, '');
+  if (net.isIP(host)) return { ...first, addresses: [host] };
+  let addresses: string[];
+  try {
+    addresses = (await dns.lookup(host, { all: true, verbatim: true })).map((a) => a.address);
+  } catch {
+    return { isSafe: false, error: `Host '${host}' does not resolve.` };
+  }
+  const bad = addresses.find(isPrivateAddress);
+  if (!addresses.length || bad) return { isSafe: false, error: `Host '${host}' resolves to a private address.` };
+  return { ...first, addresses };
 }

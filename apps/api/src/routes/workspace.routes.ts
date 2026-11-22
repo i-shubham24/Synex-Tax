@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db/pool.js';
 import { activeGstPeriod } from '../modules/tenancy/trialBootstrapper.js';
+import { publicMessage } from '../plugins/publicError.js';
 
 export async function workspaceRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
   fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -208,7 +209,7 @@ export async function workspaceRoutes(fastify: FastifyInstance, _opts: FastifyPl
 
       return reply.send(snapshot);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Snapshot Error', message: err.message });
+      return reply.status(500).send({ error: 'Snapshot Error', message: publicMessage(err) });
     }
   });
 }

@@ -23,233 +23,212 @@ export async function auditRoutes(fastify: FastifyInstance, _opts: FastifyPlugin
     }
   });
 
-  // Query Immutable Audit Logs (MCA Rule 3 / CGST Rule 56(15) evidence trail)
+  // The change log (MCA Rule 3 / CGST Rule 56(15) evidence trail), newest first, with the DSC signing trail.
   fastify.get('/logs', async (request: FastifyRequest, reply: FastifyReply) => {
     const parse = AuditLogQuerySchema.safeParse(request.query);
     const page = parse.success ? parse.data.page : 1;
     const limit = parse.success ? parse.data.limit : 50;
     const tableName = parse.success ? parse.data.tableName : undefined;
+    if (!db.isConfigured()) return reply.send({ total: 0, page, limit, logs: [] });
 
-    if (db.isConfigured()) {
-      try {
-        const result = await db.withTenantTransaction(getCtx(request), async (client: any) => {
-          const offset = (page - 1) * limit;
-          const res = await client.query(
-            `SELECT id::text, table_schema, table_name, record_id::text, action, actor_kind,
-                    ip_addr::text, timestamp_ist::text,
-                    coalesce(diff->>'summary', action || ' on ' || table_name || ' (record: ' || substring(record_id::text, 1, 8) || '...)') as summary,
-                    md5(id::text || table_name || record_id::text || action || timestamp_ist::text) as hmac_hash
-             FROM audit.immutable_audit_logs
-             WHERE firm_id = app.current_firm_id()
-               AND ($1::text IS NULL OR table_name = $1)
-             ORDER BY timestamp_ist DESC
-             LIMIT $2 OFFSET $3`,
-            [tableName || null, limit, offset],
-          );
+    try {
+      const logs = await db.withTenantTransaction(getCtx(request), async (client: any) => {
+        const res = await client.query(
+          `SELECT l.id::text, l.table_name, l.action, l.actor_kind::text, host(l.ip_addr) AS ip_addr, l.timestamp_ist,
+                  l.chain_seq, l.row_hash, u.display_name, u.role::text AS role,
+                  coalesce(l.diff->>'summary', l.action || ' on ' || l.table_name || ' (record ' || substring(l.record_id::text, 1, 8) || ')') AS summary
+           FROM audit.immutable_audit_logs l
+           LEFT JOIN public.users u ON u.id = l.actor_id
+           WHERE l.firm_id = app.current_firm_id()
+             AND ($1::text IS NULL OR l.table_name = $1)
+           ORDER BY l.timestamp_ist DESC, l.id DESC
+           LIMIT $2 OFFSET $3`,
+          [tableName || null, limit, (page - 1) * limit],
+        );
+        const signRes =
+          page === 1 && (!tableName || tableName === 'signing_audit_logs')
+            ? await client.query(
+                `SELECT id::text, cert_serial_hex, holder_name, operation, payload_hash, status, error_code, host(ip_addr) AS ip_addr, signed_at
+                 FROM audit.signing_audit_logs
+                 WHERE firm_id = app.current_firm_id()
+                 ORDER BY signed_at DESC LIMIT 10`,
+              )
+            : { rows: [] };
 
-          // Also check signing audit logs
-          const signRes = await client.query(
-            `SELECT id::text, cert_serial_hex, holder_name, operation, payload_hash, token_profile,
-                    ip_addr::text, status, signed_at::text
-             FROM audit.signing_audit_logs
-             WHERE firm_id = app.current_firm_id()
-             ORDER BY signed_at DESC LIMIT 10`,
-          );
-
-          const dbLogs = res.rows.map((r: any) => ({
-            id: r.id,
-            eventType: `${r.table_name.toUpperCase()}_${r.action}`,
-            performedBy: 'ca.verma@synextax.com',
-            userRole: 'PARTNER',
-            ipAddress: r.ip_addr || '127.0.0.1',
-            timestamp: r.timestamp_ist,
-            hmacSignature: r.hmac_hash.slice(0, 16) + '...' + r.hmac_hash.slice(-8),
-            details: r.summary,
-            tableName: r.table_name,
-          }));
-
-          const signingLogs = signRes.rows.map((s: any) => ({
-            id: s.id,
-            eventType: 'DSC_SIGNING_COMPLETED',
-            performedBy: s.holder_name || 'CA Amrinder Verma, FCA',
-            userRole: 'PARTNER',
-            ipAddress: s.ip_addr || '127.0.0.1',
-            timestamp: s.signed_at,
-            hmacSignature: s.payload_hash.slice(0, 16) + '...' + s.payload_hash.slice(-8),
-            details: `Return filed with ${s.token_profile} hardware token. Cert serial: ${s.cert_serial_hex}. Status: ${s.status}.`,
-            tableName: 'signing_audit_logs',
-          }));
-
-          return [...signingLogs, ...dbLogs];
-        });
-
-        if (result && result.length > 0) {
-          return reply.send({
-            total: result.length,
-            page,
-            limit,
-            logs: result,
-          });
-        }
-      } catch (err: any) {
-        request.log.warn({ err }, 'Audit logs db fetch notice');
-      }
+        const changeLogs = res.rows.map((r: any) => ({
+          id: r.id,
+          eventType: `${r.table_name.toUpperCase()}_${r.action}`,
+          performedBy: r.display_name ?? (r.actor_kind === 'USER' ? 'Unknown user' : 'System'),
+          userRole: r.role ?? r.actor_kind,
+          ipAddress: r.ip_addr ?? '',
+          timestamp: new Date(r.timestamp_ist).toISOString(),
+          hmacSignature: r.row_hash ? `#${r.chain_seq} ${r.row_hash.slice(0, 12)}...${r.row_hash.slice(-6)}` : '',
+          details: r.summary,
+          tableName: r.table_name,
+        }));
+        const signingLogs = signRes.rows.map((s: any) => ({
+          id: s.id,
+          eventType: `DSC_SIGNING_${s.status}`,
+          performedBy: s.holder_name || 'DSC holder',
+          userRole: 'DSC',
+          ipAddress: s.ip_addr ?? '',
+          timestamp: new Date(s.signed_at).toISOString(),
+          hmacSignature: `${s.payload_hash.slice(0, 12)}...${s.payload_hash.slice(-6)}`,
+          details: `${s.operation}, certificate serial ${s.cert_serial_hex}, ${s.status}${s.error_code ? ` (${s.error_code})` : ''}.`,
+          tableName: 'signing_audit_logs',
+        }));
+        return [...signingLogs, ...changeLogs].sort((x, y) => y.timestamp.localeCompare(x.timestamp));
+      });
+      return reply.send({ total: logs.length, page, limit, logs });
+    } catch (err: any) {
+      request.log.error({ err: err.code ?? err.message }, 'Audit log read failed');
+      return reply.status(503).send({ error: 'AUDIT_UNAVAILABLE', message: 'The audit log could not be read. Try again.' });
     }
-
-    // Default seeded audit logs
-    const mockLogs = [
-      {
-        id: 'log-901',
-        eventType: 'DSC_SIGNING_COMPLETED',
-        performedBy: 'ca.verma@synextax.com',
-        userRole: 'PARTNER',
-        ipAddress: '182.72.104.18',
-        timestamp: '2026-11-20T10:08:29Z',
-        hmacSignature: 'a89c4288102f9011...99f012e4b892a01',
-        details: 'GSTR-3B return for period 102025 digitally signed using Class 3 USB token ePass2003.',
-      },
-      {
-        id: 'log-902',
-        eventType: 'ENTITIES_INSERT',
-        performedBy: 'ca.verma@synextax.com',
-        userRole: 'PARTNER',
-        ipAddress: '127.0.0.1',
-        timestamp: '2026-11-20T10:08:29Z',
-        hmacSignature: 'f41098223901441a...77ba8311cb44901',
-        details: 'Created legal entity Amritsar Phulkari Textiles Private Limited (PAN: AAFCP4821K).',
-      },
-      {
-        id: 'log-903',
-        eventType: 'IMS_ACTION_ACCEPTED',
-        performedBy: 'ca.verma@synextax.com',
-        userRole: 'PARTNER',
-        ipAddress: '127.0.0.1',
-        timestamp: '2026-11-20T10:08:29Z',
-        hmacSignature: 'bb1290881234901f...44ff0910ee22199',
-        details: 'Accepted invoice in IMS console. Net ITC claimed: Rs 27,000.00.',
-      },
-    ];
-
-    return reply.send({
-      total: mockLogs.length,
-      page,
-      limit,
-      logs: mockLogs,
-    });
   });
 
-  // Query Section 39 Statutory Expiry & 3-Year Hard Bar Radar
-  fastify.get('/expiry-radar', async (request: FastifyRequest, reply: FastifyReply) => {
-    if (db.isConfigured()) {
-      try {
-        const items = await db.withTenantTransaction(getCtx(request), async (client: any) => {
-          const gstRes = await client.query(
-            `SELECT f.id, e.legal_name as taxpayer_name, g.gstin, f.return_period, f.return_type as form_type,
-                    f.statutory_due_date::text, f.workflow_status
-             FROM public.gst_filings f
-             JOIN public.entities e ON e.id = f.entity_id
-             JOIN public.gst_registrations g ON g.id = f.gst_registration_id
-             WHERE f.firm_id = app.current_firm_id()
-             ORDER BY f.created_at`,
-          );
-
-          const tdsRes = await client.query(
-            `SELECT r.id, e.legal_name as taxpayer_name, t.tan as gstin, r.quarter as return_period,
-                    r.form_code as form_type, r.statutory_due_date::text, r.correction_window_expires_at::text,
-                    r.workflow_status
-             FROM public.tds_returns r
-             JOIN public.entities e ON e.id = r.entity_id
-             JOIN public.tan_registrations t ON t.id = r.tan_registration_id
-             WHERE r.firm_id = app.current_firm_id()
-             ORDER BY r.created_at`,
-          );
-
-          const list: any[] = [];
-
-          for (const g of gstRes.rows) {
-            const cutoffDate = '2026-11-30';
-            const barDate = '2028-11-20';
-            const diffMs = new Date(cutoffDate).getTime() - Date.now();
-            const daysRemaining = Math.max(0, Math.ceil(diffMs / (24 * 3600 * 1000)));
-
-            list.push({
-              id: g.id,
-              taxpayerName: g.taxpayer_name,
-              gstin: g.gstin,
-              returnPeriod: g.return_period,
-              formType: g.form_type,
-              correctionWindowCutoff: cutoffDate,
-              threeYearStatutoryBar: barDate,
-              daysRemainingCorrection: daysRemaining,
-              status: daysRemaining <= 60 ? 'WARNING_CORRECTION_NEAR' : 'SAFE',
-              workflowStatus: g.workflow_status,
-            });
-          }
-
-          for (const t of tdsRes.rows) {
-            const barDate = t.correction_window_expires_at || '2029-03-31';
-            const diffMs = new Date(barDate).getTime() - Date.now();
-            const daysRemaining = Math.max(0, Math.ceil(diffMs / (24 * 3600 * 1000)));
-
-            list.push({
-              id: t.id,
-              taxpayerName: t.taxpayer_name,
-              gstin: t.gstin,
-              returnPeriod: t.return_period,
-              formType: 'Form ' + t.form_type,
-              correctionWindowCutoff: t.statutory_due_date || '2027-01-31',
-              threeYearStatutoryBar: barDate,
-              daysRemainingCorrection: daysRemaining,
-              status: 'SAFE',
-              workflowStatus: t.workflow_status,
-            });
-          }
-
-          return list;
-        });
-
-        if (items && items.length > 0) {
-          return reply.send({ success: true, expiryItems: items });
-        }
-      } catch (err: any) {
-        request.log.warn({ err }, 'Expiry radar db fetch notice');
-      }
+  // Recomputes the firm's change-log hash chain (migration 0027) and reports where it breaks.
+  fastify.get('/chain', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!db.isConfigured()) return reply.status(503).send({ error: 'AUDIT_UNAVAILABLE', message: 'No database.' });
+    try {
+      const r = await db.withTenantTransaction(getCtx(request), async (client: any) => (await client.query('SELECT * FROM audit.verify_chain()')).rows[0]);
+      const checked = Number(r.checked);
+      const firstBroken = r.first_broken === null ? null : Number(r.first_broken);
+      return reply.send({ checked, firstBroken, headOk: r.head_ok === true, intact: firstBroken === null && r.head_ok === true, checkedAt: new Date().toISOString() });
+    } catch (err: any) {
+      request.log.error({ err: err.code ?? err.message }, 'Audit chain check failed');
+      return reply.status(503).send({ error: 'AUDIT_UNAVAILABLE', message: 'The audit chain could not be checked. Try again.' });
     }
+  });
 
-    // Default seeded radar items
-    return reply.send({
-      success: true,
-      expiryItems: [
-        {
-          id: 'exp-1',
-          taxpayerName: 'Amritsar Phulkari Textiles Private Limited',
-          gstin: '03AAFCP4821K1Z5',
-          returnPeriod: '102025',
-          formType: 'GSTR-3B',
-          correctionWindowCutoff: '2026-11-30',
-          threeYearStatutoryBar: '2028-11-20',
-          daysRemainingCorrection: 10,
-          status: 'WARNING_CORRECTION_NEAR',
-          workflowStatus: 'DRAFT',
+  // Evidence pack for auditors: the change log with its hash chain and the chain check, the DSC
+  // signing trail and the PII reveal log, as one JSON file. Partners only (bulk export). PANs in
+  // the logged values are masked.
+  fastify.get('/export', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (request: FastifyRequest, reply: FastifyReply) => {
+    if ((request.user as { role: string }).role !== 'PARTNER') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Only a partner can export the audit trail.' });
+    }
+    if (!db.isConfigured()) return reply.status(503).send({ error: 'AUDIT_UNAVAILABLE', message: 'No database.' });
+    const maskPans = (v: unknown) => (v == null ? null : JSON.parse(JSON.stringify(v).replace(/\b([A-Z]{5})(\d{4}[A-Z])\b/g, 'XXXXX$2')));
+    try {
+      const pack = await db.withTenantTransaction(getCtx(request), async (client: any) => {
+        const chain = (await client.query('SELECT * FROM audit.verify_chain()')).rows[0];
+        const changes = (
+          await client.query(
+            `SELECT l.chain_seq, l.prev_hash, l.row_hash, l.table_name, l.record_id, l.action, l.diff,
+                    l.actor_kind::text AS actor_kind, u.display_name AS actor, host(l.ip_addr) AS ip, l.timestamp_ist
+             FROM audit.immutable_audit_logs l LEFT JOIN public.users u ON u.id = l.actor_id
+             WHERE l.firm_id = app.current_firm_id() ORDER BY l.chain_seq`,
+          )
+        ).rows.map((r: any) => ({ ...r, diff: maskPans(r.diff) }));
+        const signing = (
+          await client.query(
+            `SELECT cert_serial_hex, holder_name, operation, payload_hash, status, error_code, signed_at
+             FROM audit.signing_audit_logs WHERE firm_id = app.current_firm_id() ORDER BY signed_at`,
+          )
+        ).rows;
+        const reveals = (
+          await client.query(
+            `SELECT p.target_table, p.target_column, p.record_id, p.access_reason, u.display_name AS revealed_by, p.accessed_at
+             FROM audit.pii_access_logs p LEFT JOIN public.users u ON u.id = p.user_id
+             WHERE p.firm_id = app.current_firm_id() ORDER BY p.accessed_at`,
+          )
+        ).rows;
+        return { chain, changes, signing, reveals };
+      });
+      const exportedAt = new Date().toISOString();
+      reply.header('Content-Type', 'application/json; charset=utf-8');
+      reply.header('Content-Disposition', `attachment; filename="synextax-audit-${exportedAt.slice(0, 10)}.json"`);
+      return reply.send({
+        exportedAt,
+        chain: {
+          entries: Number(pack.chain.checked),
+          intact: pack.chain.first_broken === null && pack.chain.head_ok === true,
+          firstBrokenEntry: pack.chain.first_broken === null ? null : Number(pack.chain.first_broken),
+          note: 'Each change-log entry stores the SHA-256 of the entry before it (prev_hash) and of itself (row_hash); the check recomputes every link.',
         },
-        {
-          id: 'exp-2',
-          taxpayerName: 'Golden Gate Hardware Pvt Ltd (Sample)',
-          gstin: 'AMRG04217D',
-          returnPeriod: 'Q3 (2026)',
-          formType: 'Form 140',
-          correctionWindowCutoff: '2027-01-31',
-          threeYearStatutoryBar: '2029-03-31',
-          daysRemainingCorrection: 862,
-          status: 'SAFE',
-          workflowStatus: 'DRAFT',
-        },
-      ],
-    });
+        changeLog: pack.changes,
+        dscSigning: pack.signing,
+        piiReveals: pack.reveals,
+      });
+    } catch (err: any) {
+      request.log.error({ err: err.code ?? err.message }, 'Audit export failed');
+      return reply.status(503).send({ error: 'AUDIT_UNAVAILABLE', message: 'The audit trail could not be exported. Try again.' });
+    }
+  });
+
+  // Section 39 correction window and three-year bar for GST returns; the TDS correction window.
+  // GST: a return for a month in financial year Y can be corrected until 30 November after Y ends
+  // (Section 39(9)), and cannot be filed three years after its due date (Section 39(11)).
+  fastify.get('/expiry-radar', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (!db.isConfigured()) return reply.send({ success: true, expiryItems: [] });
+    const DAY = 24 * 3600 * 1000;
+    const daysUntil = (iso: string) => Math.max(0, Math.ceil((new Date(`${iso}T23:59:59+05:30`).getTime() - Date.now()) / DAY));
+    const addYears = (iso: string, n: number) => `${Number(iso.slice(0, 4)) + n}${iso.slice(4)}`;
+    const statusFor = (days: number) => (days === 0 ? 'EXPIRED' : days <= 60 ? 'WARNING_CORRECTION_NEAR' : 'SAFE');
+    try {
+      const items = await db.withTenantTransaction(getCtx(request), async (client: any) => {
+        const gstRes = await client.query(
+          `SELECT f.id, e.legal_name AS taxpayer_name, g.gstin, f.return_period, f.return_type AS form_type,
+                  f.statutory_due_date::text, f.workflow_status
+           FROM public.gst_filings f
+           JOIN public.entities e ON e.id = f.entity_id
+           JOIN public.gst_registrations g ON g.id = f.gst_registration_id
+           WHERE f.firm_id = app.current_firm_id()
+           ORDER BY f.statutory_due_date`,
+        );
+        const tdsRes = await client.query(
+          `SELECT r.id, e.legal_name AS taxpayer_name, t.tan, r.quarter, r.tax_year,
+                  r.form_code, r.correction_window_expires_at::text, r.workflow_status
+           FROM public.tds_returns r
+           JOIN public.entities e ON e.id = r.entity_id
+           JOIN public.tan_registrations t ON t.id = r.tan_registration_id
+           WHERE r.firm_id = app.current_firm_id()
+           ORDER BY r.statutory_due_date`,
+        );
+        const list: any[] = [];
+        for (const g of gstRes.rows) {
+          const [y, m] = String(g.return_period).split('-').map(Number);
+          const cutoff = `${m >= 4 ? y + 1 : y}-11-30`;
+          const days = daysUntil(cutoff);
+          list.push({
+            id: g.id,
+            taxpayerName: g.taxpayer_name,
+            gstin: g.gstin,
+            returnPeriod: g.return_period,
+            formType: g.form_type,
+            correctionWindowCutoff: cutoff,
+            threeYearStatutoryBar: addYears(g.statutory_due_date, 3),
+            daysRemainingCorrection: days,
+            status: statusFor(days),
+            workflowStatus: g.workflow_status,
+          });
+        }
+        for (const t of tdsRes.rows) {
+          const days = daysUntil(t.correction_window_expires_at);
+          list.push({
+            id: t.id,
+            taxpayerName: t.taxpayer_name,
+            gstin: t.tan,
+            returnPeriod: `${t.quarter} TY ${t.tax_year}`,
+            formType: `Form ${t.form_code}`,
+            correctionWindowCutoff: t.correction_window_expires_at,
+            threeYearStatutoryBar: t.correction_window_expires_at,
+            daysRemainingCorrection: days,
+            status: statusFor(days),
+            workflowStatus: t.workflow_status,
+          });
+        }
+        return list;
+      });
+      return reply.send({ success: true, expiryItems: items });
+    } catch (err: any) {
+      request.log.error({ err: err.code ?? err.message }, 'Expiry radar read failed');
+      return reply.status(503).send({ error: 'AUDIT_UNAVAILABLE', message: 'The expiry radar could not be read. Try again.' });
+    }
   });
 
   // Statutory PII Reveal Endpoint (DPDP Act 2023 & Section 138 Income-tax Act)
-  fastify.post('/reveal-pii', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/reveal-pii', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request: FastifyRequest, reply: FastifyReply) => {
     const parse = PiiRevealRequestSchema.safeParse(request.body);
     if (!parse.success) {
       return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });

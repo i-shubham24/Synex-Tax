@@ -108,7 +108,7 @@ export function CustomDropdown({
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex items-center justify-between gap-2 border border-pos-line bg-pos-surface text-pos-ink outline-none transition-all hover:border-pos-accent/60 focus:border-pos-accent focus:ring-1 focus:ring-pos-accent/30 cursor-pointer w-full text-left font-medium ${buttonVariantStyle} ${buttonClassName}`}
+        className={`flex items-center justify-between gap-2 border border-pos-line bg-pos-surface text-pos-ink outline-none transition-colors hover:border-pos-accent/60 focus:border-pos-accent focus:ring-1 focus:ring-pos-accent/30 cursor-pointer w-full text-left font-medium ${buttonVariantStyle} ${buttonClassName}`}
       >
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
@@ -139,7 +139,7 @@ export function CustomDropdown({
                 }}
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
                   isSelected
-                    ? 'bg-[#52E888]/15 text-[#52E888] font-bold'
+                    ? 'bg-[#52E888]/15 text-[#52E888] font-semibold'
                     : 'text-slate-300 hover:bg-[#17191C] hover:text-white'
                 }`}
               >

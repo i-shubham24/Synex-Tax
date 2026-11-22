@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { hash as argonHash, verify as argonVerify, Algorithm } from '@node-rs/argon2';
 import { generateTotpCode } from './cryptoUtils.js';
+import { isLocalEnv } from './env.js';
 
 // OWASP Password Storage Cheat Sheet, Argon2id minimum: m=19 MiB, t=2, p=1.
 const ARGON = { algorithm: Algorithm.Argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
@@ -71,7 +72,7 @@ function mfaKey(): Buffer {
     if (key.length !== 32) throw new Error('MFA_ENCRYPTION_KEY must be 32 bytes, base64 encoded');
     return key;
   }
-  if (process.env.NODE_ENV === 'production') {
+  if (!isLocalEnv()) {
     throw new Error('MFA_ENCRYPTION_KEY must be set in production (KMS data key, base64)');
   }
   return crypto.createHash('sha256').update('synextax-local-dev-mfa-key').digest();

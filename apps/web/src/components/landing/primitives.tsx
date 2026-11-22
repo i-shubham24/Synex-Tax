@@ -59,7 +59,7 @@ export function Eyebrow({
   dark?: boolean;
 }) {
   return (
-    <p className={`flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-eyebrow ${dark ? 'text-white/80' : 'text-ink'}`}>
+    <p className={`flex items-center gap-2.5 text-[11px] font-medium tracking-eyebrow ${dark ? 'text-white/80' : 'text-ink'}`}>
       <StepMark tone={tone} />
       {children}
     </p>
@@ -160,7 +160,7 @@ export function ArrowChip({ tone = 'dark', size = 'md' }: { tone?: PillTone; siz
   return (
     <span
       aria-hidden
-      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-500 ease-out-expo group-hover:scale-[1.06] ${box} ${PILL_CHIP[tone]}`}
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-500 ease-out-expo ${box} ${PILL_CHIP[tone]}`}
     >
       <ArrowUpRight
         className={`${icon} transition-transform duration-500 ease-out-expo group-hover:-translate-y-[160%] group-hover:translate-x-[160%] motion-reduce:transition-none`}

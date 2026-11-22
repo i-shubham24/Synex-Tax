@@ -93,7 +93,7 @@ export function ClientPill() {
               {results.map((e) => (
                 <li key={e.id} className="rounded-[14px] px-2.5 py-2 hover:bg-pos-muted">
                   <p className="text-[13.5px] font-medium text-pos-ink">{e.legalName}</p>
-                  <p className="ident font-mono text-[11px] text-pos-ink/45">PAN {maskPan(e.pan)}</p>
+                  <p className="ident text-[11px] text-pos-ink/45">PAN {maskPan(e.pan)}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {e.gstins.map((g) => (
                       <button

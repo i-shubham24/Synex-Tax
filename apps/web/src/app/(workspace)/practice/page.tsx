@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { CalendarCheck, IndianRupee, Plus, RefreshCw } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Columns3, IndianRupee, Plus, RefreshCw } from 'lucide-react';
 import { PRACTICE_SERVICES, type ClientLedger } from '@synextax/tax-engine';
 import { useAuth } from '../../../context/AuthContext';
+import { TaskBoard, type TaskStatus } from '../../../components/practice/TaskBoard';
+import { PracticeCalendar } from '../../../components/practice/PracticeCalendar';
 
-type Tab = 'tasks' | 'fees';
-interface Task { id: string; entity_id: string; client: string; kind: string; reference: string | null; title: string; period_label: string; due_date: string; status: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'NOT_APPLICABLE'; assignee: string | null; overdue: boolean }
+type Tab = 'tasks' | 'board' | 'calendar' | 'fees';
+interface Task { id: string; entity_id: string; client: string; kind: string; reference: string | null; title: string; period_label: string; due_date: string; status: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'NOT_APPLICABLE'; assignee: string | null; overdue: boolean; updated_at?: string }
 interface FeeClient { entityId: string; name: string; outstanding: string; ageing: { upTo30: string; days31to90: string; over90: string }; oldestUnpaidDays: number; entries: number }
 interface Invoice { id: string; invoice_no: string; invoice_date: string; kind: string; total: string; status: string }
 
@@ -32,10 +34,14 @@ export default function PracticePage() {
   const [onlyPending, setOnlyPending] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const loadTasks = useCallback(async () => {
-    const r = await authFetch(`/api/v1/practice/tasks?from=${from}&to=${to}${onlyPending ? '&status=PENDING' : ''}`);
+    // The board shows every status, so it ignores the open-only filter.
+    const pendingOnly = onlyPending && tab === 'tasks';
+    const r = await authFetch(`/api/v1/practice/tasks?from=${from}&to=${to}${pendingOnly ? '&status=PENDING' : ''}`);
     if (r.ok) setTasks((await r.json()).tasks);
-  }, [authFetch, from, to, onlyPending]);
-  useEffect(() => { if (tab === 'tasks') loadTasks(); }, [tab, loadTasks]);
+  }, [authFetch, from, to, onlyPending, tab]);
+  useEffect(() => { if (tab === 'tasks' || tab === 'board') loadTasks(); }, [tab, loadTasks]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
 
   const generate = async () => {
     const r = await authFetch('/api/v1/practice/tasks/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ from, to }) });
@@ -44,8 +50,19 @@ export default function PracticePage() {
     loadTasks();
   };
   const setStatus = async (id: string, status: Task['status']) => {
-    const r = await authFetch(`/api/v1/practice/tasks/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status }) });
-    if (r.ok) loadTasks();
+    // The version this screen showed: if someone changed the task since, the API answers 409.
+    const version = tasks.find((t) => t.id === id)?.updated_at;
+    const r = await authFetch(`/api/v1/practice/tasks/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json', ...(version ? { 'If-Match': `"${version}"` } : {}) }, body: JSON.stringify({ status }) });
+    if (r.status === 409) setMessage({ tone: 'bad', text: 'Someone changed this task while you had the page open. The latest is shown now.' });
+    else if (!r.ok) setMessage({ tone: 'bad', text: 'The task was not changed.' });
+    if (r.ok || r.status === 409) await loadTasks();
+  };
+  const moveOnBoard = async (task: { id: string; title: string }, to: TaskStatus) => {
+    setMessage(null);
+    setBusyId(task.id);
+    await setStatus(task.id, to);
+    setBusyId(null);
+    setFocusId(task.id);
   };
 
   // Fees
@@ -85,12 +102,25 @@ export default function PracticePage() {
         <p className="mt-1 max-w-2xl text-[14px] text-pos-ink/60">Every return and deposit due for your clients, who is on it, and what each client owes the firm.</p>
       </div>
       <div className="flex flex-wrap gap-2" role="tablist">
-        {([['tasks', 'Tasks and due dates', CalendarCheck], ['fees', 'Fees and receipts', IndianRupee]] as const).map(([id, label, Icon]) => (
+        {([['tasks', 'Tasks and due dates', CalendarCheck], ['board', 'Task board', Columns3], ['calendar', 'Calendar', CalendarDays], ['fees', 'Fees and receipts', IndianRupee]] as const).map(([id, label, Icon]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); setMessage(null); }}
             className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}><Icon className="h-4 w-4" /> {label}</button>
         ))}
       </div>
       {message && <p role="status" className={`rounded-[10px] px-3 py-2 text-[13px] ${message.tone === 'ok' ? 'bg-[#22a356]/10 text-[#15803d]' : 'bg-[#dc2626]/5 text-[#dc2626]'}`}>{message.text}</p>}
+
+      {tab === 'board' && (
+        <>
+          <div className="pos-card flex flex-wrap items-end gap-3 p-4 text-[13px] text-pos-ink/60">
+            <label className="flex flex-col gap-1">Due from<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={input} /></label>
+            <label className="flex flex-col gap-1">To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={input} /></label>
+            <p className="pb-2 text-[12.5px] text-pos-ink/55">Move a task with its arrows, or focus it and press the left or right arrow key.</p>
+          </div>
+          <TaskBoard tasks={tasks} onMove={moveOnBoard} busyId={busyId} focusId={focusId} />
+        </>
+      )}
+
+      {tab === 'calendar' && <PracticeCalendar />}
 
       {tab === 'tasks' && (
         <>

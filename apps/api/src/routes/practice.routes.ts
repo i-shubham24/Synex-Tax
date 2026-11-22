@@ -1,11 +1,13 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { CHECKLIST_TEMPLATES, SERVICE_LABEL, SERVICE_PHRASE, documentGaps, reminderMessage, whatsappLink, type ChecklistService, type GapChecklist } from '@synextax/tax-engine';
+import { CHECKLIST_TEMPLATES, SERVICE_LABEL, documentGaps, type ChecklistService, type GapChecklist } from '@synextax/tax-engine';
 import { db } from '../db/pool.js';
+import { deliverReminder, loadReminderTarget, recordReminder } from '../modules/practice/reminders.js';
+import { expectedVersion, versionTag, VERSION_MATCHES } from '../plugins/concurrency.js';
 
 const SERVICES = Object.keys(CHECKLIST_TEMPLATES) as [ChecklistService, ...ChecklistService[]];
 const CreateSchema = z.object({
-  entityId: z.string().uuid(),
+  entityId: z.guid(),
   service: z.enum(SERVICES),
   periodLabel: z.string().trim().min(3).max(32),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -42,7 +44,7 @@ export async function practiceRoutes(fastify: FastifyInstance) {
       [onlyOpen],
     );
     const items = await c.query(
-      `SELECT id, checklist_id, label, status, note, received_via, position FROM public.doc_checklist_items ORDER BY position`,
+      `SELECT id, checklist_id, label, status, note, received_via, position, updated_at FROM public.doc_checklist_items ORDER BY position`,
     );
     return lists.rows.map((k: any) => ({
       id: k.id,
@@ -53,7 +55,7 @@ export async function practiceRoutes(fastify: FastifyInstance) {
       dueDate: iso(k.due_date),
       status: k.status,
       lastReminder: k.last_reminder,
-      items: items.rows.filter((i: any) => i.checklist_id === k.id).map((i: any) => ({ id: i.id, label: i.label, status: i.status, note: i.note, receivedVia: i.received_via })),
+      items: items.rows.filter((i: any) => i.checklist_id === k.id).map((i: any) => ({ id: i.id, label: i.label, status: i.status, note: i.note, receivedVia: i.received_via, version: new Date(i.updated_at).toISOString() })),
     }));
   }
 
@@ -98,13 +100,15 @@ export async function practiceRoutes(fastify: FastifyInstance) {
     const body = ItemSchema.safeParse(request.body);
     const { id } = request.params as { id: string };
     if (!body.success || !/^[0-9a-f-]{36}$/.test(id)) return reply.status(400).send({ error: 'Validation Error' });
+    const expected = expectedVersion(request);
     const updated = await db.withTenantTransaction(ctx(request), async (c) => {
-      const r = await c.query(
+      const r = await c.query<{ checklist_id: string; updated_at: Date }>(
         `UPDATE public.doc_checklist_items SET status = $2, note = COALESCE($3, note), received_via = COALESCE($4, received_via), updated_by = $5
-         WHERE id = $1 RETURNING checklist_id`,
-        [id, body.data.status, body.data.note ?? null, body.data.receivedVia ?? null, request.user.userId],
+         WHERE id = $1 AND ${VERSION_MATCHES('$6')} RETURNING checklist_id, updated_at`,
+        [id, body.data.status, body.data.note ?? null, body.data.receivedVia ?? null, request.user.userId, expected],
       );
-      if (!r.rows[0]) return false;
+      if (!r.rows[0]) return expected && (await c.query('SELECT 1 FROM public.doc_checklist_items WHERE id = $1', [id])).rowCount ? ('stale' as const) : false;
+      reply.header('ETag', versionTag(r.rows[0].updated_at));
       // A checklist with nothing outstanding is complete; reopening an item reopens it.
       await c.query(
         `UPDATE public.doc_checklists k SET status = CASE WHEN EXISTS (
@@ -114,45 +118,28 @@ export async function practiceRoutes(fastify: FastifyInstance) {
       );
       return true;
     });
+    if (updated === 'stale') return reply.status(409).send({ error: 'Changed', message: 'Someone updated this item after you opened it. Reload to see the latest.' });
     return updated ? reply.send({ ok: true }) : reply.status(404).send({ error: 'Not found' });
   });
 
-  // Records the reminder and returns the message with a WhatsApp or email link; the user sends it.
+  // Sends the reminder (when mail or WhatsApp is set up) or returns a link the user sends; records it.
   fastify.post('/checklists/:id/reminder', async (request, reply) => {
     const body = ReminderSchema.safeParse(request.body);
     const { id } = request.params as { id: string };
     if (!body.success || !/^[0-9a-f-]{36}$/.test(id)) return reply.status(400).send({ error: 'Validation Error' });
     const out = await db.withTenantTransaction(ctx(request), async (c) => {
-      const k = await c.query(
-        `SELECT k.id, k.entity_id, k.service, k.period_label, k.due_date, e.legal_name, COALESCE(f.trade_name, f.legal_name) AS firm_name,
-                ct.mobile_e164, ct.email, ct.full_name
-         FROM public.doc_checklists k
-         JOIN public.entities e ON e.id = k.entity_id
-         JOIN public.firms f ON f.id = k.firm_id
-         LEFT JOIN LATERAL (SELECT mobile_e164, email, full_name FROM public.entity_contacts x WHERE x.entity_id = k.entity_id ORDER BY x.is_primary DESC, x.created_at LIMIT 1) ct ON true
-         WHERE k.id = $1`,
-        [id],
-      );
-      const row = k.rows[0];
-      if (!row) return null;
-      const outstanding = (await c.query(`SELECT label FROM public.doc_checklist_items WHERE checklist_id = $1 AND status IN ('MISSING','REJECTED') ORDER BY position`, [id])).rows.map((r) => r.label);
-      const message = reminderMessage({
-        clientName: row.full_name || row.legal_name,
-        firmName: row.firm_name,
-        periodLabel: row.period_label,
-        serviceLabel: SERVICE_PHRASE[row.service as ChecklistService] ?? 'compliance work',
-        dueDate: iso(row.due_date),
-        outstanding,
-      });
-      const link =
-        body.data.channel === 'WHATSAPP'
-          ? row.mobile_e164 ? whatsappLink(row.mobile_e164, message) : null
-          : row.email ? `mailto:${row.email}?subject=${encodeURIComponent(`Documents needed for ${row.period_label}`)}&body=${encodeURIComponent(message)}` : null;
-      if (link) {
-        await c.query(`INSERT INTO public.doc_reminders (firm_id, entity_id, checklist_id, channel, sent_by) VALUES (app.current_firm_id(), $1, $2, $3, $4)`, [row.entity_id, id, body.data.channel, request.user.userId]);
+      const target = await loadReminderTarget(c, id);
+      if (!target) return null;
+      let result;
+      try {
+        result = await deliverReminder(target, body.data.channel);
+      } catch (err) {
+        return { error: (err as Error).message };
       }
-      return { message, link, missingContact: !link };
+      if (result.link || result.sent) await recordReminder(c, target, body.data.channel, request.user.userId);
+      return { message: result.message, link: result.link, sent: result.sent, missingContact: !result.link && !result.sent };
     });
+    if (out && 'error' in out) return reply.status(502).send({ error: 'Not sent', message: out.error });
     return out ? reply.send(out) : reply.status(404).send({ error: 'Not found' });
   });
 }

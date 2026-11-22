@@ -179,13 +179,15 @@ function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
         {data.map((m) => (
           <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
             <div className="flex h-full w-full items-end justify-center gap-[3px]">
-              {[{ v: m.itc, c: 'bg-gradient-to-b from-[#52B0F8] to-[#5FE88A]' }, { v: m.cash, c: 'bg-[#141416] dark:bg-[#5A50F2]' }].map((b, i) => (
-                <div key={i} className="relative h-full w-[7px] overflow-hidden rounded-full bg-pos-muted">
+              {[{ v: m.itc, c: 'bg-pos-accent' }, { v: m.cash, c: 'bg-pos-ink/35' }].map((b, i) => (
+                <div key={i} className="relative h-full w-[8px] overflow-hidden rounded-full bg-pos-muted">
+                  {/* ITC in the accent, cash in a neutral; the bar grows with a transform, not its height */}
                   <motion.div
-                    className={`absolute inset-x-0 bottom-0 rounded-full ${b.c}`}
-                    initial={{ height: 0 }}
-                    animate={{ height: `${(b.v / max) * 100}%` }}
-                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                    className={`absolute inset-x-0 bottom-0 origin-bottom rounded-full ${b.c}`}
+                    style={{ height: `${(b.v / max) * 100}%` }}
+                    initial={{ scaleY: 0 }}
+                    animate={{ scaleY: 1 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   />
                 </div>
               ))}
@@ -195,8 +197,8 @@ function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
         ))}
       </div>
       <div className="mt-3 flex gap-4 text-[12px] text-pos-ink/65">
-        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#52B0F8]" /> ITC utilised</span>
-        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#141416] dark:bg-[#5A50F2]" /> Cash paid</span>
+        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-pos-accent" /> ITC utilised</span>
+        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-pos-ink/35" /> Cash paid</span>
       </div>
     </div>
   );
@@ -350,7 +352,7 @@ export default function ControlTowerPage() {
         </button>
         <AnimatePresence initial={false}>
           {radarOpen && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden">
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="-m-2 overflow-hidden p-2">
               <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 {tiles.map((t) => {
                   const Icon = TILE_ICON[t.id];
@@ -595,7 +597,7 @@ export default function ControlTowerPage() {
               animate={{ x: 0 }}
               exit={{ x: 40 }}
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-              className="h-full w-full max-w-[420px] overflow-y-auto bg-pos-surface p-5 text-pos-ink shadow-2xl"
+              className="h-full w-full max-w-[420px] overflow-y-auto bg-pos-surface p-5 text-pos-ink shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <h2 className="text-[17px] font-semibold">Partner approval queue</h2>

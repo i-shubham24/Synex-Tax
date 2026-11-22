@@ -2,14 +2,15 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Plus } from 'lucide-react';
-import type { DefaultAnalysis, DepositMonth, SectionLine } from '@synextax/tax-engine';
+import type { CertificateFinding, DefaultAnalysis, DepositMonth, RateFinding, SectionLine } from '@synextax/tax-engine';
+import { CertificatesView, type CertificateRow } from './CertificatesView';
 import { useAuth } from '../../context/AuthContext';
 
 interface StatementLine { id: string; form: string; quarter: string; dueDate: string; filedOn: string | null; state: 'ON_TIME' | 'LATE' | 'OVERDUE' | 'NOT_DUE' | 'FILED_DATE_UNKNOWN'; daysLate: number }
 interface Declaration { id: string; pan: string; name: string; identificationNo: string | null; receivedOn: string; seniorCitizen: boolean; incomeNature: string | null; estimatedIncome: string; estimatedTotalIncome: string; status: 'ACTIVE' | 'WITHDRAWN' }
-interface Registers { analysis: DefaultAnalysis; deposits: DepositMonth[]; sections: SectionLine[]; statements: StatementLine[]; form121: Declaration[] }
+interface Registers { analysis: DefaultAnalysis; rateFindings: RateFinding[]; certificates: CertificateRow[]; certificateFindings: CertificateFinding[]; bookAdjustments: Array<{ month: string; date: string; receiptNo24G: string; ddoSerial: string; amount: string }>; deposits: DepositMonth[]; sections: SectionLine[]; statements: StatementLine[]; form121: Declaration[] }
 
-type View = 'defaults' | 'deposits' | 'sections' | 'statements' | 'form121';
+type View = 'defaults' | 'deposits' | 'sections' | 'statements' | 'form121' | 'certificates';
 
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const nice = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -91,7 +92,7 @@ export function RegistersPanel({ tan }: { tan: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Register">
-          {([['defaults', 'Defaults'], ['deposits', 'Deposits'], ['sections', 'Section-wise (clause 34)'], ['statements', 'Statements'], ['form121', 'Form 121 declarations']] as const).map(([id, label]) => (
+          {([['defaults', 'Defaults'], ['deposits', 'Deposits'], ['sections', 'Section-wise (clause 34)'], ['statements', 'Statements'], ['form121', 'Form 121 declarations'], ['certificates', 'Lower deduction certificates']] as const).map(([id, label]) => (
             <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => setView(id)}
               className={`rounded-full px-3 py-1.5 text-[12.5px] ${view === id ? 'bg-pos-ink text-pos-surface' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}>{label}</button>
           ))}
@@ -130,6 +131,10 @@ export function RegistersPanel({ tan }: { tan: string }) {
             <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Payee</th><th className={th}>Deducted</th><th className={th}>Due</th><th className={th}>Paid</th><th className={th}>Months</th><th className={`${th} text-right`}>Interest</th></tr></thead>
               <tbody>{a.lateDeposits.map((x) => <tr key={x.rowId} className="border-t border-pos-line"><td className={td}>{x.name}</td><td className={td}>{nice(x.deductedOn)}</td><td className={td}>{nice(x.dueOn)}</td><td className={td}>{nice(x.paidOn)}</td><td className={td}>{x.months}</td><td className={num}>{inr(x.interest)}</td></tr>)}</tbody></table>
           </Card>
+          <Card title="Section rates and thresholds" note="Each row checked against its section’s rate and threshold for Tax Year 2026-27, from the Income Tax Department’s rate chart and section 393. Rows with a reason flag for lower or nil deduction are judged by that flag." count={data?.rateFindings.length ?? 0} empty="Every row was deducted at its section’s rate once the threshold was crossed.">
+            <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Payee</th><th className={th}>PAN</th><th className={th}>Code</th><th className={`${th} text-right`}>Paid</th><th className={`${th} text-right`}>Deducted</th><th className={`${th} text-right`}>Due</th><th className={th}>Why</th></tr></thead>
+              <tbody>{(data?.rateFindings ?? []).map((x) => <tr key={`${x.rowId}-${x.kind}`} className="border-t border-pos-line"><td className={td}>{x.name}</td><td className={`${td} font-mono`}>{x.pan}</td><td className={td}>{x.sectionCode}</td><td className={num}>{inr(x.amountPaid)}</td><td className={num}>{inr(x.deducted)}</td><td className={num}>{inr(x.expected)}</td><td className={`${td} text-[#b45309]`}>{x.message}</td></tr>)}</tbody></table>
+          </Card>
           <Card title="Deducted but not deposited" count={a.notDeposited.length} empty="Everything deducted was deposited.">
             <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Payee</th><th className={th}>Code</th><th className={`${th} text-right`}>Deducted</th><th className={`${th} text-right`}>Deposited</th><th className={`${th} text-right`}>Short</th></tr></thead>
               <tbody>{a.notDeposited.map((x) => <tr key={x.rowId} className="border-t border-pos-line"><td className={td}>{x.name}</td><td className={td}>{x.sectionCode}</td><td className={num}>{inr(x.deducted)}</td><td className={num}>{inr(x.deposited)}</td><td className={num}>{inr(x.shortfall)}</td></tr>)}</tbody></table>
@@ -157,6 +162,13 @@ export function RegistersPanel({ tan }: { tan: string }) {
         </Card>
       )}
 
+      {data && view === 'deposits' && data.bookAdjustments.length > 0 && (
+        <Card title="Paid by book adjustment (Form 24G)" note="Transfer vouchers for a government deductor, with the 24G receipt number given by the PAO, TO or CDDO and the DDO serial number." count={data.bookAdjustments.length} empty="">
+          <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Month</th><th className={th}>Date</th><th className={th}>24G receipt no.</th><th className={th}>DDO serial</th><th className={`${th} text-right`}>Amount</th></tr></thead>
+            <tbody>{data.bookAdjustments.map((b) => <tr key={`${b.receiptNo24G}-${b.ddoSerial}`} className="border-t border-pos-line"><td className={td}>{monthName(b.month)}</td><td className={td}>{nice(b.date)}</td><td className={`${td} font-mono`}>{b.receiptNo24G}</td><td className={`${td} font-mono`}>{b.ddoSerial}</td><td className={num}>{inr(b.amount)}</td></tr>)}</tbody></table>
+        </Card>
+      )}
+
       {data && view === 'sections' && (
         <Card title={`Section-wise TDS, ${yearLabel}`} note="Laid out like clause 34(a) of the tax audit report. Columns 4 and 5 (all payments of the nature, and the part on which tax had to be deducted) come from the books, so they are not filled here." count={data.sections.length} empty="No deductions recorded for this year.">
           <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Form</th><th className={th}>Code</th><th className={`${th} text-right`}>Rows</th><th className={`${th} text-right`}>Paid</th><th className={`${th} text-right`}>At the full rate (6)</th><th className={`${th} text-right`}>Tax (7)</th><th className={`${th} text-right`}>Lower or nil (8)</th><th className={`${th} text-right`}>Tax (9)</th><th className={`${th} text-right`}>Not deposited (10)</th></tr></thead>
@@ -174,6 +186,8 @@ export function RegistersPanel({ tan }: { tan: string }) {
             ))}</tbody></table>
         </Card>
       )}
+
+      {data && view === 'certificates' && <CertificatesView tan={tan} certificates={data.certificates} findings={data.certificateFindings} onSaved={load} />}
 
       {data && view === 'form121' && (
         <>

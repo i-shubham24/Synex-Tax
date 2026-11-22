@@ -40,6 +40,7 @@ export async function buildStatement(
     await client.query(
       `SELECT r.id, r.tax_year, r.quarter, r.form_code, r.statutory_regime, r.workflow_status, r.tan_registration_id,
               t.tan, t.deductor_type_code, t.address, t.deductor_email, t.deductor_phone, t.gstin, t.statement_file_seq,
+              t.govt_state_code, t.ministry_code, t.ministry_other, t.ain,
               t.responsible_person_name, t.responsible_person_designation, t.responsible_person_pan,
               t.responsible_address, t.responsible_email, t.responsible_phone,
               e.legal_name, e.pan AS entity_pan
@@ -97,7 +98,8 @@ export async function buildStatement(
     preparedWith: 'SynexTax',
     tan: ret.tan,
     deductorPan: ret.entity_pan,
-    deductor: { name: ret.legal_name, address: toAddress(ret.address), email: ret.deductor_email ?? '', phone: ret.deductor_phone ?? '', type: ret.deductor_type_code ?? '', gstin: ret.gstin ?? undefined },
+    deductor: { name: ret.legal_name, address: toAddress(ret.address), email: ret.deductor_email ?? '', phone: ret.deductor_phone ?? '', type: ret.deductor_type_code ?? '', gstin: ret.gstin ?? undefined,
+      government: { stateCode: ret.govt_state_code ?? undefined, ministryCode: ret.ministry_code ?? undefined, ministryOther: ret.ministry_other ?? undefined, ain: ret.ain ?? undefined } },
     responsible: {
       name: ret.responsible_person_name ?? '',
       designation: ret.responsible_person_designation ?? '',

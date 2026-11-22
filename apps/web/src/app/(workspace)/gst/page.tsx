@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import React, { useState, useEffect } from 'react';
 import {
   Receipt,
@@ -122,6 +124,15 @@ export default function MasterInvoicesPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedRowId, setSelectedRowId] = useState<string>('row-1');
   const [showSignModal, setShowSignModal] = useState<boolean>(false);
+  const dialogCloseRef = React.useRef<HTMLButtonElement>(null);
+  // The dialog takes focus when it opens and closes on Escape.
+  useEffect(() => {
+    if (!showSignModal) return;
+    dialogCloseRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setShowSignModal(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSignModal]);
   const [auditNote, setAuditNote] = useState<string>('Pre-filing GSTR-3B reconciliation verified by Senior Partner.');
   const [cashOffsetInput, setCashOffsetInput] = useState<string>('24150.00');
   const [filingFeedback, setFilingFeedback] = useState<string | null>(null);
@@ -180,11 +191,6 @@ export default function MasterInvoicesPage() {
     return true;
   });
 
-  const handleExecuteSign = () => {
-    setShowSignModal(false);
-    setFilingFeedback('Successfully offset liability and cryptographically signed with Class 3 DSC.');
-    setTimeout(() => setFilingFeedback(null), 5000);
-  };
 
   return (
     <div className="space-y-4 max-w-[1600px] mx-auto font-sans">
@@ -193,7 +199,7 @@ export default function MasterInvoicesPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-[#17191C] p-3 sm:p-4 rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm">
         
         {/* Left Segmented Status Filter Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-mono">
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
           {[
             { id: 'ALL', label: 'All Returns' },
             { id: 'PENDING', label: 'Draft / Pending' },
@@ -206,7 +212,7 @@ export default function MasterInvoicesPage() {
               <button
                 key={tab.id}
                 onClick={() => setFilterStatus(tab.id)}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors whitespace-nowrap ${
                   isActive
                     ? 'bg-[#2F8AE0] text-white shadow-sm'
                     : 'text-[#646A73] dark:text-[#9BA1AA] hover:bg-[#FAFAFB] dark:hover:bg-slate-800'
@@ -243,7 +249,7 @@ export default function MasterInvoicesPage() {
       </div>
 
       {filingFeedback && (
-        <div className="p-3.5 rounded-xl bg-[#DCFCE7] text-[#15803D] border border-[#16A34A]/30 font-mono text-xs flex items-center gap-2">
+        <div className="p-3.5 rounded-xl bg-[#DCFCE7] text-[#15803D] border border-[#16A34A]/30 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{filingFeedback}</span>
         </div>
@@ -260,7 +266,7 @@ export default function MasterInvoicesPage() {
               
               {/* Solid Obsidian Header Bar (#141619) with Crisp White Bold Text */}
               <thead>
-                <tr className="bg-[#141619] text-white font-mono text-[11px] uppercase tracking-wider">
+                <tr className="bg-[#141619] text-white text-[11px] tracking-wider">
                   <th className="py-3 px-4 rounded-tl-xl">
                     <div className="flex items-center gap-1 cursor-pointer">
                       <span>Doc Ref</span>
@@ -306,21 +312,21 @@ export default function MasterInvoicesPage() {
                       onClick={() => setSelectedRowId(row.id)}
                       className={`cursor-pointer transition-colors h-12 ${rowBg} hover:bg-[#ECF4FD]/70`}
                     >
-                      <td className="py-3 px-4 font-mono font-bold text-[#0E0F10] dark:text-white">
+                      <td className="py-3 px-4 font-mono font-semibold text-[#0E0F10] dark:text-white">
                         <div>{row.docNum}</div>
                         <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA] font-normal">{row.docDate}</div>
                       </td>
 
                       <td className="py-3 px-4">
                         <div className="font-semibold text-[#0E0F10] dark:text-white text-xs">{row.counterparty}</div>
-                        <div className="font-mono text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{row.gstin}</div>
+                        <div className=" text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{row.gstin}</div>
                       </td>
 
                       <td className="py-3 px-3 font-mono text-[11px] text-[#646A73] dark:text-[#9BA1AA]">
                         {row.pos}
                       </td>
 
-                      <td className="py-3 px-4 text-right font-mono font-bold text-[#0E0F10] dark:text-white tabular-nums">
+                      <td className="py-3 px-4 text-right font-mono font-semibold text-[#0E0F10] dark:text-white tabular-nums">
                         ₹ {row.taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
 
@@ -330,12 +336,12 @@ export default function MasterInvoicesPage() {
                         </span>
                       </td>
 
-                      <td className="py-3 px-4 text-right font-mono font-bold text-[#16A34A] tabular-nums">
+                      <td className="py-3 px-4 text-right font-mono font-semibold text-[#16A34A] tabular-nums">
                         ₹ {totalTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${statusPill}`}>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold ${statusPill}`}>
                           {row.statusLabel}
                         </span>
                       </td>
@@ -347,14 +353,14 @@ export default function MasterInvoicesPage() {
           </div>
 
           {/* Bottom Pagination Bar */}
-          <div className="p-3.5 bg-white dark:bg-[#17191C] border-t border-[#E5E7EB] dark:border-[#24272B] flex items-center justify-between text-xs font-mono text-[#646A73] dark:text-[#9BA1AA]">
+          <div className="p-3.5 bg-white dark:bg-[#17191C] border-t border-[#E5E7EB] dark:border-[#24272B] flex items-center justify-between text-xs text-[#646A73] dark:text-[#9BA1AA]">
             <span>Showing 1 to {filteredRows.length} of {SAMPLE_INVOICES.length} invoices</span>
 
             <div className="flex items-center gap-1.5">
               <button className="px-2 py-1 rounded border border-[#E5E7EB] dark:border-[#24272B] hover:bg-slate-100 dark:hover:bg-slate-800">
                 « Previous
               </button>
-              <button className="w-6 h-6 rounded bg-[#141619] text-white font-bold flex items-center justify-center">
+              <button className="w-6 h-6 rounded bg-[#141619] text-white font-semibold flex items-center justify-center">
                 1
               </button>
               <button className="w-6 h-6 rounded border border-[#E5E7EB] dark:border-[#24272B] hover:bg-slate-100 flex items-center justify-center">
@@ -369,13 +375,13 @@ export default function MasterInvoicesPage() {
         </div>
 
         {/* Right Elevated Floating Inspector Card (4 cols ~ 28%) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-xl overflow-hidden space-y-4">
+        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
           
           {/* Solid Sky Cobalt Header Bar with Doc Ref & Expand Arrow */}
-          <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between font-mono">
+          <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">
             <div>
-              <span className="text-[10px] uppercase font-bold text-white/80 block">Active Selection Inspector</span>
-              <span className="text-sm font-black text-white">{selectedRow.docNum}</span>
+              <span className="text-[10px] font-semibold text-white/80 block">Selected invoice</span>
+              <span className="text-sm font-semibold text-white">{selectedRow.docNum}</span>
             </div>
             <button
               onClick={() => setShowSignModal(true)}
@@ -390,16 +396,16 @@ export default function MasterInvoicesPage() {
             
             {/* Metadata Pill Row */}
             <div className="p-3 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-1">
-              <div className="text-[10px] font-mono text-[#646A73] dark:text-[#9BA1AA] uppercase">
+              <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">
                 Customer / Vendor Context
               </div>
-              <div className="font-bold text-xs text-[#0E0F10] dark:text-white">{selectedRow.counterparty}</div>
-              <div className="text-[11px] font-mono text-[#2F8AE0] font-semibold">{selectedRow.gstin}</div>
+              <div className="font-semibold text-xs text-[#0E0F10] dark:text-white">{selectedRow.counterparty}</div>
+              <div className="text-[11px] text-[#2F8AE0] font-semibold">{selectedRow.gstin}</div>
             </div>
 
             {/* Mini Solid Obsidian Breakdown Table */}
-            <div className="rounded-xl overflow-hidden border border-[#24272B] text-xs font-mono">
-              <div className="bg-[#141619] text-white p-2.5 flex justify-between font-bold text-[11px] uppercase">
+            <div className="rounded-xl overflow-hidden border border-[#24272B] text-xs">
+              <div className="bg-[#141619] text-white p-2.5 flex justify-between font-semibold text-[11px]">
                 <span>Tax Head</span>
                 <span>Rate</span>
                 <span>Amount (₹)</span>
@@ -408,25 +414,25 @@ export default function MasterInvoicesPage() {
                 <div className="flex justify-between">
                   <span>Central Tax (CGST):</span>
                   <span>9%</span>
-                  <span className="font-bold tabular-nums">₹ {selectedRow.cgst.toFixed(2)}</span>
+                  <span className="font-semibold tabular-nums">₹ {selectedRow.cgst.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>State Tax (SGST):</span>
                   <span>9%</span>
-                  <span className="font-bold tabular-nums">₹ {selectedRow.sgst.toFixed(2)}</span>
+                  <span className="font-semibold tabular-nums">₹ {selectedRow.sgst.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Integrated Tax (IGST):</span>
                   <span>18%</span>
-                  <span className="font-bold tabular-nums">₹ {selectedRow.igst.toFixed(2)}</span>
+                  <span className="font-semibold tabular-nums">₹ {selectedRow.igst.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             {/* Full-Width Solid Obsidian Total Bar */}
-            <div className="bg-[#141619] text-white p-3.5 rounded-xl flex items-center justify-between font-mono">
-              <span className="text-xs uppercase font-bold text-slate-300">Net Tax Value:</span>
-              <span className="text-base font-black text-[#13A83C] tabular-nums">
+            <div className="bg-[#141619] text-white p-3.5 rounded-xl flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-300">Net Tax Value:</span>
+              <span className="text-base font-semibold text-[#13A83C] tabular-nums">
                 ₹ {(selectedRow.cgst + selectedRow.sgst + selectedRow.igst).toLocaleString('en-IN', {
                   minimumFractionDigits: 2,
                 })}
@@ -438,7 +444,7 @@ export default function MasterInvoicesPage() {
               <button
                 type="button"
                 onClick={() => alert('Voucher held for clarification.')}
-                className="py-2.5 rounded-xl bg-[#141619] hover:bg-[#0E0F10] text-white font-mono text-xs font-bold transition-all text-center"
+                className="py-2.5 rounded-xl bg-[#141619] hover:bg-[#0E0F10] text-white font-mono text-xs font-semibold transition-colors text-center"
               >
                 Mark Pending
               </button>
@@ -446,7 +452,7 @@ export default function MasterInvoicesPage() {
               <button
                 type="button"
                 onClick={() => setShowSignModal(true)}
-                className="py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-mono text-xs font-bold transition-all text-center shadow-md shadow-[#16A34A]/20"
+                className="py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-mono text-xs font-semibold transition-colors text-center shadow-md shadow-[#16A34A]/20"
               >
                 Approve & File
               </button>
@@ -460,143 +466,30 @@ export default function MasterInvoicesPage() {
 
       {/* 3. Screen C: Pre-Filing Reconciliation & Sign-Off Modal */}
       {showSignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#17191C] border border-[#E5E7EB] dark:border-[#24272B] rounded-2xl max-w-[620px] w-full p-6 text-[#0E0F10] dark:text-white space-y-5 shadow-2xl relative">
-            
-            {/* Header Row */}
-            <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] dark:border-[#24272B]">
-              <div>
-                <h3 className="text-lg font-black tracking-tight font-sans">
-                  GSTR-3B Pre-Filing Reconciliation
-                </h3>
-                <span className="text-[11px] font-mono text-[#646A73] dark:text-[#9BA1AA]">
-                  November 2025 Return Cycle
-                </span>
-              </div>
-
-              <div className="text-right font-mono">
-                <span className="text-xs font-bold text-[#2F8AE0]">186 Invoices</span>
-                <div className="text-sm font-black tabular-nums">₹ 8,56,000.00</div>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="file-gst-title">
+          <div className="w-full max-w-[520px] space-y-4 rounded-2xl border border-[#E5E7EB] bg-white p-6 text-[#0E0F10] dark:border-[#24272B] dark:bg-[#17191C] dark:text-white">
+            <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] pb-3 dark:border-[#24272B]">
+              <h3 id="file-gst-title" className="text-lg font-semibold">Offset and file a GST return</h3>
+              <button ref={dialogCloseRef} type="button" aria-label="Close" onClick={() => setShowSignModal(false)} className="text-[#646A73] transition-colors hover:text-[#0E0F10] dark:hover:text-white">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-
-            {/* Ledger Breakdown Blocks */}
-            <div className="space-y-3 font-mono text-xs">
-              
-              {/* Credit Ledger Block */}
-              <div className="p-3.5 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-2">
-                <div className="text-[10px] uppercase text-[#646A73] dark:text-[#9BA1AA] font-bold">
-                  Electronic Credit Ledger (ITC Utilization)
-                </div>
-                <div className="flex justify-between">
-                  <span>Available GSTR-2B ITC:</span>
-                  <span className="font-bold tabular-nums">₹ 1,48,920.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Section 17(5) Ineligible Blocked Credit:</span>
-                  <span className="text-[#DC2626] font-bold tabular-nums">-₹ 0.00</span>
-                </div>
-                <div className="flex justify-between border-t border-[#E5E7EB] dark:border-[#24272B] pt-1">
-                  <span>Net ITC Available:</span>
-                  <span className="text-[#16A34A] font-bold tabular-nums">₹ 1,48,920.00</span>
-                </div>
-              </div>
-
-              {/* Cash Ledger Block */}
-              <div className="p-3.5 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-2">
-                <div className="text-[10px] uppercase text-[#646A73] dark:text-[#9BA1AA] font-bold">
-                  Electronic Cash Ledger (RCM & Cash Floor)
-                </div>
-                <div className="flex justify-between">
-                  <span>Rule 86B Mandatory Cash (1%):</span>
-                  <span className="font-bold tabular-nums">₹ 8,560.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Reverse Charge (RCM 9(3)):</span>
-                  <span className="font-bold tabular-nums">₹ 15,590.00</span>
-                </div>
-                <div className="flex justify-between border-t border-[#E5E7EB] dark:border-[#24272B] pt-1">
-                  <span>Net Cash Required:</span>
-                  <span className="text-[#DC2626] font-bold tabular-nums">₹ 24,150.00</span>
-                </div>
-              </div>
-
+            <p className="text-sm leading-relaxed text-[#3F444B] dark:text-[#C4C9D0]">
+              Offsetting liability and filing GSTR-1 or GSTR-3B happen on the GST portal: SynexTax is not connected to a GST Suvidha Provider yet, so it cannot read the ledgers or file for you.
+            </p>
+            <ol className="list-decimal space-y-2 pl-5 text-sm text-[#3F444B] dark:text-[#C4C9D0]">
+              <li>Prepare the return and its tables under GST returns, and download the JSON for the portal.</li>
+              <li>Record the partner&apos;s sign-off with the DSC under Audit, DSC signing.</li>
+              <li>Offset and file on the GST portal with the client&apos;s DSC or EVC, then mark the return filed.</li>
+            </ol>
+            <div className="flex flex-wrap justify-end gap-2 border-t border-[#E5E7EB] pt-3 dark:border-[#24272B]">
+              <Link href="/audit" className="rounded-xl border border-[#E5E7EB] px-4 py-2 text-xs font-semibold transition-colors hover:bg-[#F5F6F8] dark:border-[#24272B] dark:hover:bg-[#202327]">
+                DSC sign-off
+              </Link>
+              <Link href="/gst/returns" className="rounded-xl bg-[#141619] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#0E0F10]">
+                Open GST returns
+              </Link>
             </div>
-
-            {/* Verification Inputs */}
-            <div className="space-y-3 font-mono text-xs">
-              <div>
-                <label className="block text-[11px] font-semibold text-[#646A73] dark:text-[#9BA1AA] mb-1">
-                  Cash Offset Amount (₹)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={cashOffsetInput}
-                    onChange={(e) => setCashOffsetInput(e.target.value)}
-                    className="w-full bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] rounded-lg px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2F8AE0]"
-                  />
-                  {cashOffsetInput && (
-                    <button
-                      onClick={() => setCashOffsetInput('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-[#646A73] dark:text-[#9BA1AA] mb-1">
-                  Filing Audit Note (Stored in MCA Rule 3 Immutable Logs)
-                </label>
-                <textarea
-                  rows={2}
-                  value={auditNote}
-                  onChange={(e) => setAuditNote(e.target.value)}
-                  className="w-full bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] rounded-lg p-2.5 text-xs font-sans focus:outline-none focus:border-[#2F8AE0]"
-                />
-              </div>
-            </div>
-
-            {/* Split Footer Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#E5E7EB] dark:border-[#24272B]">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSignModal(false)}
-                  className="px-4 py-2 rounded-xl bg-[#141619] text-white hover:bg-[#0E0F10] text-xs font-mono font-semibold transition-colors"
-                >
-                  Discard
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExecuteSign}
-                  className="px-5 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-mono font-bold transition-all shadow-md shadow-[#16A34A]/25"
-                >
-                  Offset & Sign via DSC
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => alert('Exporting Draft GSTR-3B JSON...')}
-                  className="px-3 py-1.5 rounded-lg border border-[#2F8AE0]/40 text-[#2F8AE0] hover:bg-[#ECF4FD] text-xs font-mono"
-                >
-                  Preview JSON
-                </button>
-                <button
-                  type="button"
-                  onClick={() => alert('4-Pass 2B Recompute Triggered.')}
-                  className="px-3 py-1.5 rounded-lg border border-[#2F8AE0]/40 text-[#2F8AE0] hover:bg-[#ECF4FD] text-xs font-mono"
-                >
-                  Recompute 2B
-                </button>
-              </div>
-            </div>
-
           </div>
         </div>
       )}

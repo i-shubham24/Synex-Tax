@@ -50,7 +50,7 @@ const COMPANY: Array<[string, string]> = [
 function LinkColumn({ title, links }: { title: string; links: Array<[string, string]> }) {
   return (
     <div>
-      <p className="font-display text-[12.5px] font-semibold uppercase tracking-[0.12em] text-ink/40">{title}</p>
+      <p className="font-display text-[12.5px] font-semibold text-ink/40">{title}</p>
       <ul className="mt-4 space-y-2.5 font-display text-[17px] tracking-[-0.015em]">
         {links.map(([label, href]) => (
           <li key={label}>
@@ -104,7 +104,7 @@ export function LandingFooter() {
                 key={label}
                 href={href}
                 aria-label={label}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink shadow-[0_8px_20px_-10px_rgba(20,40,80,0.5)] transition-transform duration-300 hover:-translate-y-0.5 hover:scale-105"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink shadow-[0_8px_20px_-10px_rgba(20,40,80,0.5)] transition-transform duration-300 hover:-translate-y-0.5"
               >
                 <Icon className="h-[17px] w-[17px]" />
               </a>
@@ -129,7 +129,7 @@ export function LandingFooter() {
           </div>
           <div className="hidden bg-ink/10 md:block" />
           <div className="flex flex-col justify-center p-8 sm:p-9">
-            <p className="font-display text-[12.5px] font-semibold uppercase tracking-[0.12em] text-sky-deep">Statutory notes</p>
+            <p className="font-display text-[12.5px] font-semibold text-sky-deep">Statutory notes</p>
             <h2 className="mt-3 font-display text-[clamp(26px,2.2vw,34px)] font-medium leading-[1.15] tracking-[-0.035em] text-ink">
               Rule Changes Before The Deadline
             </h2>

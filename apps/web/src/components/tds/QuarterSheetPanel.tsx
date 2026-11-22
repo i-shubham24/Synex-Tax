@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import type { QuarterChallan } from '@synextax/tax-engine';
 import { useAuth } from '../../context/AuthContext';
+import { TemplateLink } from '../TemplateLink';
 
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const input = 'h-9 rounded-[10px] border border-pos-line bg-pos-surface px-3 text-[13px] text-pos-ink outline-none focus:border-pos-accent';
@@ -15,12 +16,13 @@ export function QuarterSheetPanel({ tans }: { tans: string[] }) {
   const [taxYear, setTaxYear] = useState(2026);
   const [quarter, setQuarter] = useState(3);
   const [text, setText] = useState('');
+  const [challanText, setChallanText] = useState('');
   const [preview, setPreview] = useState<{ challans: QuarterChallan[]; errors: Array<{ line: number; message: string }>; missing: string[] } | null>(null);
   const [message, setMessage] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
 
   const send = async (path: 'preview' | 'import') => {
     setMessage(null);
-    const r = await authFetch(`/api/v1/tds/quarter/${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tan: tan || tans[0], form, taxYear, quarter, text }) });
+    const r = await authFetch(`/api/v1/tds/quarter/${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tan: tan || tans[0], form, taxYear, quarter, text, challans: challanText }) });
     const b = await r.json().catch(() => ({}));
     if (path === 'preview') return r.ok ? setPreview(b) : setMessage({ tone: 'bad', text: b.message ?? 'Could not read the sheet.' });
     if (r.ok) {
@@ -40,7 +42,16 @@ export function QuarterSheetPanel({ tans }: { tans: string[] }) {
         <select aria-label="Tax year" value={taxYear} onChange={(e) => setTaxYear(Number(e.target.value))} className={input}>{[2026, 2027].map((y) => <option key={y} value={y}>TY {y}-{String((y + 1) % 100).padStart(2, '0')}</option>)}</select>
         <select aria-label="Quarter" value={quarter} onChange={(e) => setQuarter(Number(e.target.value))} className={input}>{[1, 2, 3, 4].map((q) => <option key={q} value={q}>Q{q}</option>)}</select>
       </div>
+      <div className="flex flex-wrap gap-4">
+        <TemplateLink fileName="quarter-payments-template.csv" label="Payments template" headers={['BSR Code', 'Challan No', 'Challan Date', 'Section', 'PAN', 'Name', 'Amount Paid', 'Paid On', 'TDS', 'Deducted On', 'Reason', 'Certificate']} example={['0510308', '417', '07/11/2026', '1027', 'ABCPK1234L', 'Dr Kaur', '60000', '15/10/2026', '6000', '15/10/2026', '', '']} />
+        <TemplateLink fileName="challan-list-template.csv" label="Challan list template" headers={['BSR Code', 'Challan No', 'Date', 'Tax', 'Interest', 'Fee']} example={['0510308', '417', '07/11/2026', '7000', '0', '0']} />
+      </div>
       <textarea aria-label="Quarter sheet" rows={6} value={text} onChange={(e) => { setText(e.target.value); setPreview(null); }} className="w-full rounded-[10px] border border-pos-line bg-pos-surface p-3 font-mono text-[12px] text-pos-ink outline-none focus:border-pos-accent" />
+      <details className="text-[13px] text-pos-ink/65">
+        <summary className="cursor-pointer">Challans kept in a separate list?</summary>
+        <p className="mt-2">Leave the challan columns out of the payments and paste the challans here (BSR code, challan no, date, tax, and optionally interest and fee). Each month&apos;s rows are linked to the challan paid for that month.</p>
+        <textarea aria-label="Challan list" rows={4} value={challanText} onChange={(e) => { setChallanText(e.target.value); setPreview(null); }} className="mt-2 w-full rounded-[10px] border border-pos-line bg-pos-surface p-3 font-mono text-[12px] text-pos-ink outline-none focus:border-pos-accent" placeholder="BSR Code	Challan No	Date	Tax" />
+      </details>
       <div className="flex gap-2">
         <button type="button" disabled={!text.trim() || !tans.length} onClick={() => send('preview')} className="rounded-full border border-pos-line px-4 py-2 text-[13px] text-pos-ink disabled:opacity-40">Check</button>
         <button type="button" disabled={!preview || preview.errors.length > 0 || !preview.challans.length} onClick={() => send('import')} className="rounded-full bg-pos-accent px-4 py-2 text-[13px] font-medium text-white disabled:opacity-40">Save to the quarter</button>

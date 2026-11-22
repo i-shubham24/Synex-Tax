@@ -12,6 +12,7 @@ import {
   TdsReturnFilingSchema,
   PROTEAN_NON_PAN_LITERALS,
 } from '@synextax/shared-schemas';
+import { publicMessage } from '../plugins/publicError.js';
 
 const DeducteeCalcSchema = z.object({
   pan: z.string().toUpperCase(),
@@ -245,7 +246,7 @@ export async function tdsRoutes(app: FastifyInstance) {
 
       return reply.send({ success: true, source: 'POSTGRESQL_RLS', data: result });
     } catch (err: any) {
-      return reply.status(500).send({ error: 'TDS Fetch Failed', message: err.message });
+      return reply.status(500).send({ error: 'TDS Fetch Failed', message: publicMessage(err) });
     }
   });
 

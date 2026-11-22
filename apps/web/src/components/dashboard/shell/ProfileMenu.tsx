@@ -59,7 +59,7 @@ export function ProfileMenu({ dark, onToggleTheme }: { dark: boolean; onToggleTh
           aria-haspopup="menu"
           aria-expanded={pop.open}
           onClick={() => pop.setOpen((o) => !o)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#141416] text-[13px] font-semibold text-white shadow-[0_6px_14px_-6px_rgba(20,20,22,0.7)] ring-2 ring-[#5fe88a]/70 ring-offset-2 ring-offset-transparent transition-transform hover:scale-105"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#141416] text-[13px] font-semibold text-white shadow-[0_6px_14px_-6px_rgba(20,20,22,0.7)] ring-2 ring-[#5fe88a]/70 ring-offset-2 ring-offset-transparent transition-transform"
         >
           {initials}
         </button>
@@ -153,7 +153,7 @@ export function ProfileMenu({ dark, onToggleTheme }: { dark: boolean; onToggleTh
                 setCode('');
                 setCodeError(null);
               }}
-              className="w-full max-w-[360px] rounded-[24px] bg-pos-surface p-6 text-center text-pos-ink shadow-2xl"
+              className="w-full max-w-[360px] rounded-[24px] bg-pos-surface p-6 text-center text-pos-ink shadow-sm"
             >
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-pos-tint text-pos-accent">
                 <Lock className="h-5 w-5" />

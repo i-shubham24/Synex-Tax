@@ -1,60 +1,6 @@
 import crypto from 'node:crypto';
 
-const SCRYPT_KEYLEN = 64;
-const SCRYPT_COST = 16384;
-const SCRYPT_BLOCK_SIZE = 8;
-const SCRYPT_PARALLELIZATION = 1;
-
-/**
- * Hashes a plain text password using scrypt with a unique cryptographically random salt.
- * Formats as: scrypt$<salt_hex>$<derived_key_hex>
- */
-export function hashPassword(password: string): string {
-  if (!password || typeof password !== 'string') {
-    throw new Error('Password must be a non-empty string');
-  }
-
-  const salt = crypto.randomBytes(16);
-  const derivedKey = crypto.scryptSync(password, salt, SCRYPT_KEYLEN, {
-    N: SCRYPT_COST,
-    r: SCRYPT_BLOCK_SIZE,
-    p: SCRYPT_PARALLELIZATION,
-  });
-
-  return `scrypt$${salt.toString('hex')}$${derivedKey.toString('hex')}`;
-}
-
-/**
- * Verifies a password attempt against a stored scrypt hash using timing-safe comparison.
- */
-export function verifyPassword(password: string, storedHash: string): boolean {
-  if (!password || !storedHash || typeof password !== 'string' || typeof storedHash !== 'string') {
-    return false;
-  }
-
-  const parts = storedHash.split('$');
-  if (parts.length !== 3 || parts[0] !== 'scrypt') {
-    return false;
-  }
-
-  const saltHex = parts[1];
-  const originalHashHex = parts[2];
-
-  const salt = Buffer.from(saltHex, 'hex');
-  const originalKey = Buffer.from(originalHashHex, 'hex');
-
-  if (salt.length !== 16 || originalKey.length !== SCRYPT_KEYLEN) {
-    return false;
-  }
-
-  const derivedKey = crypto.scryptSync(password, salt, SCRYPT_KEYLEN, {
-    N: SCRYPT_COST,
-    r: SCRYPT_BLOCK_SIZE,
-    p: SCRYPT_PARALLELIZATION,
-  });
-
-  return crypto.timingSafeEqual(derivedKey, originalKey);
-}
+// Passwords are hashed with Argon2id in authCrypto.ts; there is no other password hash.
 
 /**
  * Base32 character set used for standard RFC 6238 TOTP secrets.

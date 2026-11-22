@@ -75,3 +75,7 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+
+# Client documents stored on local disk in development
+apps/api/.uploads/
+.uploads/

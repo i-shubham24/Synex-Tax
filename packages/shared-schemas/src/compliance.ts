@@ -32,7 +32,7 @@ export const FeatureFlagSchema = z.object({
 export type FeatureFlag = z.infer<typeof FeatureFlagSchema>;
 
 export const DpdpConsentCreateSchema = z.object({
-  entityId: z.string().uuid(),
+  entityId: z.guid(),
   purposeCode: z.enum(['GST_FILING', 'TDS_FILING', 'ITR_VERIFICATION', 'BANK_RECON', 'CLIENT_COMMUNICATION']),
   consentChannel: z.enum(['WEB_APP', 'OTP', 'PHYSICAL']).default('WEB_APP'),
   validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

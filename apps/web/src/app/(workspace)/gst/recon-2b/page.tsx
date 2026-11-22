@@ -312,23 +312,23 @@ export default function ReconPage() {
       {/* Top Breadcrumb & Metadata Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-pos-accent">
+          <div className="flex items-center gap-2 text-xs text-pos-accent">
             <GitCompare className="w-4 h-4" />
-            <span>GSTR-2B vs. Purchase Register 4-Pass Recon & IMS Console</span>
+            <span>GSTR-2B against the purchase register</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-pos-ink tracking-tight mt-1">
+          <h1 className="text-xl sm:text-2xl font-semibold text-pos-ink tracking-tight mt-1">
             Reconciliation & Invoice Management System
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono">
+        <div className="flex items-center gap-2 text-xs">
           <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md">
             <span className="text-pos-ink/60">GSTIN: </span>
-            <span className="text-pos-ink font-bold">{activeGstin}</span>
+            <span className="text-pos-ink font-semibold">{activeGstin}</span>
           </div>
           <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md">
             <span className="text-pos-ink/60">Period: </span>
-            <span className="text-pos-accent font-bold">{activePeriod}</span>
+            <span className="text-pos-accent font-semibold">{activePeriod}</span>
           </div>
         </div>
       </div>
@@ -338,7 +338,7 @@ export default function ReconPage() {
         <div className="bg-[#FFF6E0] border border-[#F59E0B]/40 rounded-xl p-4 flex items-start gap-3.5 shadow-lg shadow-[#F59E0B]/10">
           <AlertTriangle className="w-5 h-5 text-[#C2410C] shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <div className="flex items-center gap-2 font-bold text-[#C2410C]">
+            <div className="flex items-center gap-2 font-semibold text-[#C2410C]">
               <span>Statutory Alert: 48-Hour Pre-14th Deemed Acceptance Guard</span>
               <span className="bg-amber-500/20 text-[#C2410C] text-[10px] px-2 py-0.5 rounded font-mono border border-amber-500/30">
                 {unactionedRiskCount} At-Risk Record(s)
@@ -346,7 +346,7 @@ export default function ReconPage() {
             </div>
             <p className="text-pos-ink/80 leading-relaxed">
               Under Section 38 & IMS Rules, any invoice left with status{' '}
-              <span className="font-mono font-bold text-pos-ink">NONE</span> on the 14th cutoff is automatically deemed
+              <span className="font-mono font-semibold text-pos-ink">NONE</span> on the 14th cutoff is automatically deemed
               accepted. We flagged {unactionedRiskCount} unactioned invoice(s) exceeding the ₹25,000 threshold or falling
               under Section 17(5) blocked credit (e.g. Golden Temple Roadways). Take action now to avoid erroneous ITC
               claims and Section 50 interest penalties.
@@ -366,38 +366,38 @@ export default function ReconPage() {
       {/* KPI Overview Cards (POS Style) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[10px] font-mono uppercase text-pos-ink/60 font-semibold">Pass 1: Exact</span>
-          <p className="text-xl font-bold font-mono text-pos-accent mt-1">2</p>
+          <span className="text-[10px] font-mono text-pos-ink/60 font-semibold">Pass 1: Exact</span>
+          <p className="text-xl font-semibold text-pos-accent mt-1">2</p>
           <span className="text-[10px] text-pos-ink/50">100% Tax & Doc Match</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[10px] font-mono uppercase text-pos-ink/60 font-semibold">Pass 2: Fuzzy</span>
-          <p className="text-xl font-bold font-mono text-[#3A6FE8] mt-1">1</p>
+          <span className="text-[10px] font-mono text-pos-ink/60 font-semibold">Pass 2: Fuzzy</span>
+          <p className="text-xl font-semibold text-[#3A6FE8] mt-1">1</p>
           <span className="text-[10px] text-pos-ink/50">Normalized FY Tokens</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[10px] font-mono uppercase text-pos-ink/60 font-semibold">Pass 3: Mismatch</span>
-          <p className="text-xl font-bold font-mono text-[#C2410C] mt-1">0</p>
+          <span className="text-[10px] font-mono text-pos-ink/60 font-semibold">Pass 3: Mismatch</span>
+          <p className="text-xl font-semibold text-[#C2410C] mt-1">0</p>
           <span className="text-[10px] text-pos-ink/50">Sec 170 ±₹1 Tolerance</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[10px] font-mono uppercase text-pos-ink/60 font-semibold">Missing in 2B</span>
-          <p className="text-xl font-bold font-mono text-pos-red mt-1">1</p>
+          <span className="text-[10px] font-mono text-pos-ink/60 font-semibold">Missing in 2B</span>
+          <p className="text-xl font-semibold text-pos-red mt-1">1</p>
           <span className="text-[10px] text-pos-ink/50">Supplier Not Uploaded</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[10px] font-mono uppercase text-pos-ink/60 font-semibold">Unrecorded in PR</span>
-          <p className="text-xl font-bold font-mono text-[#3A6FE8] mt-1">1</p>
+          <span className="text-[10px] font-mono text-pos-ink/60 font-semibold">Unrecorded in PR</span>
+          <p className="text-xl font-semibold text-[#3A6FE8] mt-1">1</p>
           <span className="text-[10px] text-pos-ink/50">Missing from Books</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[10px] font-mono uppercase text-pos-ink/60 font-semibold">Claimable ITC</span>
-          <p className="text-xl font-bold font-mono text-pos-ink mt-1">
+          <span className="text-[10px] font-mono text-pos-ink/60 font-semibold">Claimable ITC</span>
+          <p className="text-xl font-semibold text-pos-ink mt-1">
             ₹{totalAcceptedItc.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </p>
           <span className="text-[10px] text-pos-accent">Accepted & Eligible</span>
@@ -431,20 +431,20 @@ export default function ReconPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] font-mono text-pos-ink/60">
+        <div className="flex items-center gap-2 text-[11px] text-pos-ink/60">
           <span className="text-pos-ink/50">Hotkeys:</span>
-          <span className="px-1.5 py-0.5 rounded bg-pos-muted text-pos-green font-bold border border-pos-line">A</span> Accept
-          <span className="px-1.5 py-0.5 rounded bg-pos-muted text-pos-red font-bold border border-pos-line">R</span> Reject
-          <span className="px-1.5 py-0.5 rounded bg-pos-muted text-[#C2410C] font-bold border border-pos-line">P</span> Pending
+          <span className="px-1.5 py-0.5 rounded bg-pos-muted text-pos-green font-semibold border border-pos-line">A</span> Accept
+          <span className="px-1.5 py-0.5 rounded bg-pos-muted text-pos-red font-semibold border border-pos-line">R</span> Reject
+          <span className="px-1.5 py-0.5 rounded bg-pos-muted text-[#C2410C] font-semibold border border-pos-line">P</span> Pending
         </div>
       </div>
 
       {/* Main Recon & IMS Data Grid */}
-      <div className="bg-pos-muted border border-pos-line rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-pos-muted border border-pos-line rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-pos-muted border-b border-pos-line text-pos-ink/60 font-mono uppercase text-[11px]">
+              <tr className="bg-pos-muted border-b border-pos-line text-pos-ink/60 text-[11px]">
                 <th className="py-3 px-3">Status</th>
                 <th className="py-3 px-3">Supplier GSTIN & Entity</th>
                 <th className="py-3 px-3">PR vs 2B Doc Num</th>
@@ -470,25 +470,25 @@ export default function ReconPage() {
                     {/* Status Badge */}
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       {item.status === 'EXACT_MATCH' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-pos-tint text-pos-accent border border-pos-accent/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-pos-tint text-pos-accent border border-pos-accent/30">
                           <CheckCircle2 className="w-3 h-3" />
                           <span>Exact Match</span>
                         </span>
                       )}
                       {item.status === 'FUZZY_MATCH' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#3A6FE8]/10 text-[#3A6FE8] border border-[#3A6FE8]/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#3A6FE8]/10 text-[#3A6FE8] border border-[#3A6FE8]/30">
                           <Sparkles className="w-3 h-3" />
                           <span>Fuzzy (96%)</span>
                         </span>
                       )}
                       {item.status === 'PURCHASE_NOT_IN_2B' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-pos-red border border-pos-red/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-500/10 text-pos-red border border-pos-red/30">
                           <AlertTriangle className="w-3 h-3" />
                           <span>Missing in 2B</span>
                         </span>
                       )}
                       {item.status === 'VENDOR_NOT_IN_PR' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-[#3A6FE8] border border-[#3A6FE8]/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-indigo-500/10 text-[#3A6FE8] border border-[#3A6FE8]/30">
                           <Info className="w-3 h-3" />
                           <span>Unrecorded PR</span>
                         </span>
@@ -497,7 +497,7 @@ export default function ReconPage() {
 
                     {/* Supplier GSTIN & Name */}
                     <td className="py-3.5 px-3">
-                      <div className="font-mono font-bold text-pos-ink/80">{item.supplierGstin}</div>
+                      <div className=" font-semibold text-pos-ink/80">{item.supplierGstin}</div>
                       <div className="text-[11px] text-pos-ink/60 truncate max-w-[200px]">{item.supplierName}</div>
                     </td>
 
@@ -516,14 +516,14 @@ export default function ReconPage() {
 
                     {/* Taxable Amount */}
                     <td className="py-3.5 px-3 text-right font-mono">
-                      <div className="font-bold text-pos-ink">
+                      <div className="font-semibold text-pos-ink">
                         ₹{parseFloat(item.taxableValue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
 
                       {/* Amended Post-Acceptance Side-by-Side Delta Badge */}
                       {item.isAmendedPostAcceptance && item.originalTaxableValue && (
                         <div className="mt-1 p-1.5 rounded bg-[#FFF1D2] border border-[#F59E0B]/40 text-[10px] text-left">
-                          <div className="flex items-center justify-between text-[#C2410C] font-bold">
+                          <div className="flex items-center justify-between text-[#C2410C] font-semibold">
                             <span>Amended by Supplier</span>
                             <span className="text-pos-accent">
                               +₹
@@ -553,7 +553,7 @@ export default function ReconPage() {
 
                     {/* Tax Breakdown */}
                     <td className="py-3.5 px-3 text-right font-mono">
-                      <div className="font-bold text-pos-accent">
+                      <div className="font-semibold text-pos-accent">
                         ₹{parseFloat(item.totalTax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
                       <div className="text-[10px] text-pos-ink/60">
@@ -584,7 +584,7 @@ export default function ReconPage() {
                         <button
                           onClick={() => handleImsAction(item.id, 'A')}
                           title="Accept in IMS (Hotkey A)"
-                          className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                          className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
                             isAccepted
                               ? 'bg-pos-accent text-white shadow-sm'
                               : 'text-pos-ink/60 hover:text-pos-accent hover:bg-pos-muted'
@@ -595,7 +595,7 @@ export default function ReconPage() {
                         <button
                           onClick={() => handleImsAction(item.id, 'R')}
                           title="Reject in IMS (Hotkey R)"
-                          className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                          className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
                             isRejected
                               ? 'bg-rose-500 text-pos-ink shadow-sm'
                               : 'text-pos-ink/60 hover:text-pos-red hover:bg-pos-muted'
@@ -606,7 +606,7 @@ export default function ReconPage() {
                         <button
                           onClick={() => handleImsAction(item.id, 'P')}
                           title="Pending in IMS (Hotkey P)"
-                          className={`px-2 py-1 rounded text-[11px] font-mono font-bold transition-all ${
+                          className={`px-2 py-1 rounded text-[11px] font-mono font-semibold transition-colors ${
                             isPending
                               ? 'bg-amber-500 text-white shadow-sm'
                               : 'text-pos-ink/60 hover:text-[#C2410C] hover:bg-pos-muted'
@@ -633,24 +633,24 @@ export default function ReconPage() {
         </div>
 
         {/* Section 170 Statutory Rounding & Claimable ITC Footer */}
-        <div className="bg-pos-surface border-t border-pos-line p-4 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+        <div className="bg-pos-surface border-t border-pos-line p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-3">
             <span className="text-pos-ink/60">Total Inward Tax (2B):</span>
-            <span className="text-pos-ink font-bold">
+            <span className="text-pos-ink font-semibold">
               ₹{totalTax2b.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
             <span className="text-pos-ink/50">|</span>
             <span className="text-pos-ink/60">Section 170 CGST Rounding:</span>
-            <span className="text-pos-accent font-bold">
+            <span className="text-pos-accent font-semibold">
               ₹{Math.round(totalAcceptedItc).toLocaleString('en-IN')}.00
             </span>
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 rounded-lg bg-pos-muted hover:bg-pos-muted text-pos-ink font-bold transition-colors">
+            <button className="px-4 py-2 rounded-lg bg-pos-muted hover:bg-pos-muted text-pos-ink font-semibold transition-colors">
               Export GSTR-2B Recon (Excel)
             </button>
-            <button className="px-4 py-2 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-bold transition-all shadow-[0_6px_14px_-6px_rgba(47,138,224,0.8)]">
+            <button className="px-4 py-2 rounded-lg bg-pos-accent hover:bg-pos-accent-deep text-white font-semibold transition-colors shadow-[0_6px_14px_-6px_rgba(47,138,224,0.8)]">
               Push Actions to GSTN IMS Portal
             </button>
           </div>

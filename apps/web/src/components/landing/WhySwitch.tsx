@@ -188,7 +188,7 @@ export function WhySwitch() {
                     aria-selected={k === i}
                     aria-label={x.who}
                     onClick={() => setI(k)}
-                    className={`h-2.5 transition-all duration-500 ${k === i ? 'w-7 bg-mint' : 'w-2.5 bg-mist hover:bg-hairline'}`}
+                    className={`h-2.5 transition-colors duration-500 ${k === i ? 'w-7 bg-mint' : 'w-2.5 bg-mist hover:bg-hairline'}`}
                   />
                 ))}
               </div>

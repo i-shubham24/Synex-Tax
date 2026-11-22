@@ -34,6 +34,9 @@ const ROUTE_MODULES: Array<[string, Module]> = [
   ['/api/v1/client-master/import', 'CLIENTS'],
 ];
 
+/** The only API areas a CLIENT login may use. */
+const CLIENT_ALLOWED = ['/api/v1/client', '/api/v1/auth', '/api/v1/account', '/api/v1/portal'];
+
 export function moduleForUrl(url: string): Module | null {
   const path = url.split('?')[0];
   for (const [prefix, m] of ROUTE_MODULES) if (path === prefix || path.startsWith(`${prefix}/`)) return m;
@@ -45,7 +48,21 @@ export function moduleForUrl(url: string): Module | null {
  * token pass through to the route's own check, which answers 401.
  */
 export async function enforceModules(request: FastifyRequest, reply: FastifyReply) {
-  const module = moduleForUrl(request.url);
+  // The route that matched, not the raw URL: Fastify decodes the path before routing, so
+  // "/api/v1/%74ds/..." reaches the TDS routes and must be checked as TDS.
+  const route = request.routeOptions?.url ?? request.url;
+  // Client logins use the client portal and their own account only; every firm route refuses them.
+  if (route.startsWith('/api/v1/') && !CLIENT_ALLOWED.some((p) => route === p || route.startsWith(`${p}/`))) {
+    try {
+      await request.jwtVerify();
+      if ((request.user as { role?: string }).role === 'CLIENT') {
+        return reply.status(403).send({ error: 'Forbidden', message: 'This part of SynexTax is for the firm’s team.' });
+      }
+    } catch {
+      /* no valid token: the route answers itself */
+    }
+  }
+  const module = moduleForUrl(route);
   if (!module) return;
   try {
     await request.jwtVerify();

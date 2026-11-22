@@ -2,14 +2,17 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, FileText, FileUp, HeartPulse, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, FileText, FileUp, HeartPulse, Users, Wallet, BadgeCheck, FilePenLine } from 'lucide-react';
 import type { TdsHealthReport } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
 import { StatementPanel } from '../../../../components/tds/StatementPanel';
 import { RegistersPanel } from '../../../../components/tds/RegistersPanel';
 import { QuarterSheetPanel } from '../../../../components/tds/QuarterSheetPanel';
+import { SalaryPanel } from '../../../../components/tds/SalaryPanel';
+import { CorrectionPanel } from '../../../../components/tds/CorrectionPanel';
+import { CertificateCheck } from '../../../../components/tds/CertificateCheck';
 
-type Tab = 'health' | 'statement' | 'registers' | 'import' | 'payees';
+type Tab = 'health' | 'statement' | 'corrections' | 'registers' | 'salary' | 'certificates' | 'import' | 'payees';
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const nice = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
@@ -92,7 +95,7 @@ export default function TdsHealthPage() {
     setMessage(null);
     setPreview(null);
     if (file.size > 5 * 1024 * 1024) return setMessage('Statement files up to 5 MB.');
-    if (!/\.txt$/i.test(file.name)) return setMessage('Choose the statement text file (.txt) your return software created for Form 140.');
+    if (!/\.txt$/i.test(file.name)) return setMessage('Choose the statement text file (.txt) your return software created.');
     const content = await file.text();
     setText(content);
     setBusy(true);
@@ -101,6 +104,35 @@ export default function TdsHealthPage() {
       setPreview(r.ok ? await r.json() : null);
       if (!r.ok) setMessage('The file could not be read.');
     } finally {
+      setBusy(false);
+    }
+  }
+
+  // Several files at once (a year's or a folder's statements): each is checked and imported on its own.
+  const [batch, setBatch] = useState<Array<{ name: string; ok: boolean; text: string }>>([]);
+  async function onFiles(files: FileList) {
+    if (files.length === 1) return onFile(files[0]);
+    setMessage(null);
+    setPreview(null);
+    setBatch([]);
+    setBusy(true);
+    const results: Array<{ name: string; ok: boolean; text: string }> = [];
+    try {
+      for (const file of Array.from(files).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (!/\.txt$/i.test(file.name) || file.size > 5 * 1024 * 1024) { results.push({ name: file.name, ok: false, text: 'Not a statement .txt file up to 5 MB; left out.' }); continue; }
+        const content = await file.text();
+        const pr = await authFetch('/api/v1/tds/import/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: content }) });
+        const p = pr.ok ? await pr.json() : null;
+        const errs = p?.issues?.filter((i: { level: string }) => i.level === 'error') ?? [];
+        if (!p || errs.length) { results.push({ name: file.name, ok: false, text: p ? `${errs.length} error(s), e.g. ${errs[0]?.message}` : 'Could not be read.' }); continue; }
+        if (!p.tanKnown) { results.push({ name: file.name, ok: false, text: `TAN ${p.tan} is not in Client Master.` }); continue; }
+        const r = await authFetch('/api/v1/tds/import/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: content }) });
+        const b = await r.json().catch(() => ({}));
+        results.push(r.status === 201 ? { name: file.name, ok: true, text: `Form ${p.form} Q${p.quarter}: ${b.challans} challan(s), ${b.deductees} row(s).` } : { name: file.name, ok: false, text: b.message ?? 'Not imported.' });
+        setBatch([...results]);
+      }
+    } finally {
+      setBatch(results);
       setBusy(false);
     }
   }
@@ -134,14 +166,14 @@ export default function TdsHealthPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="tablist">
-          {([['health', 'Health', HeartPulse], ['statement', 'Prepare statement', FileText], ['registers', 'Registers', BookOpen], ['import', 'Import past statements', FileUp], ['payees', 'Payee master', Users]] as const).map(([id, label, Icon]) => (
+          {([['health', 'Health', HeartPulse], ['statement', 'Prepare statement', FileText], ['corrections', 'Corrections', FilePenLine], ['registers', 'Registers', BookOpen], ['salary', 'Salary', Wallet], ['certificates', 'Certificates', BadgeCheck], ['import', 'Import past statements', FileUp], ['payees', 'Payee master', Users]] as const).map(([id, label, Icon]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}>
               <Icon className="h-4 w-4" /> {label}
             </button>
           ))}
         </div>
-        {tab !== 'import' && (
+        {tab !== 'import' && tab !== 'certificates' && tab !== 'corrections' && (
           <label className="flex items-center gap-2 text-[13px] text-pos-ink/60">
             TAN
             <select value={tan} onChange={(e) => setTan(e.target.value)} className="rounded-full border border-pos-line bg-pos-surface px-3 py-1.5 font-mono text-pos-ink">
@@ -199,6 +231,9 @@ export default function TdsHealthPage() {
 
       {tab === 'statement' && <StatementPanel tan={tan} />}
       {tab === 'registers' && <RegistersPanel tan={tan} />}
+      {tab === 'salary' && <SalaryPanel tan={tan} />}
+      {tab === 'certificates' && <CertificateCheck />}
+      {tab === 'corrections' && <CorrectionPanel />}
 
       {tab === 'import' && (
         <div className="pos-card space-y-4 p-5">
@@ -206,9 +241,14 @@ export default function TdsHealthPage() {
             Choose a regular statement text file (the .txt your return software produced for upload): Form 138, 140, 144 or 143, or 24Q, 26Q, 27Q or 27EQ for periods up to March 2026. It is checked against Protean&apos;s file format for that form before anything is saved, and kept as closed history for that quarter. Quarter 4 salary details in 24Q files are not brought in; the deductee rows are.
           </p>
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-pos-line px-6 py-8 text-[14px] text-pos-ink/60 hover:border-pos-accent">
-            <FileUp className="h-6 w-6" /> {busy ? 'Reading' : 'Choose a statement file (.txt, up to 5 MB)'}
-            <input type="file" accept=".txt,text/plain" className="sr-only" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+            <FileUp className="h-6 w-6" /> {busy ? 'Reading' : 'Choose statement files (.txt, up to 5 MB each; pick several to bring in a whole year)'}
+            <input type="file" multiple accept=".txt,text/plain" className="sr-only" onChange={(e) => e.target.files?.length && onFiles(e.target.files)} />
           </label>
+          {batch.length > 0 && (
+            <ul className="divide-y divide-pos-line rounded-[12px] border border-pos-line text-[13px]">
+              {batch.map((b) => <li key={b.name} className="flex flex-wrap justify-between gap-2 px-3 py-2"><span className="font-mono text-[12px] text-pos-ink">{b.name}</span><span className={b.ok ? 'text-[#15803d]' : 'text-[#dc2626]'}>{b.ok ? 'Imported. ' : ''}{b.text}</span></li>)}
+            </ul>
+          )}
           {preview && (
             <div className="space-y-3">
               <dl className="grid grid-cols-2 gap-3 text-[13px] sm:grid-cols-4">

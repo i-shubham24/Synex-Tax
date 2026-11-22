@@ -1,6 +1,7 @@
 import type pg from 'pg';
 import { Decimal } from 'decimal.js';
 import { tdsCorrectionDeadline, tdsStatementDueDate, type ParsedStatement, type TdsForm } from '@synextax/tax-engine';
+import { insertRows } from '../../db/batchInsert.js';
 
 export class ImportError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -87,16 +88,16 @@ export async function commitStatement(client: pg.PoolClient, s: ParsedStatement,
         )
       ).rows[0].id;
       sections += 1;
-      for (const d of list) {
-        const literal = ['PANNOTAVBL', 'PANAPPLIED', 'PANINVALID'].includes(d.pan);
-        await client.query(
-          `INSERT INTO public.tds_deductees (firm_id, entity_id, tan_registration_id, challan_id, section_allocation_id, deductee_pan, deductee_name, pan_status,
-             payment_credit_date, amount_paid, tds_rate, tds_deducted, total_tds_deposited, deduction_date, certificate_no, reason_for_non_deduction, created_by,
-             payee_status_code, opting_out_202, remittance_nature, country_code, grossed_up, rate_basis, form15ca_ack, form121_uin,
-             residence_address, residence_email, residence_contact, residence_tax_id, non_resident, permanent_establishment, form_code)
-           VALUES (app.current_firm_id(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-                   $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`,
-          [
+      await insertRows(
+        client,
+        `INSERT INTO public.tds_deductees (firm_id, entity_id, tan_registration_id, challan_id, section_allocation_id, deductee_pan, deductee_name, pan_status,
+           payment_credit_date, amount_paid, tds_rate, tds_deducted, total_tds_deposited, deduction_date, certificate_no, reason_for_non_deduction, created_by,
+           payee_status_code, opting_out_202, remittance_nature, country_code, grossed_up, rate_basis, form15ca_ack, form121_uin,
+           residence_address, residence_email, residence_contact, residence_tax_id, non_resident, permanent_establishment, form_code)`,
+        `(app.current_firm_id(), ${Array(31).fill('?').join(', ')})`,
+        list.map((d) => {
+          const literal = ['PANNOTAVBL', 'PANAPPLIED', 'PANINVALID'].includes(d.pan);
+          return [
             entityId, tanId, challanId, allocId, d.pan, d.name.slice(0, 150) || 'Unnamed payee', literal ? 'UNAVAILABLE' : 'OPERATIVE',
             d.paymentDate, d.amountPaid, d.rate ? new Decimal(d.rate).div(100).toFixed(4) : '0.0000', d.taxDeducted, d.taxDeposited,
             d.deductionDate || d.paymentDate, d.certificateNo || null, /^[A-Z0-9]{1,8}$/.test(d.reasonCode) ? d.reasonCode : null, userId,
@@ -104,9 +105,9 @@ export async function commitStatement(client: pg.PoolClient, s: ParsedStatement,
             /^\d{2,3}$/.test(d.countryCode) ? d.countryCode : null, d.grossedUp, ['A', 'B'].includes(d.rateBasis) ? d.rateBasis : null,
             d.form15caAck || null, d.form121Uin || null, d.residenceAddress || null, d.residenceEmail || null, d.residenceContact || null,
             d.residenceTaxId || null, d.nonResident, d.permanentEstablishment, s.form,
-          ],
-        );
-      }
+          ];
+        }),
+      );
     }
   }
 

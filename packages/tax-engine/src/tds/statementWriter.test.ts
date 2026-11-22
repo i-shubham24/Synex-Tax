@@ -147,3 +147,34 @@ test('Form 138: Annexure 2 and 6 rules, deducted equals deposited, and no Q4 unt
   assert.match(msgs((i) => (i.challans[0].deductees[0].reasonFlag = 'B')), /not allowed in Form 138/);
   assert.match(msgs((i) => { i.quarter = 4; }), /Q4 file format/);
 });
+
+test('government deductors: ministry, state and AIN go in fields 57, 54 and 68; book adjustment carries the 24G receipt and DDO serial', () => {
+  const central = (): StatementInput => {
+    const i = form144();
+    return {
+      ...i,
+      form: '140',
+      deductor: { ...i.deductor, type: 'A', government: { ministryCode: '46', ain: 'AB12345' } },
+      challans: [{ mode: 'B', bsrCode: '1234567', challanNo: '42', depositedOn: '2026-11-07', tax: 1000, interest: 0, fee: 0, others: 0, minorHead: '200',
+        deductees: [{ pan: 'ABCPK1234L', name: 'Dr Kaur', sectionCode: '1027', paidOn: '2026-10-20', amountPaid: 10000, taxDeducted: 1000, taxDeposited: 1000, deductedOn: '2026-10-20', ratePercent: 10 }] }],
+    };
+  };
+  const { text, issues } = writeTdsStatement(central());
+  assert.deepEqual(issues, []);
+  const bh = text.split('\r\n')[1].split('^');
+  assert.deepEqual([bh[31], bh[53], bh[56], bh[67]], ['A', '', '46', 'AB12345']);
+  const cd = text.split('\r\n')[2].split('^');
+  assert.deepEqual([cd[12], cd[14], cd[16]], ['B', '1234567', '42']);
+
+  const msgs = (change: (i: StatementInput) => void) => { const i = central(); change(i); return writeTdsStatement(i).issues.map((x) => x.message).join(' | '); };
+  assert.match(msgs((i) => { i.deductor.government = { ministryCode: '46' }; }), /needs the 7-character AIN/);
+  assert.match(msgs((i) => { i.deductor.government = { ain: 'AB12345' }; }), /must give its ministry/);
+  assert.match(msgs((i) => { i.deductor.type = 'S'; i.deductor.government = { ain: 'AB12345' }; }), /must give its state/);
+  assert.match(msgs((i) => { i.deductor.type = 'K'; i.deductor.government = {}; }), /Only government deductors pay by book adjustment/);
+  const state = central();
+  state.deductor.type = 'S';
+  state.deductor.government = { stateCode: '26', ain: 'AB12345' };
+  const s = writeTdsStatement(state);
+  assert.deepEqual(s.issues, []);
+  assert.deepEqual([s.text.split('\r\n')[1].split('^')[53], s.text.split('\r\n')[1].split('^')[56]], ['26', '']);
+});

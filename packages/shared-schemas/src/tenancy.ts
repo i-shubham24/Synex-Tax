@@ -83,7 +83,7 @@ export const FirmCreateSchema = z.object({
 export type FirmCreate = z.infer<typeof FirmCreateSchema>;
 
 export const FirmResponseSchema = FirmCreateSchema.extend({
-  id: z.string().uuid(),
+  id: z.guid(),
   status: LifecycleStatusEnum,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -94,7 +94,7 @@ export type FirmResponse = z.infer<typeof FirmResponseSchema>;
 // Client Group Schemas
 // ---------------------------------------------------------------------
 export const ClientGroupCreateSchema = z.object({
-  firmId: z.string().uuid().optional(),
+  firmId: z.guid().optional(),
   groupName: z.string().trim().min(2).max(150),
   description: z.string().trim().max(500).optional(),
   primaryContactName: z.string().trim().max(100).optional(),
@@ -104,8 +104,8 @@ export const ClientGroupCreateSchema = z.object({
 export type ClientGroupCreate = z.infer<typeof ClientGroupCreateSchema>;
 
 export const ClientGroupResponseSchema = ClientGroupCreateSchema.extend({
-  id: z.string().uuid(),
-  firmId: z.string().uuid(),
+  id: z.guid(),
+  firmId: z.guid(),
   entityCount: z.number().int().nonnegative().default(0),
   status: LifecycleStatusEnum,
   createdAt: z.string(),
@@ -117,8 +117,8 @@ export type ClientGroupResponse = z.infer<typeof ClientGroupResponseSchema>;
 // Legal Entity (PAN Level) Schemas
 // ---------------------------------------------------------------------
 export const EntityCreateSchema = z.object({
-  firmId: z.string().uuid().optional(),
-  clientGroupId: z.string().uuid(),
+  firmId: z.guid().optional(),
+  clientGroupId: z.guid(),
   pan: PanStringSchema,
   legalName: z.string().trim().min(2).max(200),
   tradeName: z.string().trim().max(200).optional(),
@@ -133,8 +133,8 @@ export const EntityCreateSchema = z.object({
 export type EntityCreate = z.infer<typeof EntityCreateSchema>;
 
 export const EntityResponseSchema = EntityCreateSchema.extend({
-  id: z.string().uuid(),
-  firmId: z.string().uuid(),
+  id: z.guid(),
+  firmId: z.guid(),
   status: LifecycleStatusEnum,
   gstinCount: z.number().int().nonnegative().default(0),
   tanCount: z.number().int().nonnegative().default(0),
@@ -147,8 +147,8 @@ export type EntityResponse = z.infer<typeof EntityResponseSchema>;
 // GST Registration Schemas
 // ---------------------------------------------------------------------
 export const GstRegistrationCreateSchema = z.object({
-  firmId: z.string().uuid().optional(),
-  entityId: z.string().uuid(),
+  firmId: z.guid().optional(),
+  entityId: z.guid(),
   gstin: GstinStringSchema,
   stateCode: z.string().length(2),
   legalName: z.string().trim().max(200).optional(),
@@ -162,8 +162,8 @@ export const GstRegistrationCreateSchema = z.object({
 export type GstRegistrationCreate = z.infer<typeof GstRegistrationCreateSchema>;
 
 export const GstRegistrationResponseSchema = GstRegistrationCreateSchema.extend({
-  id: z.string().uuid(),
-  firmId: z.string().uuid(),
+  id: z.guid(),
+  firmId: z.guid(),
   portalAuthStatus: z.enum(['ACTIVE_SESSION', 'TOKEN_EXPIRED', 'NEVER_AUTHENTICATED']).default('NEVER_AUTHENTICATED'),
   status: LifecycleStatusEnum,
   createdAt: z.string(),
@@ -175,8 +175,8 @@ export type GstRegistrationResponse = z.infer<typeof GstRegistrationResponseSche
 // TAN Registration Schemas
 // ---------------------------------------------------------------------
 export const TanRegistrationCreateSchema = z.object({
-  firmId: z.string().uuid().optional(),
-  entityId: z.string().uuid(),
+  firmId: z.guid().optional(),
+  entityId: z.guid(),
   tan: TanStringSchema,
   deductorType: z.enum(['COMPANY', 'NON_COMPANY']).default('COMPANY'),
   deductorBranch: z.string().trim().max(100).optional(),
@@ -185,8 +185,8 @@ export const TanRegistrationCreateSchema = z.object({
 export type TanRegistrationCreate = z.infer<typeof TanRegistrationCreateSchema>;
 
 export const TanRegistrationResponseSchema = TanRegistrationCreateSchema.extend({
-  id: z.string().uuid(),
-  firmId: z.string().uuid(),
+  id: z.guid(),
+  firmId: z.guid(),
   tracesAuthStatus: z.enum(['VALID', 'EXPIRED', 'NOT_CONFIGURED']).default('NOT_CONFIGURED'),
   status: LifecycleStatusEnum,
   createdAt: z.string(),
@@ -198,9 +198,9 @@ export type TanRegistrationResponse = z.infer<typeof TanRegistrationResponseSche
 // User Client Assignment Schemas
 // ---------------------------------------------------------------------
 export const UserClientAssignmentCreateSchema = z.object({
-  userId: z.string().uuid(),
-  clientGroupId: z.string().uuid().optional(),
-  entityId: z.string().uuid().optional(),
+  userId: z.guid(),
+  clientGroupId: z.guid().optional(),
+  entityId: z.guid().optional(),
   scope: z.enum(['GROUP', 'ENTITY']).default('ENTITY'),
   canPrepare: z.boolean().default(true),
   canReview: z.boolean().default(false),
@@ -209,8 +209,8 @@ export const UserClientAssignmentCreateSchema = z.object({
 export type UserClientAssignmentCreate = z.infer<typeof UserClientAssignmentCreateSchema>;
 
 export const UserClientAssignmentResponseSchema = UserClientAssignmentCreateSchema.extend({
-  id: z.string().uuid(),
-  firmId: z.string().uuid(),
+  id: z.guid(),
+  firmId: z.guid(),
   createdAt: z.string(),
 });
 export type UserClientAssignmentResponse = z.infer<typeof UserClientAssignmentResponseSchema>;

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import { Inter_Tight, Poppins, Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
@@ -42,7 +43,9 @@ export const metadata: Metadata = {
     'Cloud GST and dual-Act TDS filing for Chartered Accountants: IMS, 2B reconciliation, Forms 138 to 144, FVU validation and local DSC signing.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Every page renders per request so it carries the CSP nonce set in src/proxy.ts.
+  await connection();
   return (
     <html
       lang="en"

@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { demoEnabled, isLocalEnv } from '../security/env.js';
 import { AuthService } from '../modules/auth/authService.js';
+import { publicMessage } from '../plugins/publicError.js';
 
 const SignupSchema = z.object({
   fullName: z.string().min(2).max(120),
@@ -30,7 +32,7 @@ const RefreshSchema = z.object({
 });
 
 function setRefreshCookie(reply: FastifyReply, token: string): void {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = !isLocalEnv();
   const cookie = `synextax_refresh=${token}; Path=/api/v1/auth; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 3600}${isProd ? '; Secure' : ''}`;
   reply.header('Set-Cookie', cookie);
 }
@@ -54,7 +56,7 @@ function extractRefreshToken(request: FastifyRequest): string | undefined {
 }
 
 export function demoWorkspaceEnabled(): boolean {
-  return process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_WORKSPACE === 'true';
+  return demoEnabled();
 }
 
 export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
@@ -69,7 +71,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
   }
 
   // 1. Signup with automatic firm provisioning and trial workspace seeding
-  fastify.post('/signup', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/signup', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (request: FastifyRequest, reply: FastifyReply) => {
     const parse = SignupSchema.safeParse(request.body);
     if (!parse.success) {
       return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });
@@ -85,13 +87,13 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
     } catch (err: any) {
       return reply.status(err.statusCode || 500).send({
         error: err.name || 'Signup Failed',
-        message: err.message,
+        message: publicMessage(err),
       });
     }
   });
 
   // 2. Complete MFA enrollment
-  fastify.post('/mfa/enroll', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/mfa/enroll', { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (request: FastifyRequest, reply: FastifyReply) => {
     const parse = MfaEnrollSchema.safeParse(request.body);
     if (!parse.success) {
       return reply.status(400).send({ error: 'Validation Error', details: parse.error.format() });
@@ -109,7 +111,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
     } catch (err: any) {
       return reply.status(err.statusCode || 500).send({
         error: err.name || 'MFA Enrollment Failed',
-        message: err.message,
+        message: publicMessage(err),
       });
     }
   });
@@ -150,7 +152,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
       } catch (err: any) {
         return reply.status(err.statusCode || 401).send({
           error: 'Authentication Failed',
-          message: err.message,
+          message: publicMessage(err),
         });
       }
     },
@@ -185,14 +187,14 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
       } catch (err: any) {
         return reply.status(err.statusCode || 401).send({
           error: 'MFA Verification Failed',
-          message: err.message,
+          message: publicMessage(err),
         });
       }
     },
   );
 
   // 5. Token Refresh with token rotation
-  fastify.post('/refresh', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/refresh', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (request: FastifyRequest, reply: FastifyReply) => {
     RefreshSchema.safeParse(request.body);
     const token = extractRefreshToken(request);
 
@@ -208,7 +210,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
       clearRefreshCookie(reply);
       return reply.status(err.statusCode || 401).send({
         error: 'Refresh Failed',
-        message: err.message,
+        message: publicMessage(err),
       });
     }
   });
@@ -224,7 +226,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
   });
 
   // 7. Demo mode endpoint (returns real database session for CA Verma)
-  fastify.post('/demo', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/demo', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (_request: FastifyRequest, reply: FastifyReply) => {
     if (!demoWorkspaceEnabled()) {
       return reply.status(404).send({ error: 'Not Found' });
     }
@@ -237,7 +239,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
       }
       return reply.send(demo);
     } catch (err: any) {
-      return reply.status(500).send({ error: 'Demo Initialization Failed', message: err.message });
+      return reply.status(500).send({ error: 'Demo Initialization Failed', message: publicMessage(err) });
     }
   });
 

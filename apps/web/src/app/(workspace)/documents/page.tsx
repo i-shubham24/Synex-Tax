@@ -3,9 +3,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Mail, MessageCircle, Plus } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { ChecklistFiles } from '../../../components/documents/ChecklistFiles';
+import { ClientDocuments } from '../../../components/documents/ClientDocuments';
+import { ReminderSettings } from '../../../components/documents/ReminderSettings';
 
 type Status = 'MISSING' | 'RECEIVED' | 'ACCEPTED' | 'REJECTED' | 'NOT_NEEDED';
-interface Item { id: string; label: string; status: Status }
+interface Item { id: string; label: string; status: Status; version?: string }
 interface Checklist { id: string; entityId: string; clientName: string; service: string; periodLabel: string; dueDate: string; status: string; lastReminder: string | null; items: Item[] }
 interface GapRow extends Checklist { outstanding: string[]; done: number; total: number }
 type Gaps = Record<'OVERDUE' | 'THIS_WEEK' | 'LATER', GapRow[]>;
@@ -29,6 +32,7 @@ export default function DocumentsPage() {
   const [form, setForm] = useState({ entityId: '', service: 'GST_MONTHLY', periodLabel: '', dueDate: '' });
   const [message, setMessage] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ text: string; link: string | null } | null>(null);
+  const [tab, setTab] = useState<'checklists' | 'documents' | 'reminders'>('checklists');
 
   const load = useCallback(async () => {
     const [g, l] = await Promise.all([authFetch('/api/v1/practice/gaps'), authFetch('/api/v1/practice/checklists')]);
@@ -59,7 +63,10 @@ export default function DocumentsPage() {
   }
 
   async function setItem(id: string, status: Status) {
-    await authFetch(`/api/v1/practice/items/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    // The version this screen showed: if someone changed the item since, the API answers 409.
+    const version = lists.flatMap((l) => l.items).find((i) => i.id === id)?.version;
+    const r = await authFetch(`/api/v1/practice/items/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(version ? { 'If-Match': `"${version}"` } : {}) }, body: JSON.stringify({ status }) });
+    if (r.status === 409) setMessage('Someone updated this item while you had the page open. The latest is shown now.');
     await load();
   }
 
@@ -84,6 +91,17 @@ export default function DocumentsPage() {
         <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">Client documents</h1>
         <p className="mt-1 max-w-2xl text-[14px] text-pos-ink/60">What each client still owes you for this month&apos;s work, and a reminder ready to send. Every change is logged.</p>
       </div>
+
+      <div role="tablist" aria-label="Documents sections" className="inline-flex rounded-full border border-pos-line p-1">
+        {([['checklists', 'Checklists'], ['documents', 'Documents'], ['reminders', 'Automatic reminders']] as const).map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)} className={`rounded-full px-4 py-1.5 text-[13px] ${tab === key ? 'bg-pos-ink font-medium text-pos-surface' : 'text-pos-ink/65'}`}>{label}</button>
+        ))}
+      </div>
+
+      {tab === 'documents' && <ClientDocuments clients={clients.map((c) => ({ id: c.id, name: c.legal_name ?? c.legalName ?? 'Client' }))} />}
+      {tab === 'reminders' && <ReminderSettings />}
+
+      {tab === 'checklists' && (<>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {columns.map(([key, title, tone]) => (
@@ -162,10 +180,12 @@ export default function DocumentsPage() {
                 </li>
               ))}
             </ul>
+            <ChecklistFiles checklistId={k.id} items={k.items} onChange={load} />
           </details>
         ))}
         {!lists.length && <p className="text-[13.5px] text-pos-ink/55">No checklists yet. Create one above for a client and period.</p>}
       </section>
+      </>)}
     </div>
   );
 }

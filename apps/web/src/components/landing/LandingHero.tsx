@@ -15,7 +15,7 @@ function FormMarks({ revealed }: { revealed: boolean }) {
         Ready for the 2026-27 returns and statements
       </p>
       <div className={`flex flex-wrap items-center gap-x-7 gap-y-3 text-ink ${base}`} style={{ transitionDelay: '620ms' }}>
-        <span className="flex items-center gap-1.5 font-display text-[19px] font-bold tracking-[-0.04em]">
+        <span className="flex items-center gap-1.5 font-display text-[19px] font-semibold tracking-[-0.04em]">
           <span className="grid h-[18px] w-[26px] grid-cols-2 gap-[2px]" aria-hidden>
             <i className="bg-ink" />
             <i className="bg-ink" />
@@ -25,7 +25,7 @@ function FormMarks({ revealed }: { revealed: boolean }) {
         </span>
         <span className="font-[Georgia,serif] text-[21px] italic tracking-[-0.02em]">GSTR&#8209;3B</span>
         <span className="font-display text-[19px] font-semibold tracking-[0.18em]">IMS</span>
-        <span className="font-display text-[19px] font-extrabold tracking-[-0.05em]">2B&nbsp;Recon</span>
+        <span className="font-display text-[19px] font-semibold tracking-[-0.05em]">2B&nbsp;Recon</span>
       </div>
       <div className={`flex flex-wrap items-center gap-x-7 gap-y-3 text-ink/45 ${base}`} style={{ transitionDelay: '760ms' }}>
         <span className="flex gap-[3px] font-mono text-[15px] font-semibold" aria-label="Form 138">
@@ -35,14 +35,14 @@ function FormMarks({ revealed }: { revealed: boolean }) {
             </span>
           ))}
         </span>
-        <span className="font-[Georgia,serif] text-[22px] font-bold tracking-[-0.03em]">Form 140</span>
+        <span className="font-[Georgia,serif] text-[22px] font-semibold tracking-[-0.03em]">Form 140</span>
         <span className="font-display text-[17px] font-semibold italic">FVU 1.2</span>
         <span className="font-[Georgia,serif] text-[15px] leading-[0.95]">
           Form
           <br />
           144
         </span>
-        <span className="font-display text-[17px] font-bold tracking-[0.06em]">DSC</span>
+        <span className="font-display text-[17px] font-semibold tracking-[0.06em]">DSC</span>
       </div>
     </div>
   );
@@ -105,7 +105,7 @@ export function LandingHero() {
             File returns, act on IMS and sign TDS statements for every client from one fast, secure workspace.
           </p>
           <div
-            className={`mt-9 transition-all duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
+            className={`mt-9 transition-colors duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
             style={{ transitionDelay: '260ms' }}
           >
             <div className="flex flex-wrap items-center gap-5">

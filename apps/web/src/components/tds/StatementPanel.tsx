@@ -2,8 +2,9 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Download } from 'lucide-react';
-import { DEDUCTOR_TYPES, PROTEAN_STATE_CODES } from '@synextax/tax-engine';
+import { DEDUCTOR_TYPES, GOVERNMENT_DEDUCTOR_TYPES, MINISTRY_CODES, PROTEAN_STATE_CODES, STATE_GOVERNMENT_TYPES } from '@synextax/tax-engine';
 import { useAuth } from '../../context/AuthContext';
+import { FvuRun } from './FvuRun';
 
 interface ReturnRow { id: string; form_code: string; quarter: string; tax_year: number; workflow_status: string; source?: string; total_deductees: number }
 interface Addr { line1: string; line2?: string; line3?: string; line4?: string; district?: string; state: string; pin: string }
@@ -34,8 +35,11 @@ export function StatementPanel({ tan }: { tan: string }) {
   const [returns, setReturns] = useState<ReturnRow[]>([]);
   const [issues, setIssues] = useState<Array<{ where: string; message: string }>>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [written, setWritten] = useState<{ fileName: string; text: string } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  const [d, setD] = useState({ deductorType: 'K', address: EMPTY, deductorEmail: '', deductorPhone: '', gstin: '', rName: '', rDesignation: '', rPan: '', rAddress: EMPTY, rEmail: '', rPhone: '' });
+  // The version of the deductor details on screen, sent back so a concurrent edit is not overwritten.
+  const [detailsVersion, setDetailsVersion] = useState<string | null>(null);
+  const [d, setD] = useState({ deductorType: 'K', address: EMPTY, deductorEmail: '', deductorPhone: '', gstin: '', rName: '', rDesignation: '', rPan: '', rAddress: EMPTY, rEmail: '', rPhone: '', govState: '', ministry: '', ministryOther: '', ain: '' });
   const canEdit = ['PARTNER', 'MANAGER'].includes(user?.role ?? '');
 
   const load = useCallback(async () => {
@@ -45,11 +49,13 @@ export function StatementPanel({ tan }: { tan: string }) {
     const t = await authFetch(`/api/v1/tds/tan-details?tan=${tan}`);
     if (t.ok) {
       const x = await t.json();
+      setDetailsVersion(x.updated_at ? new Date(x.updated_at).toISOString() : null);
       const addr = (a: Partial<Addr> | null): Addr => ({ ...EMPTY, ...(a ?? {}), state: String(a?.state ?? 'PUNJAB').toUpperCase() });
       setD({
         deductorType: x.deductor_type_code || 'K', address: addr(x.address), deductorEmail: x.deductor_email ?? '', deductorPhone: x.deductor_phone ?? '', gstin: x.gstin ?? '',
         rName: x.responsible_person_name ?? '', rDesignation: x.responsible_person_designation ?? '', rPan: x.responsible_person_pan ?? '',
         rAddress: addr(x.responsible_address), rEmail: x.responsible_email ?? '', rPhone: x.responsible_phone ?? '',
+        govState: x.govt_state_code ?? '', ministry: x.ministry_code ?? '', ministryOther: x.ministry_other ?? '', ain: x.ain ?? '',
       });
     }
   }, [authFetch, tan]);
@@ -71,6 +77,7 @@ export function StatementPanel({ tan }: { tan: string }) {
       a.click();
       URL.revokeObjectURL(url);
       setMessage(`${body.fileName} is ready. Validate it with Protean's FVU 1.2 before uploading; SynexTax checked the file format rules it can check without the FVU.`);
+      setWritten({ fileName: body.fileName, text: body.text });
     } else {
       setIssues(body.issues ?? []);
       if ((body.issues ?? []).some((i: { where: string }) => /Deductor|Responsible/.test(i.where))) setShowDetails(true);
@@ -81,14 +88,23 @@ export function StatementPanel({ tan }: { tan: string }) {
     e.preventDefault();
     const r = await authFetch('/api/v1/tds/tan-details', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(detailsVersion ? { 'If-Match': `"${detailsVersion}"` } : {}) },
       body: JSON.stringify({
         tan, deductorType: d.deductorType, address: d.address, deductorEmail: d.deductorEmail, deductorPhone: d.deductorPhone, gstin: d.gstin,
         responsible: { name: d.rName, designation: d.rDesignation, pan: d.rPan.toUpperCase(), address: d.rAddress, email: d.rEmail, phone: d.rPhone },
+        government: GOVERNMENT_DEDUCTOR_TYPES.has(d.deductorType) ? { stateCode: d.govState, ministryCode: d.ministry, ministryOther: d.ministryOther, ain: d.ain.toUpperCase() } : undefined,
       }),
     });
+    if (r.status === 409) {
+      setMessage('Someone saved these deductor details while you were editing. Reload them, then make your change again.');
+      return;
+    }
     setMessage(r.ok ? 'Details saved. Write the statement again.' : 'Check the details: phone numbers have 10 digits, PAN is 10 characters.');
-    if (r.ok) setShowDetails(false);
+    if (r.ok) {
+      const b = await r.json().catch(() => ({}));
+      if (b.version) setDetailsVersion(b.version);
+      setShowDetails(false);
+    }
   }
 
   async function saveToken(id: string) {
@@ -142,6 +158,25 @@ export function StatementPanel({ tan }: { tan: string }) {
             <input aria-label="Deductor GSTIN" placeholder="GSTIN (optional)" maxLength={15} className={input} value={d.gstin} onChange={(e) => setD({ ...d, gstin: e.target.value.toUpperCase() })} />
           </div>
           <AddressFields label="Deductor address" value={d.address} onChange={(a) => setD({ ...d, address: a })} />
+          {GOVERNMENT_DEDUCTOR_TYPES.has(d.deductorType) && (
+            <fieldset className="grid gap-2 sm:grid-cols-4">
+              <legend className="mb-1 text-[12px] font-medium text-pos-ink/55">Government deductor</legend>
+              {STATE_GOVERNMENT_TYPES.has(d.deductorType) && (
+                <select aria-label="State of the government body" className={input} value={d.govState} onChange={(e) => setD({ ...d, govState: e.target.value })}>
+                  <option value="">State</option>
+                  {Object.entries(PROTEAN_STATE_CODES).map(([name, code]) => <option key={code} value={code}>{name}</option>)}
+                </select>
+              )}
+              {!STATE_GOVERNMENT_TYPES.has(d.deductorType) || ['E', 'H', 'N'].includes(d.deductorType) ? (
+                <select aria-label="Ministry" className={input} value={d.ministry} onChange={(e) => setD({ ...d, ministry: e.target.value })}>
+                  <option value="">Ministry</option>
+                  {Object.entries(MINISTRY_CODES).map(([code, name]) => <option key={code} value={code}>{code} {name}</option>)}
+                </select>
+              ) : null}
+              {d.ministry === '99' && <input aria-label="Ministry name" placeholder="Ministry name" maxLength={150} className={input} value={d.ministryOther} onChange={(e) => setD({ ...d, ministryOther: e.target.value })} />}
+              <input aria-label="AIN" placeholder="AIN of PAO, TO or CDDO (book adjustment)" maxLength={7} className={`${input} font-mono uppercase`} value={d.ain} onChange={(e) => setD({ ...d, ain: e.target.value })} />
+            </fieldset>
+          )}
           <div className="grid gap-2 sm:grid-cols-5">
             <input aria-label="Responsible person name" placeholder="Responsible person" className={input} value={d.rName} onChange={(e) => setD({ ...d, rName: e.target.value })} />
             <input aria-label="Designation" placeholder="Designation" maxLength={20} className={input} value={d.rDesignation} onChange={(e) => setD({ ...d, rDesignation: e.target.value })} />
@@ -154,6 +189,7 @@ export function StatementPanel({ tan }: { tan: string }) {
         </form>
       )}
       {message && <p role="status" className="text-[13.5px] text-pos-ink/75">{message}</p>}
+      {written && <FvuRun fileName={written.fileName} text={written.text} />}
     </div>
   );
 }

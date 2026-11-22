@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { FeatureFlagSchema } from '@synextax/shared-schemas';
 import { verifyWebhookSignature } from '../security/webhookSecurity.js';
+import { secrets } from '../security/env.js';
+import { claimOnce } from '../infra/redis.js';
 
 type PortalKind = 'GSTN' | 'NIC_IRP' | 'TRACES' | 'CBDT_EFILING';
 type PortalState = 'OPERATIONAL' | 'DEGRADED' | 'OUTAGE' | 'UNKNOWN';
@@ -91,32 +93,31 @@ export async function complianceRoutes(fastify: FastifyInstance, _opts: FastifyP
   // ---------------------------------------------------------------------
   fastify.get('/portal-health', async (_request, reply) => reply.send(await portalHealth()));
 
-  // Statutory Webhook Receiver with HMAC-SHA256 signature and replay verification
-  fastify.post('/webhook', async (request, reply) => {
-    const signature = (request.headers['x-synextax-signature'] || request.headers['x-gstn-signature']) as string;
-    const timestamp = (request.headers['x-synextax-timestamp'] || request.headers['x-gstn-timestamp']) as string;
-    const secret = process.env.WEBHOOK_SECRET || 'synextax_statutory_webhook_hmac_secret_2026!';
-
-    const verification = verifyWebhookSignature({
-      secret,
-      signatureHeader: signature,
-      timestampHeader: timestamp,
-      payload: JSON.stringify(request.body || {}),
-      maxAgeSeconds: 300,
-    });
-
-    if (!verification.isValid) {
-      return reply.status(401).send({
-        statusCode: 401,
-        error: 'Unauthorized',
-        message: verification.error || 'Statutory webhook signature verification failed',
+  // Statutory webhook receiver: HMAC-SHA256 over "timestamp." plus the exact bytes received,
+  // with a required timestamp and a replay check. The body is kept raw for the signature.
+  fastify.register(async (hook) => {
+    hook.addContentTypeParser('application/json', { parseAs: 'buffer', bodyLimit: 1024 * 1024 }, (_req, body, done) => done(null, body));
+    hook.post('/webhook', { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (request, reply) => {
+      const header = (name: string) => {
+        const v = request.headers[name];
+        return typeof v === 'string' ? v : '';
+      };
+      const verification = verifyWebhookSignature({
+        secret: secrets.webhook(),
+        signatureHeader: header('x-synextax-signature') || header('x-gstn-signature'),
+        timestampHeader: header('x-synextax-timestamp') || header('x-gstn-timestamp'),
+        payload: Buffer.isBuffer(request.body) ? request.body : Buffer.alloc(0),
+        maxAgeSeconds: 300,
       });
-    }
-
-    return reply.status(200).send({
-      received: true,
-      timestampIst: new Date().toISOString(),
-      status: 'PROCESSED',
+      if (!verification.isValid) {
+        return reply.status(401).send({ error: 'Unauthorized', message: verification.error || 'Webhook signature verification failed' });
+      }
+      // Across instances: the same signed message is accepted once (when REDIS_URL is set).
+      const signature = (header('x-synextax-signature') || header('x-gstn-signature')).replace(/^(sha256=|v1=)/i, '').toLowerCase();
+      if ((await claimOnce(`webhook:${signature}`, 360)) === false) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Webhook already received (replay)' });
+      }
+      return reply.status(200).send({ received: true, receivedAt: new Date().toISOString(), status: 'PROCESSED' });
     });
   });
 }

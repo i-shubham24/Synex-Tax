@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 /**
  * The page-load session restore, shared: React development mode runs effects twice, and two
@@ -105,11 +106,28 @@ const DEMO_PARTNER: UserSession = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Pages a CLIENT login may open outside its portal: the public site and the token links.
+ * Everything else (the firm workspace, sign in) sends a client to /client.
+ */
+const CLIENT_OPEN_PATHS = ['/client', '/upload', '/contact', '/features', '/privacy', '/security', '/terms', '/tools', '/whats-new'];
+function clientMayOpen(pathname: string): boolean {
+  return pathname === '/' || CLIENT_OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
   // Memory-only access token to guard against XSS exfiltration
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // A client login lands on its portal after sign-in and is kept out of the firm workspace.
+  useEffect(() => {
+    if (user?.role !== 'CLIENT' || !pathname || clientMayOpen(pathname)) return;
+    router.replace('/client');
+  }, [user, pathname, router]);
 
   // Attempt silent session restore via rotating httpOnly refresh cookie
   useEffect(() => {
@@ -184,7 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/v1/auth/mfa/verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
         body: JSON.stringify({ challengeToken, code }),
       });
 
@@ -229,7 +248,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
         body: JSON.stringify({ email, password }),
       });
 
@@ -244,7 +264,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (totpCode) {
           return await mfaVerify(data.challengeToken, totpCode);
         }
-        sessionStorage.setItem('synextax_challenge_token', data.challengeToken);
         setIsLoading(false);
         return true;
       }
@@ -291,7 +310,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const password = params.password || 'SynexTrial2026!';
       const res = await fetch('/api/v1/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
         body: JSON.stringify({
           fullName: params.fullName,
           email: params.email,
@@ -343,7 +363,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/v1/auth/mfa/enroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(await csrfHeader()) },
         body: JSON.stringify({ challengeToken, totpCode }),
       });
 
@@ -484,6 +505,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Access tokens last an hour; renew two minutes before expiry so pages that read `token`
+  // directly never send an expired one.
+  useEffect(() => {
+    if (!token || token.startsWith('mem_session_')) return;
+    let exp = 0;
+    try {
+      exp = Number(JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp) || 0;
+    } catch {
+      return;
+    }
+    const wait = Math.max(5_000, exp * 1000 - Date.now() - 120_000);
+    const id = window.setTimeout(() => {
+      void refreshAccessToken();
+    }, wait);
+    return () => window.clearTimeout(id);
+  }, [token, refreshAccessToken]);
+
   const authFetch = useCallback(
     async (input: string, init: RequestInit = {}) => {
       const send = (t: string | null) =>
@@ -514,8 +552,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setToken(null);
-    sessionStorage.removeItem('synextax_session');
-    sessionStorage.removeItem('synextax_offline_demo');
+    // Nothing that identifies the session is left in the browser.
+    for (const k of ['synextax_session', 'synextax_offline_demo', 'synextax_token', 'synextax_challenge_token', 'synextax_locked']) sessionStorage.removeItem(k);
+    for (const k of ['synextax_token', 'synextax_user']) localStorage.removeItem(k);
   }, []);
 
   const upgradePlan = useCallback((plan: 'SOLO' | 'GROWTH' | 'SCALE') => {

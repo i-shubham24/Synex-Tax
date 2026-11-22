@@ -124,7 +124,7 @@ export function SiteNav() {
                     {l.label}
                     <span
                       aria-hidden
-                      className={`absolute bottom-1 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full transition-all duration-500 ${
+                      className={`absolute bottom-1 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full transition-colors duration-500 ${
                         current ? (dark ? 'bg-mint opacity-100' : 'bg-ink opacity-100') : 'opacity-0'
                       }`}
                     />
