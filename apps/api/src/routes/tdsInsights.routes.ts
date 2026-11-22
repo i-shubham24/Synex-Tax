@@ -36,7 +36,10 @@ function sectionNature(form: string, code: string): string {
   return missing;
 }
 
-const StatementBody = z.object({ text: z.string().min(10).max(5 * 1024 * 1024) });
+const StatementBody = z.object({
+  text: z.string().min(10).max(5 * 1024 * 1024),
+  autoCreate: z.boolean().optional(),
+});
 const QuarterBody = z.object({
   tan: z.string().regex(/^[A-Z]{4}\d{5}[A-Z]$/),
   form: z.enum(['138', '140', '144', '143']),
@@ -165,7 +168,9 @@ export async function tdsInsightsRoutes(fastify: FastifyInstance) {
     if (!body.success) return reply.status(400).send({ error: 'Send the statement text.' });
     const s = parseEtdsStatement(body.data.text);
     try {
-      const result = await db.withTenantTransaction(ctx(request), (c) => commitStatement(c, s, request.user.userId));
+      const result = await db.withTenantTransaction(ctx(request), (c) =>
+        commitStatement(c, s, request.user.userId, { autoCreateEntity: body.data.autoCreate })
+      );
       return reply.status(201).send(result);
     } catch (err: any) {
       if (err instanceof ImportError) return reply.status(err.statusCode).send({ error: 'Not imported', message: err.message, issues: s.issues });

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ClipboardPaste, FileUp, ListChecks, Trash2, Upload } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, ClipboardPaste, FileUp, Layers, ListChecks, Trash2, Upload } from 'lucide-react';
 import {
   IMPORT_FIELD_LABELS,
   detectHeaderRow,
@@ -19,8 +19,17 @@ import {
 } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
 
-type Source = 'paste' | 'file' | 'gstins';
+type Source = 'paste' | 'file' | 'gstins' | 'smartbiz';
 type Row = { raw: RawRow; sourceLine: number };
+
+interface SmartBizMigrationSummary {
+  filesProcessed: number;
+  entitiesCreated: number;
+  returnsImported: number;
+  challansRecorded: number;
+  deducteesLoaded: number;
+  errors: Array<{ filename: string; reason: string }>;
+}
 
 const EDITABLE: ImportField[] = ['legalName', 'pan', 'gstins', 'constitution', 'tan', 'mobile', 'email', 'groupName'];
 const FIELD_OPTIONS = Object.entries(IMPORT_FIELD_LABELS) as Array<[ImportField, string]>;
@@ -47,6 +56,8 @@ export default function ClientImportPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [result, setResult] = useState<Record<string, number> | null>(null);
+  const [smartBizProgress, setSmartBizProgress] = useState<{ current: number; total: number; filename: string } | null>(null);
+  const [smartBizResult, setSmartBizResult] = useState<SmartBizMigrationSummary | null>(null);
 
 
   useEffect(() => {
@@ -118,6 +129,58 @@ export default function ClientImportPage() {
     load(content, 'file');
   }
 
+  async function onSmartBizFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (!files.length) return;
+    setBusy(true);
+    setMessage(null);
+    setSmartBizResult(null);
+
+    const summary: SmartBizMigrationSummary = {
+      filesProcessed: 0,
+      entitiesCreated: 0,
+      returnsImported: 0,
+      challansRecorded: 0,
+      deducteesLoaded: 0,
+      errors: [],
+    };
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setSmartBizProgress({ current: i + 1, total: files.length, filename: file.name });
+      try {
+        const content = await file.text();
+        const res = await authFetch('/api/v1/tds/import/commit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: content, autoCreate: true }),
+        });
+        const data = await res.json();
+        if (res.status === 201) {
+          summary.filesProcessed += 1;
+          summary.returnsImported += 1;
+          if (data.createdEntity) summary.entitiesCreated += 1;
+          summary.challansRecorded += data.challans || 0;
+          summary.deducteesLoaded += data.deductees || 0;
+        } else {
+          summary.errors.push({
+            filename: file.name,
+            reason: data.message || `HTTP ${res.status}: Import failed`,
+          });
+        }
+      } catch (err: any) {
+        summary.errors.push({
+          filename: file.name,
+          reason: err?.message || 'Network error while uploading',
+        });
+      }
+    }
+
+    setBusy(false);
+    setSmartBizProgress(null);
+    setSmartBizResult(summary);
+  }
+
   async function commit() {
     setBusy(true);
     setMessage(null);
@@ -143,6 +206,84 @@ export default function ClientImportPage() {
       <div className="pos-card mx-auto max-w-xl p-8 text-center">
         <p className="text-[15px] text-pos-ink">Only partners can import clients.</p>
         <Link href="/clients" className="mt-4 inline-block text-pos-accent">Back to Client Master</Link>
+      </div>
+    );
+  }
+
+  if (smartBizResult) {
+    return (
+      <div className="pos-card mx-auto max-w-2xl p-8">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#22a356]/15 text-[#22a356]">
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-pos-ink">SmartBiz migration complete</h1>
+            <p className="text-[13.5px] text-pos-ink/60">
+              {smartBizResult.filesProcessed} past statements processed and verified.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-pos-line bg-pos-surface/60 p-4">
+            <span className="text-[12px] font-medium text-pos-ink/60">Clients Provisioned</span>
+            <div className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-pos-ink">
+              {smartBizResult.entitiesCreated}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-pos-line bg-pos-surface/60 p-4">
+            <span className="text-[12px] font-medium text-pos-ink/60">Returns Logged</span>
+            <div className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-pos-ink">
+              {smartBizResult.returnsImported}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-pos-line bg-pos-surface/60 p-4">
+            <span className="text-[12px] font-medium text-pos-ink/60">Challans Verified</span>
+            <div className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-pos-ink">
+              {smartBizResult.challansRecorded}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-pos-line bg-pos-surface/60 p-4">
+            <span className="text-[12px] font-medium text-pos-ink/60">Payees Mastered</span>
+            <div className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-pos-ink">
+              {smartBizResult.deducteesLoaded}
+            </div>
+          </div>
+        </div>
+
+        {smartBizResult.errors.length > 0 && (
+          <div className="mt-6 rounded-2xl border border-[#dc2626]/20 bg-[#dc2626]/5 p-4">
+            <div className="flex items-center gap-2 text-[13px] font-medium text-[#b91c1c]">
+              <AlertCircle className="h-4 w-4" />
+              <span>{smartBizResult.errors.length} files skipped or require attention</span>
+            </div>
+            <ul className="mt-2 space-y-1.5 text-[12.5px] text-pos-ink/75">
+              {smartBizResult.errors.map((e, idx) => (
+                <li key={idx} className="flex justify-between gap-4 font-mono">
+                  <span className="truncate">{e.filename}</span>
+                  <span className="text-[#b91c1c]">{e.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/clients" className="rounded-full bg-pos-accent px-5 py-2.5 text-[14px] font-medium text-white">
+            Open Client Master
+          </Link>
+          <Link href="/tds" className="rounded-full border border-pos-line px-5 py-2.5 text-[14px] text-pos-ink hover:bg-pos-tint">
+            Open TDS Workspace
+          </Link>
+          <button
+            type="button"
+            onClick={() => setSmartBizResult(null)}
+            className="rounded-full border border-pos-line px-5 py-2.5 text-[14px] text-pos-ink/70 hover:bg-pos-tint"
+          >
+            Migrate More Files
+          </button>
+        </div>
       </div>
     );
   }
@@ -188,6 +329,7 @@ export default function ClientImportPage() {
             ['paste', 'Paste from Excel', ClipboardPaste],
             ['file', 'Upload CSV', FileUp],
             ['gstins', 'Paste GSTINs', ListChecks],
+            ['smartbiz', 'SmartBiz Migrator', Layers],
           ] as const).map(([id, label, Icon]) => (
             <button
               key={id}
@@ -204,7 +346,41 @@ export default function ClientImportPage() {
           ))}
         </div>
 
-        {source === 'file' ? (
+        {source === 'smartbiz' ? (
+          <div className="mt-4 space-y-4">
+            <div className="rounded-2xl border border-pos-accent/30 bg-pos-accent/5 p-4 text-[13.5px] text-pos-ink/80">
+              <div className="font-semibold text-pos-accent">60-Second SmartBiz Legacy Migrator</div>
+              <p className="mt-1">
+                Drop raw SmartBiz exports, TRACES CONSO files, or Protean .txt return files. SynexTax automatically discovers the client PAN, infers constitution, registers the TAN, and imports all past returns, challans, and payee directories in one pass.
+              </p>
+            </div>
+
+            {busy && smartBizProgress ? (
+              <div className="flex flex-col items-center justify-center rounded-[16px] border border-pos-line bg-pos-surface/50 p-8 text-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-pos-accent border-t-transparent" />
+                <p className="mt-3 text-[14px] font-medium text-pos-ink">
+                  Migrating file {smartBizProgress.current} of {smartBizProgress.total}
+                </p>
+                <p className="mt-1 font-mono text-[12.5px] text-pos-ink/60">
+                  {smartBizProgress.filename}
+                </p>
+              </div>
+            ) : (
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-pos-line px-6 py-10 text-center text-[14px] text-pos-ink/60 hover:border-pos-accent">
+                <Layers className="h-7 w-7 text-pos-accent" />
+                <span className="font-medium text-pos-ink">Drop SmartBiz or past return files here, or click to browse</span>
+                <span className="text-[12.5px] text-pos-ink/50">Supports multiple .txt, .conso, or .tds files at once (up to 5 MB per file)</span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".txt,.conso,.tds,text/plain"
+                  className="sr-only"
+                  onChange={(e) => e.target.files && onSmartBizFiles(e.target.files)}
+                />
+              </label>
+            )}
+          </div>
+        ) : source === 'file' ? (
           <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-pos-line px-6 py-10 text-center text-[14px] text-pos-ink/60 hover:border-pos-accent">
             <Upload className="h-6 w-6" />
             Choose a CSV file (up to 5 MB)

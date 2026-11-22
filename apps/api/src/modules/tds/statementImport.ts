@@ -14,6 +14,11 @@ export interface StatementImportResult {
   challans: number;
   deductees: number;
   sections: number;
+  createdEntity?: boolean;
+}
+
+export interface StatementImportOptions {
+  autoCreateEntity?: boolean;
 }
 
 /**
@@ -21,7 +26,12 @@ export interface StatementImportResult {
  * the return (source IMPORTED, closed), its challans, section allocations and deductees.
  * Runs in the caller's RLS transaction; every insert is audited by trigger.
  */
-export async function commitStatement(client: pg.PoolClient, s: ParsedStatement, userId: string): Promise<StatementImportResult> {
+export async function commitStatement(
+  client: pg.PoolClient,
+  s: ParsedStatement,
+  userId: string,
+  options?: StatementImportOptions
+): Promise<StatementImportResult> {
   if (s.issues.some((i) => i.level === 'error')) throw new ImportError(422, 'The file has errors. Fix them in your return software and export again.');
   if (!s.taxYear || !s.quarter) throw new ImportError(422, 'The file does not say which tax year and quarter it is for.');
 
@@ -35,8 +45,77 @@ export async function commitStatement(client: pg.PoolClient, s: ParsedStatement,
       if (codes.size > 1) throw new ImportError(422, `Challan ${c.recordNo} (BSR ${c.bsrCode}, ${c.depositDate}) has rows under ${[...codes].join(', ')}. Under the 1961 Act a challan covers one section; split it in your return software and export again.`);
     }
   }
-  const tan = await client.query<{ id: string; entity_id: string }>('SELECT id, entity_id FROM public.tan_registrations WHERE tan = $1', [s.tan]);
-  if (!tan.rows[0]) throw new ImportError(422, `TAN ${s.tan} is not in Client Master. Add the client and its TAN first.`);
+
+  let tan = await client.query<{ id: string; entity_id: string }>(
+    'SELECT id, entity_id FROM public.tan_registrations WHERE tan = $1',
+    [s.tan]
+  );
+  let createdEntity = false;
+
+  if (!tan.rows[0]) {
+    if (!options?.autoCreateEntity) {
+      throw new ImportError(422, `TAN ${s.tan} is not in Client Master. Add the client and its TAN first.`);
+    }
+
+    let entityId: string;
+    const ent = await client.query<{ id: string }>(
+      'SELECT id FROM public.entities WHERE pan = $1 AND firm_id = app.current_firm_id()',
+      [s.deductorPan]
+    );
+
+    if (ent.rows[0]) {
+      entityId = ent.rows[0].id;
+    } else {
+      let groupId: string;
+      const grpExisting = await client.query<{ id: string }>(
+        `SELECT id FROM public.client_groups WHERE firm_id = app.current_firm_id() AND lower(name) = 'migrated from smartbiz' LIMIT 1`
+      );
+      if (grpExisting.rows[0]) {
+        groupId = grpExisting.rows[0].id;
+      } else {
+        const grp = await client.query<{ id: string }>(
+          `INSERT INTO public.client_groups (firm_id, name, created_by)
+           VALUES (app.current_firm_id(), 'Migrated from SmartBiz', $1)
+           RETURNING id`,
+          [userId]
+        );
+        groupId = grp.rows[0].id;
+      }
+
+      const fourth = (s.deductorPan[3] || '').toUpperCase();
+      const constitution =
+        fourth === 'C' ? 'PRIVATE_LIMITED' :
+        fourth === 'F' ? 'PARTNERSHIP' :
+        fourth === 'P' ? 'INDIVIDUAL' :
+        fourth === 'H' ? 'HUF' :
+        fourth === 'T' ? 'TRUST' :
+        fourth === 'A' ? 'AOP' :
+        fourth === 'B' ? 'BOI' :
+        fourth === 'L' ? 'LOCAL_AUTHORITY' :
+        fourth === 'G' ? 'GOVERNMENT' : 'ARTIFICIAL_JURIDICAL_PERSON';
+
+      const legalName = s.deductorName || `Deductor ${s.tan}`;
+      const newEnt = await client.query<{ id: string }>(
+        `INSERT INTO public.entities (firm_id, client_group_id, legal_name, pan, constitution, onboarding_source, created_by)
+         VALUES (app.current_firm_id(), $1, $2, $3, $4, 'SMARTBIZ_IMPORT', $5)
+         RETURNING id`,
+        [groupId, legalName, s.deductorPan, constitution, userId]
+      );
+      entityId = newEnt.rows[0].id;
+      createdEntity = true;
+    }
+
+    const deductorCode = (s.deductorType || '').slice(0, 2) || (s.deductorPan[3] === 'C' ? '01' : '02');
+    const newTan = await client.query<{ id: string }>(
+      `INSERT INTO public.tan_registrations (firm_id, entity_id, tan, deductor_type_code, branch_name, created_by)
+       VALUES (app.current_firm_id(), $1, $2, $3, $4, $5)
+       RETURNING id`,
+      [entityId, s.tan, deductorCode, 'Head Office', userId]
+    );
+
+    tan = { rows: [{ id: newTan.rows[0].id, entity_id: entityId }] } as any;
+  }
+
   const { id: tanId, entity_id: entityId } = tan.rows[0];
   const quarter = `Q${s.quarter}`;
 
@@ -113,5 +192,5 @@ export async function commitStatement(client: pg.PoolClient, s: ParsedStatement,
 
   // Filed outside SynexTax: keep it as closed history, which also locks the quarter's rows.
   await client.query(`UPDATE public.tds_returns SET workflow_status = 'CLOSED' WHERE id = $1`, [returnId]);
-  return { returnId, challans: s.challans.length, deductees: s.deductees.length, sections };
+  return { returnId, challans: s.challans.length, deductees: s.deductees.length, sections, createdEntity };
 }

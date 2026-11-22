@@ -706,6 +706,39 @@ test('TDS history: a Form 140 file is previewed, imported once, feeds payees and
   await app.close();
 });
 
+test('SmartBiz migration: dropping a statement file for an unknown TAN auto provisions Entity and TAN when autoCreate is set', async () => {
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+
+  const unknownText = [
+    '1^FH^NS1^R^06052026^1^D^MUMB99999K^1^Protean RPU 1.0^^^^^^^^',
+    '2^BH^1^1^140^^^^^^^^MUMB99999K^^AABCP9999K^202728^202627^Q1^ACME SMARTBIZ CLIENT PVT LTD^INDIA^7U^^^^^19^789098^ABCD@TEST.COM^56789^6789087657^^S^BHAGYASHREE^CEO^7U^^^^^19^789098^ABCD@TESTYOUP.COM^^56789^0987678909^^11200.00^^^^^N^^04^^^^^BRNPA8898H^^^^^^^^^1060872^^^^',
+    '3^CD^1^1^1^N^^10000.00^1000.00^100.00^100.00^11200.00^B^^3000012^^^^30042026^^900.00^900.00^^^^^^^^',
+    '4^DD^1^1^1^O^^BRNPA6778G^ABCD^^^^^^1008^^^^02052026^1000.00^^^^900.00^900.00^^02052026^03.0000^^^^E^^^^^^^^^^^^^',
+  ].join('\r\n') + '\r\n';
+
+  const fail = await app.inject({ method: 'POST', url: '/api/v1/tds/import/commit', headers: auth, payload: { text: unknownText } });
+  assert.equal(fail.statusCode, 422);
+
+  const success = await app.inject({ method: 'POST', url: '/api/v1/tds/import/commit', headers: auth, payload: { text: unknownText, autoCreate: true } });
+  assert.equal(success.statusCode, 201, success.body);
+  const res = JSON.parse(success.body);
+  assert.equal(res.createdEntity, true);
+  assert.equal(res.challans, 1);
+  assert.equal(res.deductees, 1);
+
+  const entitiesRes = await app.inject({ method: 'GET', url: '/api/v1/client-master/entities', headers: auth });
+  const entitiesPayload = JSON.parse(entitiesRes.body);
+  const found = (Array.isArray(entitiesPayload) ? entitiesPayload : []).find((e: any) => e.pan === 'AABCP9999K');
+  assert.ok(found, 'entity should be created');
+  assert.equal(found.legal_name, 'ACME SMARTBIZ CLIENT PVT LTD');
+  assert.equal(found.constitution, 'PRIVATE_LIMITED');
+
+  await app.close();
+});
+
 test('Practice: a checklist from a template, items marked, gaps and a WhatsApp reminder', async () => {
   const app = buildApp();
   const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
