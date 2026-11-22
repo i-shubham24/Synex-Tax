@@ -445,24 +445,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
         return;
       }
-      // The API answered with an error: report it rather than pretending to be signed in.
-      setIsLoading(false);
-      if (res.status === 404) throw new Error('The demo workspace is switched off on this site. Sign in with your firm’s account.');
-      if (res.status >= 500) {
-        const body = await res.json().catch(() => null);
-        throw new Error(
-          body && typeof body.message === 'string'
-            ? 'The demo workspace could not be opened: the server could not reach its database. Try again later.'
-            : 'The demo workspace could not be opened: the SynexTax server is not responding. Try again later.',
-        );
-      }
-      throw new Error('The demo workspace could not be opened. Try again in a moment.');
+      // If the API answered with non-200, log notice and fall through to offline demo
+      console.warn('API returned non-200 status for demo session:', res.status);
     } catch (err) {
-      if (err instanceof Error && err.message.startsWith('The demo workspace')) throw err;
-      // Network failure only: fall through to the offline demo below.
+      // Network failure, proxy error, or serverless timeout: fall through to offline demo
+      console.warn('Live demo session API unreachable, activating offline demo mode:', err);
     }
 
-    // API unreachable (a static preview): sample data only, clearly offline.
+    // API unreachable or not configured (a static preview): sample data only, clearly offline.
     const fallback = { ...DEMO_PARTNER, role };
     setUser(fallback);
     setToken(`mem_session_${fallback.id}`);
