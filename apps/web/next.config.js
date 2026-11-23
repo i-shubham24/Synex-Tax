@@ -9,19 +9,8 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    const rawApiUrl = process.env.API_URL;
-    if (!rawApiUrl) {
-      /* In standalone demo mode or on Vercel without a configured API backend,
-         route API calls directly to internal App Router handlers */
-      return [];
-    }
-    const apiUrl = rawApiUrl.replace(/\/+$/, '');
-    return [
-      {
-        source: '/api/:path*',
-        destination: apiUrl.endsWith('/api') ? `${apiUrl}/:path*` : `${apiUrl}/api/:path*`,
-      },
-    ];
+    /* Route all API calls to App Router handler with auto-fallback when backend is offline */
+    return [];
   },
   async headers() {
     return [

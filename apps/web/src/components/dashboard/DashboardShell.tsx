@@ -24,6 +24,8 @@ import {
   MessageSquare,
   MessageSquareText,
   ClipboardCheck,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../workspace/WorkspaceContext';
@@ -42,11 +44,11 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  roles?: AppRole[]; // omitted = every firm role
-  module?: string; // screen permission needed (see the team settings)
+  roles?: AppRole[]; /* omitted = every firm role */
+  module?: string; /* screen permission needed */
 }
 
-// Role-aware: audit logs (PII reveals, signing trail) stay with partners and managers.
+/* Role-aware navigation: audit logs stay with partners and managers */
 const NAV_ITEMS: NavItem[] = [
   { id: 'control', label: 'Control Tower', href: '/dashboard', icon: LayoutDashboard },
   { id: 'clients', label: 'Client Master', href: '/clients', icon: Users },
@@ -64,7 +66,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'], module: 'AUDIT' },
 ];
 
-/** Ink tile with the site's pixel S (sky and mint pixels). */
+/* Ink tile with the site's pixel S */
 function AppMark() {
   const px: Array<[number, number]> = [
     [1, 0], [2, 0], [3, 0], [0, 1], [1, 2], [2, 2], [3, 3], [0, 4], [1, 4], [2, 4],
@@ -100,18 +102,23 @@ function writePref(key: string, value: string) {
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, authFetch } = useAuth();
-  // Screens this person may open; null until known, and then nothing is hidden.
   const [modules, setModules] = useState<string[] | null>(null);
+
   useEffect(() => {
     if (!user) return;
     authFetch('/api/v1/team/me')
       .then(async (r) => (r.ok ? setModules((await r.json()).modules) : null))
       .catch(() => null);
   }, [user, authFetch]);
+
   const { snapshot } = useWorkspace();
-  // The shell renders only on the client (behind AuthGate), so preferences are read before first paint.
   const [dark, setDark] = useState(() => readPref('synextax_dashboard_theme', false));
   const [expanded, setExpanded] = useState(() => readPref('synextax_rail_expanded', false));
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   const toggleTheme = () => {
     setDark((d) => {
@@ -119,6 +126,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       return !d;
     });
   };
+
   const toggleRail = () => {
     setExpanded((x) => {
       writePref('synextax_rail_expanded', x ? '0' : '1');
@@ -129,8 +137,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const role = (user?.role ?? 'STAFF') as AppRole;
   const items = NAV_ITEMS.filter((i) => (!i.roles || i.roles.includes(role)) && (!i.module || !modules || modules.includes(i.module)));
   const isActive = (href: string) => (href === '/dashboard' || href === '/gst' ? pathname === href : pathname.startsWith(href));
-  const railW = expanded ? 'w-[220px]' : 'w-[72px]';
-  const mainMl = expanded ? 'ml-[220px]' : 'ml-[72px]';
+  const railW = expanded ? 'w-[240px] md:w-[220px]' : 'w-[240px] md:w-[72px]';
+  const mainMl = expanded ? 'ml-0 md:ml-[220px]' : 'ml-0 md:ml-[72px]';
 
   const navLink = (item: NavItem) => {
     const Icon = item.icon;
@@ -141,15 +149,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         href={item.href}
         aria-label={item.label}
         aria-current={active ? 'page' : undefined}
-        className={`group relative flex h-12 items-center gap-3 rounded-[14px] transition-colors ${expanded ? 'w-full px-3' : 'w-12 justify-center'} ${
+        onClick={() => setMobileOpen(false)}
+        className={`group relative flex h-12 items-center gap-3 rounded-[14px] transition-colors ${
+          expanded ? 'w-full px-3' : 'w-full px-3 md:w-12 md:justify-center'
+        } ${
           active ? 'bg-pos-tint text-pos-accent' : 'text-pos-ink/70 hover:bg-pos-tint/70 hover:text-pos-accent'
         }`}
       >
         <Icon className="h-[24px] w-[24px] shrink-0" strokeWidth={1.5} />
-        {expanded && <span className="truncate text-[13.5px] font-medium">{item.label}</span>}
+        <span className={`truncate text-[13.5px] font-medium ${expanded ? 'block' : 'block md:hidden'}`}>{item.label}</span>
         {active && <span className="absolute -left-[12px] h-7 w-[4px] rounded-r-full bg-pos-accent" />}
         {!expanded && (
-          <span className="pointer-events-none absolute left-[60px] z-50 whitespace-nowrap rounded-full bg-[#141416] px-3 py-1 text-[12px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+          <span className="pointer-events-none absolute left-[60px] z-50 hidden whitespace-nowrap rounded-full bg-[#141416] px-3 py-1 text-[12px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:block">
             {item.label}
           </span>
         )}
@@ -159,20 +170,50 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`pos-root min-h-screen ${dark ? 'dark' : ''}`}>
-      {/* Rail: 72px icons, 220px with labels */}
-      <aside className={`fixed inset-y-0 left-0 z-30 flex flex-col border-r border-pos-line bg-pos-surface px-3 transition-[width] duration-300 ease-out-expo ${railW}`} aria-label="Workspace">
-        <Link href="/dashboard" className={`flex h-16 items-center gap-2.5 ${expanded ? '' : 'justify-center'}`} aria-label="SynexTax Control Tower">
-          <AppMark />
-          {expanded && <span className="font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink">SynexTax</span>}
-        </Link>
-        <nav className={`mt-3 flex flex-1 flex-col gap-1.5 ${expanded ? '' : 'items-center'}`}>{items.map(navLink)}</nav>
-        <div className={`mb-4 flex flex-col gap-1.5 ${expanded ? '' : 'items-center'}`}>
+      {/* Mobile Drawer Backdrop */}
+      {mobileOpen && (
+        <div
+          role="presentation"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity md:hidden"
+        />
+      )}
+
+      {/* Rail: 72px icons / 220px on desktop, slide-out 240px drawer on mobile */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-pos-line bg-pos-surface px-3 transition-transform duration-300 ease-out-expo md:transition-[width] ${railW} ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+        aria-label="Workspace"
+      >
+        <div className="flex h-16 items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="SynexTax Control Tower">
+            <AppMark />
+            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'block md:hidden'}`}>SynexTax</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close navigation menu"
+            className="flex h-8 w-8 items-center justify-center rounded-[8px] text-pos-ink/60 hover:bg-pos-muted md:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <nav className={`mt-3 flex flex-1 flex-col gap-1.5 overflow-y-auto scrollbar-none ${expanded ? '' : 'items-start md:items-center'}`}>
+          {items.map(navLink)}
+        </nav>
+
+        <div className={`mb-4 flex flex-col gap-1.5 ${expanded ? '' : 'items-start md:items-center'}`}>
           {navLink({ id: 'settings', label: 'Settings', href: '/settings', icon: Settings })}
           <button
             type="button"
             onClick={toggleRail}
             aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
-            className={`flex h-10 items-center gap-3 rounded-[12px] text-pos-ink/55 hover:bg-pos-muted hover:text-pos-ink ${expanded ? 'w-full px-3' : 'w-12 justify-center'}`}
+            className={`hidden h-10 items-center gap-3 rounded-[12px] text-pos-ink/55 hover:bg-pos-muted hover:text-pos-ink md:flex ${
+              expanded ? 'w-full px-3' : 'w-12 justify-center'
+            }`}
           >
             {expanded ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
             {expanded && <span className="text-[12.5px]">Collapse</span>}
@@ -180,9 +221,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <div className={`flex min-h-screen flex-col transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
-        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b px-5 lg:px-6">
+        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b px-4 sm:px-5 lg:px-6">
           <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open navigation menu"
+              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-pos-line text-pos-ink/75 hover:bg-pos-tint md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <div className="hidden min-w-0 max-w-[200px] shrink xl:block">
               <p className="truncate text-[14px] font-semibold tracking-[-0.02em] text-pos-ink">{snapshot.firm.name}</p>
             </div>
@@ -210,7 +260,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-5 py-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">{children}</main>
       </div>
 
       <CommandPalette />

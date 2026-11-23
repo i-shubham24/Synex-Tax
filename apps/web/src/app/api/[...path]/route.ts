@@ -17,12 +17,45 @@ const DEMO_USER = {
   maxTrialClients: 10,
 };
 
+/* Resilient proxy: try forwarding to external API, fallback to mock if unreachable */
+async function tryProxy(request: Request, endpoint: string): Promise<Response | null> {
+  const rawApiUrl = process.env.API_URL;
+  if (!rawApiUrl) return null;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1800);
+    const targetUrl = `${rawApiUrl.replace(/\/+$/, '')}/api/${endpoint}`;
+    const reqHeaders = new Headers(request.headers);
+    reqHeaders.delete('host');
+
+    const init: RequestInit = {
+      method: request.method,
+      headers: reqHeaders,
+      signal: controller.signal,
+    };
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      init.body = await request.clone().arrayBuffer();
+    }
+
+    const res = await fetch(targetUrl, init);
+    clearTimeout(timer);
+    return res;
+  } catch {
+    /* Backend offline, unconfigured, or timed out. Fall back to internal mock handler */
+    return null;
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
   const endpoint = path.join('/');
+
+  const proxied = await tryProxy(request, endpoint);
+  if (proxied) return proxied;
 
   /* 1. CSRF Token */
   if (endpoint === 'v1/auth/csrf') {
@@ -244,6 +277,63 @@ export async function GET(
     });
   }
 
+  /* 8. Team and Registrations Fallback */
+  if (endpoint === 'v1/team/me') {
+    return NextResponse.json({
+      modules: ['GST', 'TDS', 'PRACTICE', 'DOCUMENTS', 'AUDIT'],
+      role: 'PARTNER',
+    });
+  }
+
+  if (endpoint === 'v1/gst/registrations') {
+    return NextResponse.json({
+      registrations: [
+        { gstin: '03AABCA1234F1Z8', tradeName: 'Amritsar Silk Mills', state: '03', filingFrequency: 'MONTHLY' },
+        { gstin: '07AAACZ9876M1Z2', tradeName: 'Zenith Logistics Delhi', state: '07', filingFrequency: 'MONTHLY' },
+      ],
+    });
+  }
+
+  if (endpoint === 'v1/tan/registrations') {
+    return NextResponse.json({
+      registrations: [
+        { tan: 'AMRG04217D', deductorName: 'Amritsar Silk Mills Pvt Ltd' },
+        { tan: 'DELZ01928K', deductorName: 'Zenith Logistics' },
+      ],
+    });
+  }
+
+  if (endpoint === 'v1/entities') {
+    return NextResponse.json({
+      entities: [
+        { id: 'ent-1', legalName: 'Amritsar Silk Mills Pvt Ltd', tradeName: 'Silk Mills', pan: 'AABCA1234F' },
+        { id: 'ent-2', legalName: 'Ranjit Logistics & Infra LLP', tradeName: 'Ranjit Transport', pan: 'AAKFR2290D' },
+      ],
+    });
+  }
+
+  /* 9. Client Portal Fallback */
+  if (endpoint === 'v1/client/me') {
+    return NextResponse.json({
+      firm: 'Verma & Associates CA',
+      name: 'Amritsar Silk Mills Pvt Ltd',
+      entities: [{ id: 'ent-1', name: 'Amritsar Silk Mills Pvt Ltd', tradeName: 'Silk Mills', pan: 'AABCA1234F', unread: 0 }],
+      messagesEnabled: true,
+    });
+  }
+  if (endpoint === 'v1/client/checklists') {
+    return NextResponse.json({ checklists: [] });
+  }
+  if (endpoint === 'v1/client/documents') {
+    return NextResponse.json({ documents: [] });
+  }
+  if (endpoint === 'v1/client/filings') {
+    return NextResponse.json({
+      gst: [{ entityId: 'ent-1', entityName: 'Amritsar Silk Mills Pvt Ltd', returnType: 'GSTR3B', period: '2026-10', status: 'PORTAL_SAVED' }],
+      tds: [{ entityId: 'ent-1', entityName: 'Amritsar Silk Mills Pvt Ltd', form: '140', period: 'Q3', correction: false, status: 'PORTAL_SAVED' }],
+    });
+  }
+
   /* Default JSON for unhandled GET */
   return NextResponse.json({ success: true, data: [] });
 }
@@ -254,6 +344,9 @@ export async function POST(
 ) {
   const { path } = await params;
   const endpoint = path.join('/');
+
+  const proxied = await tryProxy(request, endpoint);
+  if (proxied) return proxied;
 
   /* 1. Auth Demo & Login & Refresh */
   if (endpoint === 'v1/auth/demo' || endpoint === 'v1/auth/login' || endpoint === 'v1/auth/refresh') {
