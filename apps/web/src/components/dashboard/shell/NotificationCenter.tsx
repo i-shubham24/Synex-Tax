@@ -112,6 +112,12 @@ export function NotificationCenter() {
                         setRead((s) => new Set(s).add(n.id));
                         if (n.entityId) setActiveClient({ entityId: n.entityId, gstin: snapshot.entities.find((e) => e.id === n.entityId)?.gstins[0]?.gstin });
                         pop.setOpen(false);
+                        if (n.href.includes('view=')) {
+                          const v = new URLSearchParams(n.href.split('?')[1]).get('view');
+                          if (v && typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('synextax:switch-view', { detail: v }));
+                          }
+                        }
                         router.push(n.href);
                       }}
                       className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-pos-muted"

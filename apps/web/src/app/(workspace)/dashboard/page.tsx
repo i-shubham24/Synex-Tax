@@ -219,9 +219,27 @@ export default function ControlTowerPage() {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('view') === 'matrix') setView('matrix');
+    const checkView = () => {
+      const v = new URLSearchParams(window.location.search).get('view');
+      if (v === 'matrix' || v === 'analytics' || v === 'heatmap') {
+        setView(v);
+      }
+    };
+    checkView();
+    window.addEventListener('popstate', checkView);
+    const handleSwitch = (e: Event) => {
+      const detail = (e as CustomEvent<View>).detail;
+      if (detail === 'matrix' || detail === 'analytics' || detail === 'heatmap') {
+        setView(detail);
+      }
+    };
+    window.addEventListener('synextax:switch-view', handleSwitch);
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(id);
+    return () => {
+      window.removeEventListener('popstate', checkView);
+      window.removeEventListener('synextax:switch-view', handleSwitch);
+      window.clearInterval(id);
+    };
   }, []);
 
   const today = todayIst();

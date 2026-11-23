@@ -222,9 +222,9 @@ export default function ClientsMasterPage() {
                   const zebraBg = idx % 2 === 0 ? 'bg-white dark:bg-[#17191C]' : 'bg-[#F9FAFB] dark:bg-[#121417]';
                   const rowBg = isSelected ? 'bg-[#ECF4FD] dark:bg-[#2F8AE0]/15' : zebraBg;
 
-                  let statusPill = 'bg-[#DCFCE7] text-[#15803D]';
-                  if (cl.status === 'WARNING') statusPill = 'bg-[#FEF3C7] text-[#B45309]';
-                  if (cl.status === 'RECONCILED') statusPill = 'bg-[#ECF4FD] text-[#2F8AE0]';
+                  let statusPill = 'bg-[#DCFCE7] text-[#15803D] dark:bg-[#15803D]/20 dark:text-[#5fe88a]';
+                  if (cl.status === 'WARNING') statusPill = 'bg-[#FEF3C7] text-[#B45309] dark:bg-[#B45309]/20 dark:text-[#f2b53a]';
+                  if (cl.status === 'RECONCILED') statusPill = 'bg-[#ECF4FD] text-[#2F8AE0] dark:bg-[#2F8AE0]/20 dark:text-[#52B0F8]';
 
                   return (
                     <tr

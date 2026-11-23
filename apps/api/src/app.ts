@@ -29,6 +29,9 @@ import { integrationsRoutes } from './routes/integrations.routes.js';
 import { workspaceRoutes } from './routes/workspace.routes.js';
 import { firmRoutes } from './routes/firm.routes.js';
 import { taxAuditRoutes } from './routes/taxAudit.routes.js';
+import { itrImportRoutes } from './routes/itrImport.routes.js';
+import { itrStatementsRoutes } from './routes/itrStatements.routes.js';
+import { billingRoutes } from './routes/billing.routes.js';
 import { tdsCorrectionDraftsRoutes } from './routes/tdsCorrectionDrafts.routes.js';
 import { tdsDualActReconRoutes } from './routes/tdsDualActRecon.routes.js';
 
@@ -209,6 +212,9 @@ export function buildApp(): FastifyInstance {
   app.register(workspaceRoutes, { prefix: '/api/v1/workspace' });
   app.register(firmRoutes, { prefix: '/api/v1/firm' });
   app.register(taxAuditRoutes, { prefix: '/api/v1/tax-audit' });
+  app.register(itrImportRoutes, { prefix: '/api/v1/itr-import' });
+  app.register(itrStatementsRoutes, { prefix: '/api/v1/itr-statements' });
+  app.register(billingRoutes, { prefix: '/api/v1/billing' });
   app.register(tdsCorrectionDraftsRoutes, { prefix: '/api/v1/tds/correction-drafts' });
   app.register(practiceAutomationRoutes, { prefix: '/api/v1/practice/automation' });
   app.register(documentsRoutes, { prefix: '/api/v1/practice/documents' });

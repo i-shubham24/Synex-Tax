@@ -524,10 +524,10 @@ export function PracticeComplianceHeatmap() {
                       <span
                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${
                           ent.riskLevel === 'HIGH'
-                            ? 'bg-[#dc2626]/10 text-[#dc2626] border border-[#dc2626]/20'
+                            ? 'bg-[#dc2626]/10 dark:bg-rose-950/40 text-[#dc2626] dark:text-rose-400 border border-[#dc2626]/20 dark:border-rose-500/30'
                             : ent.riskLevel === 'MEDIUM'
-                            ? 'bg-[#f59e0b]/10 text-[#b45309] border border-[#f59e0b]/20'
-                            : 'bg-[#22a356]/10 text-[#15803d] border border-[#22a356]/20'
+                            ? 'bg-[#f59e0b]/10 dark:bg-amber-950/40 text-[#b45309] dark:text-amber-400 border border-[#f59e0b]/20 dark:border-amber-500/30'
+                            : 'bg-[#22a356]/10 dark:bg-emerald-950/40 text-[#15803d] dark:text-emerald-400 border border-[#22a356]/20 dark:border-emerald-500/30'
                         }`}
                       >
                         {ent.riskLevel === 'HIGH' && <Flame className="h-3 w-3" />}

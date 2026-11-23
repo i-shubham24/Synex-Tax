@@ -19,12 +19,15 @@ const DEMO_USER = {
 
 /* Resilient proxy: try forwarding to external API, fallback to mock if unreachable */
 async function tryProxy(request: Request, endpoint: string): Promise<Response | null> {
+  if (process.env.BYPASS_POSTGRES === 'true' || process.env.BYPASS_API === 'true') {
+    return null;
+  }
   const rawApiUrl = process.env.API_URL;
   if (!rawApiUrl) return null;
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 1800);
+    const timer = setTimeout(() => controller.abort(), 600);
     const targetUrl = `${rawApiUrl.replace(/\/+$/, '')}/api/${endpoint}`;
     const reqHeaders = new Headers(request.headers);
     reqHeaders.delete('host');
@@ -361,6 +364,54 @@ export async function GET(
     });
   }
 
+  /* 10. Recon Active Fallback */
+  if (endpoint === 'v1/recon/active') {
+    return NextResponse.json({
+      success: true,
+      data: {
+        gstin: '03AAAFCP4821K1Z5',
+        period: '2026-10',
+      },
+    });
+  }
+
+  /* 11. GST Sales Invoices Fallback */
+  if (endpoint === 'v1/gst/sales') {
+    return NextResponse.json({
+      success: true,
+      data: {
+        invoices: [
+          {
+            id: 'inv-101',
+            invoiceNum: 'INV/2026-27/001',
+            invoiceDate: '2026-10-05',
+            customerName: 'Delhi Textiles Hub LLP',
+            customerGstin: '07AAACD1122B1Z3',
+            pos: '07',
+            taxableValue: '450000.00',
+            cgstAmount: '0.00',
+            sgstAmount: '0.00',
+            igstAmount: '22500.00',
+            status: 'FILED',
+          },
+          {
+            id: 'inv-102',
+            invoiceNum: 'INV/2026-27/002',
+            invoiceDate: '2026-10-12',
+            customerName: 'Amritsar Weaving Co',
+            customerGstin: '03AABCA1234F1Z5',
+            pos: '03',
+            taxableValue: '320000.00',
+            cgstAmount: '8000.00',
+            sgstAmount: '8000.00',
+            igstAmount: '0.00',
+            status: 'FILED',
+          },
+        ],
+      },
+    });
+  }
+
   /* Default JSON for unhandled GET */
   return NextResponse.json({ success: true, data: [] });
 }
@@ -527,7 +578,7 @@ export async function POST(
   }
 
   /* 6. Vendor Compliance Chaser */
-  if (endpoint === 'v1/recon/auto-chaser') {
+  if (endpoint === 'v1/recon/chaser' || endpoint === 'v1/recon/auto-chaser') {
     return NextResponse.json({
       success: true,
       vendorName: 'Bhagwati Steel Fabricators',
@@ -538,6 +589,38 @@ export async function POST(
       noticeBody: 'Dear Vendor, 2 invoices totaling INR 84000.00 are missing in GSTR-2B. Please file GSTR-1 immediately.',
       whatsappClickUrl: 'https://wa.me/919876543210?text=Statutory%20Notice%3A%20Section%2016(2)(aa)%20GSTR-1%20mismatch',
       message: 'Statutory compliance notice prepared.',
+    });
+  }
+
+  /* 6b. IMS Action Handler */
+  if (endpoint === 'v1/recon/ims-action') {
+    return NextResponse.json({
+      success: true,
+      message: 'IMS action updated successfully',
+    });
+  }
+
+  /* 6c. TDS CSI Match Handler */
+  if (endpoint === 'v1/tds/csi-match') {
+    return NextResponse.json({
+      success: true,
+      data: {
+        matchRate: 100,
+        matchedCount: 1,
+        totalBookChallans: 1,
+      },
+      message: 'CSI file matched with 100% verification against NSDL OLTAS ledger.',
+    });
+  }
+
+  /* 6d. TDS FVU Dispatch Handler */
+  if (endpoint === 'v1/tds/fvu/dispatch') {
+    return NextResponse.json({
+      success: true,
+      data: {
+        fvuVersion: 'FVU 1.2',
+        message: 'Form 140 TDS statement validated clean and queued for TIN-FC portal dispatch.',
+      },
     });
   }
 

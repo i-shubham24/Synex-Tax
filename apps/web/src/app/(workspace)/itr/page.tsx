@@ -5,6 +5,7 @@ import { Calculator, TrendingUp } from 'lucide-react';
 import { itrComputation, type ItrInput, type ItrRegimeResult } from '@synextax/tax-engine';
 import { ItrFormPicker } from '../../../components/itr/ItrFormPicker';
 import { AdvanceTaxForecasterPanel } from '../../../components/itr/AdvanceTaxForecasterPanel';
+import { ItrImportPanel } from '../../../components/itr/import/ItrImportPanel';
 
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const input = 'h-9 w-full rounded-[10px] border border-pos-line bg-pos-surface px-3 text-right text-[13px] tabular-nums text-pos-ink outline-none focus:border-pos-accent';
@@ -138,6 +139,7 @@ export default function ItrPage() {
               <p className="text-[13px] text-pos-ink/65">{Number(result.saving) > 0 ? `The ${result.lower === 'NEW' ? 'new' : 'old'} regime saves ${inr(result.saving)}.` : 'Both regimes come to the same tax.'} A taxpayer with business income can leave the new regime only once.</p>
             </div>
           </div>
+          <ItrImportPanel values={values} onApply={(patch) => setValues((v) => ({ ...v, ...patch }))} />
           <ItrFormPicker values={values} age={age ?? 'BELOW_60'} />
         </>
       )}

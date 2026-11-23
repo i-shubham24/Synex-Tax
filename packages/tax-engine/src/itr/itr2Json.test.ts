@@ -59,7 +59,12 @@ test('ITR-2, new regime with house property and capital gains: valid against the
   assert.equal(r.ScheduleCGFor23.AccruOrRecOfCG.ShortTermUnder20Per.DateRange.Upto15Of9, 48000);
   // Liability 4,72,737 less TDS 3,30,000 = 1,42,737; advance tax 1,50,000 covers it: no 234A or 234B, and a refund.
   assert.equal(t.IntrstPay.IntrstPayUs234A + t.IntrstPay.IntrstPayUs234B, 0);
-  assert.equal(r.PartB_TTI.Refund.RefundDue, 480000 - 472737);
+  // 234C(1)(a), instalment by instalment, gains taken from the quarter they arose (second proviso):
+  // 15 Jun: tax on income other than gains 3,95,803 less TDS = 65,803; 15% = 9,870, nothing paid, 9,800 x 1% x 3 = 294.
+  // 15 Sep: with the 111A gain of Aug, 4,05,787 less TDS = 75,787; 45% = 34,104, 34,100 x 1% x 3 = 1,023.
+  // 15 Dec and 15 Mar: advance tax of 1,00,000 and 1,50,000 covers 75% and 100%.
+  assert.equal(t.IntrstPay.IntrstPayUs234C, 1317);
+  assert.equal(r.PartB_TTI.Refund.RefundDue, 480000 - 472737 - 1317);
 });
 
 test('ITR-2, old regime: house loss set off up to Rs 2 lakh, the rest and a capital loss carried forward', () => {

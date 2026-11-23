@@ -79,8 +79,9 @@ test('ITR-4, 44ADA and 44AE with salary, old regime, belated: interest 234A, 234
   // Assessed 4,84,660; advance 2,00,000. 234A Sep and Oct on 2,84,600 = 5,692. 234B Apr to Oct, 7 months = 19,922.
   const ip = r.TaxComputation.IntrstPay;
   assert.deepEqual([ip.IntrstPayUs234A, ip.IntrstPayUs234B, ip.LateFilingFee234F], [5692, 19922, 5000]);
-  // 44AE income present: 234C is not worked out here, taken as entered (none).
-  assert.equal(ip.IntrstPayUs234C, 0);
+  // 44AE and salary income: 234C(1)(a) instalment by instalment on 4,84,660 with 2,00,000 paid on 10 Mar:
+  // Jun 72,600 x 3% = 2,178; Sep 2,18,000 x 3% = 6,540; Dec 3,63,400 x 3% = 10,902; Mar 2,84,600 x 1% = 2,846.
+  assert.equal(ip.IntrstPayUs234C, 22466);
   assert.equal(r.FilingStatus.F10IEACurrAYOldRegime, 'Y');
   assert.equal(r.Schedule80C.TotalAmt, 170000);
   assert.equal(r.ScheduleBP.GoodsDtlsUs44AE.length, 2);

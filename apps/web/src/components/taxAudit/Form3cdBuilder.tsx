@@ -384,14 +384,14 @@ export function Form3cdBuilder({ seed }: { seed: ReportSeed | null }) {
         </div>
       </div>
 
-      {configured === false && <p className="rounded-[10px] bg-[#b45309]/10 px-3 py-2 text-[13px] text-[#b45309]">The schema needs the software ID the Department issues to a registered e-return intermediary. Set ITR_SOFTWARE_ID on the server; until then the report is checked but the file is not written.</p>}
+      {configured === false && <p className="rounded-[10px] bg-[#b45309]/10 dark:bg-amber-950/40 px-3 py-2 text-[13px] text-[#b45309] dark:text-amber-400">The schema needs the software ID the Department issues to a registered e-return intermediary. Set ITR_SOFTWARE_ID on the server; until then the report is checked but the file is not written.</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={submit} disabled={busy} className="rounded-full bg-pos-accent px-4 py-2 text-[13.5px] text-white disabled:opacity-50">{configured ? 'Download tax audit JSON' : 'Check the report'}</button>
         <span className="text-[12px] text-pos-ink/55">{reviewed.size} of {builtShown.length} clauses reviewed, {na.size} of {UNBUILT_CLAUSES.length} marked not applicable</span>
       </div>
       {message && <p className="text-[13px] text-pos-ink/75">{message}</p>}
-      {needed.length > 0 && <p className="text-[13px] text-[#b45309]">Clauses still needed: <span className="font-mono">{needed.join(', ')}</span></p>}
-      {issues.length > 0 && <ul className="list-disc space-y-1 pl-5 text-[13px] text-[#dc2626]">{issues.filter((i) => i.field !== 'clauses').map((i, k) => <li key={k}><span className="font-mono text-[12px] text-pos-ink/60">{i.field}</span> {i.message}</li>)}</ul>}
+      {needed.length > 0 && <p className="text-[13px] text-[#b45309] dark:text-amber-400">Clauses still needed: <span className="font-mono">{needed.join(', ')}</span></p>}
+      {issues.length > 0 && <ul className="list-disc space-y-1 pl-5 text-[13px] text-[#dc2626] dark:text-rose-400">{issues.filter((i) => i.field !== 'clauses').map((i, k) => <li key={k}><span className="font-mono text-[12px] text-pos-ink/60">{i.field}</span> {i.message}</li>)}</ul>}
     </section>
   );
 }

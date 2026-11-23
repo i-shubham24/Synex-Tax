@@ -255,7 +255,7 @@ export function Gstr3bCockpitPanel() {
       {/* Cash Warning Card */}
       {cockpit && Number(cockpit.summary.totalCashPayable) > 0 && (
         <div className="rounded-[12px] border border-[#f59e0b]/30 bg-[#fef3c7]/20 p-4 text-[13px] text-pos-ink">
-          <div className="flex items-center gap-2 font-semibold text-[#b45309]">
+          <div className="flex items-center gap-2 font-semibold text-[#b45309] dark:text-[#f2b53a]">
             <ShieldAlert className="h-4 w-4" /> Statutory Cash Deposit Alert (Due by {dueStatutoryDate(period)})
           </div>
           <p className="mt-1 text-pos-ink/75">

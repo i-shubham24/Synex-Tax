@@ -5,25 +5,37 @@ import {
 } from './itrCommon.js';
 import { specialRateTax } from './specialRateTax.js';
 import type { HouseLoan } from './itr4Json.js';
+import { capitalGains, zeroRange, type CgSale } from './schedules/capitalGains.js';
+import type { PropertySale } from './schedules/capitalGainsProperty.js';
+import { setOffBroughtForward, ITR2_CFL_KEYS, type BroughtForwardYear } from './schedules/broughtForward.js';
+import {
+  amt, scheduleAL, scheduleEI, scheduleFA, scheduleSpi,
+  type AmtCreditYear, type AssetsLiabilities, type ClubbedIncome, type ExemptIncomeInput, type ForeignAssets, type VdaTransfer,
+} from './schedules/otherSchedules.js';
+
+export { cgGain, type CgSale } from './schedules/capitalGains.js';
 
 /**
  * ITR-2 JSON for Assessment Year 2026-27 (income of 2025-26), to the Income Tax Department's schema
  * ITR-2_2026_Main_V1.2 (kept in packages/tax-engine/schemas/itr; every test output is validated
  * against it). Arithmetic links between schedules follow the Department's ITR-2 validation rules for
- * AY 2026-27 (version 1.0); rule numbers are cited below.
+ * AY 2026-27 (version 1.0) and the notified form; rule numbers are cited below.
  *
- * Covered, for a resident individual with total income up to Rs 50 lakh: salary from one or more
- * employers, several house properties (let out or self-occupied), capital gains under section 111A
- * (20%), 112A (12.5% above Rs 1.25 lakh, with the 31 Jan 2018 cost rule of section 55(2)(ac)), 112 on
- * other assets (12.5% without indexation) and short-term gains at slab rates; interest, dividends and
- * other income; set-off of current-year losses within capital gains (section 70) and of a house
- * property loss up to Rs 2 lakh against other heads in the old regime (section 71(3A)); carry forward
- * of what is left (Schedule CFL, current year); deductions under 80C, 80CCD(1B), 80D, 80TTA and 80TTB.
+ * Covered, for a resident individual: salary from one or more employers (with income from a retirement
+ * benefit account abroad and relief under section 89A), several house properties, capital gains under
+ * section 111A (20%), 112A (12.5% above Rs 1.25 lakh), 112 (12.5%; land or building with the 20%-with-
+ * indexation comparison of the second proviso to 112(1)(a), stamp value under 50C, exemptions under 54,
+ * 54B, 54EC and 54F), short-term gains at slab rates, virtual digital assets (115BBH at 30%, Schedule VDA);
+ * interest, dividends and other income; current-year set-off (sections 70, 71) and losses brought forward
+ * (Schedules BFLA and CFL); income of specified persons (Schedule SPI, section 64); exempt and agricultural
+ * income for rate purposes (Schedule EI); deductions under 80C, 80CCD(1B), 80D, 80QQB, 80RRB, 80TTA and
+ * 80TTB; alternate minimum tax and its credit (Schedules AMT and AMTC); surcharge with marginal relief;
+ * Schedule AL above Rs 1 crore and Schedule FA (tables A1, A2, A3 and D); interest under 234A, 234B and
+ * 234C (instalment by instalment) and the 234F fee.
  *
- * Not covered, reported as issues: total income above Rs 50 lakh (it needs Schedule AL and may carry
- * surcharge), sale of land or building (Schedule CG needs stamp value and buyer details, and the
- * 20%-with-indexation option for property bought before 23 July 2024), losses brought forward from
- * earlier years, directors and holders of unlisted shares, foreign assets and income, non-residents.
+ * Not covered, reported as issues: directors and holders of unlisted shares, foreign income and foreign
+ * tax credit (Schedules FSI and TR), non-residents, 89A relief on income from other sources, dividends
+ * where total income exceeds Rs 2 crore, and alternate minimum tax above Rs 50 lakh of adjusted income.
  */
 
 export const ITR2_DUE_DATE = '2026-07-31';
@@ -32,16 +44,14 @@ export interface Itr2Employer {
   tan?: string; name: string; nature: 'CGOV' | 'SGOV' | 'PSU' | 'PE' | 'PESG' | 'PEPS' | 'PEO' | 'OTH';
   address: { line: string; city: string; stateCode: string; pin: string };
   gross: number; tds: number;
+  /** Income from a retirement benefit account maintained in a country notified under section 89A (US, UK, Canada; Notification 24/2022). */
+  retirement89A?: { country: 'US' | 'UK' | 'CA'; amount: number };
+  /** Income from a retirement benefit account in a country not notified under section 89A. */
+  retirementOther?: number;
+  /** Income taxable this year on which relief under 89A was claimed in an earlier year (withdrawal). */
+  retirementPriorRelief?: number;
 }
 export interface Itr2Property { letOut: boolean; address: string; city: string; stateCode: string; pin: string; rent?: number; municipalTax?: number; loans?: HouseLoan[] }
-export interface CgSale {
-  /** 111A: listed equity or equity fund units held up to 12 months, STT paid. 112A: the same held longer. STCG and LTCG: other assets (not land or building). */
-  kind: '111A' | '112A' | 'STCG' | 'LTCG';
-  date: string; // date of transfer, YYYY-MM-DD in 2025-26
-  saleValue: number; cost: number; improvement?: number; expenses?: number;
-  /** 112A only */
-  isin?: string; name?: string; acquiredBefore1Feb2018?: boolean; fmv31Jan2018?: number;
-}
 
 export interface Itr2Input {
   softwareId: string;
@@ -49,44 +59,42 @@ export interface Itr2Input {
   intermediaryCity: string;
   person: ItrPerson;
   filing: ItrFiling;
-  flags?: { director?: boolean; unlistedShares?: boolean; foreignAssets?: boolean; landOrBuildingSold?: boolean; lossesBroughtForward?: boolean };
-  salary?: { professionalTax?: number; employers: Itr2Employer[] };
+  flags?: { director?: boolean; unlistedShares?: boolean; foreignAssets?: boolean; landOrBuildingSold?: boolean; lossesBroughtForward?: boolean; foreignIncome?: boolean };
+  salary?: {
+    professionalTax?: number; employers: Itr2Employer[];
+    /** Income from a notified-country retirement account claimed for relief under section 89A this year (Form 10-EE filed by the due date, rule 21AAA). */
+    relief89A?: { amount: number; form10EEFiled: boolean };
+  };
   houses?: Itr2Property[];
   capitalGains?: CgSale[];
+  /** Sale of land or building (Schedule CG items A1 and B1). */
+  propertySales?: PropertySale[];
+  /** Transfers of virtual digital assets (Schedule VDA). */
+  vda?: VdaTransfer[];
   otherSources?: { savingsInterest?: number; depositInterest?: number; refundInterest?: number; dividends?: number; other?: number; otherDescription?: string };
-  deductions?: { section80C?: { amount: number; id: string }[]; section80CCD1B?: number; section80D?: Deduction80DInput };
+  exemptIncome?: ExemptIncomeInput;
+  clubbedIncome?: ClubbedIncome[];
+  lossesBroughtForward?: BroughtForwardYear[];
+  deductions?: {
+    section80C?: { amount: number; id: string }[]; section80CCD1B?: number; section80D?: Deduction80DInput;
+    /** Royalty of an author (80QQB) and on a patent (80RRB), each up to Rs 3 lakh, with the Form 10CCD or 10CCE acknowledgement. */
+    section80QQB?: { amount: number; form10CCDAck: string };
+    section80RRB?: { amount: number; form10CCEAck: string };
+  };
+  /** AMT credit brought forward from earlier years (section 115JD), as in the earlier returns. */
+  amtCredit?: AmtCreditYear[];
+  assetsLiabilities?: AssetsLiabilities;
+  foreignAssets?: ForeignAssets;
   tdsOther?: (ItrOtherTds & { head?: 'HP' | 'OS' | 'NA' | 'BP' })[];
   tcs?: ItrTcs[];
   taxPayments?: ItrTaxPayment[];
+  /** @deprecated 234C is now worked instalment by instalment from the advance tax dates; this field is ignored. */
   interest234C?: number;
   bank: ItrBank;
 }
 
-const PERIODS = [['Upto15Of6', '06-15'], ['Upto15Of9', '09-15'], ['Up16Of9To15Of12', '12-15'], ['Up16Of12To15Of3', '03-15'], ['Up16Of3To31Of3', '03-31']] as const;
-const periodOf = (date: string) => {
-  const md = date.slice(5);
-  if (date.slice(0, 4) === '2025') return md <= '06-15' ? 0 : md <= '09-15' ? 1 : md <= '12-15' ? 2 : 3;
-  return md <= '03-15' ? 3 : 4;
-};
-const zeroRange = () => ({ DateRange: Object.fromEntries(PERIODS.map(([k]) => [k, 0])) as Record<string, number> });
-/** Income of a category after set-off spread over the quarters in which gains arose (rule: break-up equals the income). */
-function spread(income: number, gainsByPeriod: number[]) {
-  const r = zeroRange();
-  let left = income;
-  gainsByPeriod.forEach((g, k) => { const t = Math.min(left, Math.max(0, g)); r.DateRange[PERIODS[k][0]] = t; left -= t; });
-  if (left > 0) r.DateRange[PERIODS[4][0]] += left;
-  return r;
-}
+const EI_SUBCATEGORIES = ['10(30)', '10(31)', '10(37)', '10(10BB)', '10(10BC)', '10(17A)', '10(12AB)', '10(15)', '10(23FBB)', '10(23FD)', '10(35)', '10(35A)', '10(23FBC)', '10(33)', '10(4B)', '10(4C)', '10(4E)', '10(36)', '10(37A)', '10(12C)', '10(18)', '10(19)', 'DMD', '10(32)', '10(43)', '10(19A)', '10(26)', '10(26AAA)', '10(10D)', '10(11)', '10(11A)', '10(12)', '10(12A)', '10(12AA)', '10(12B)', '10(12BA)', '10(13)', '10(2)', '10(16)', '10(4)(ii)', '10(4)(i)', '10(4F)', '10(4G)', '10(6B)', '10(6D)', 'Incmexmptcircular', 'Incmexmptnotification', 'Receiptnotincme', '10(8)', '10(8A)', '10(8B)', '10(9)'] as const;
 
-const ded48 = (cost: number, improvement: number, expenses: number) => ({ AquisitCost: cost, ImproveCost: improvement, ExpOnTrans: expenses, TotalDedn: cost + improvement + expenses });
-
-/** Gain on one sale; for 112A the cost of an asset bought before 1 Feb 2018 is the higher of cost and the lower of its 31 Jan 2018 value and the sale value (55(2)(ac)). */
-export function cgGain(s: CgSale) {
-  const sale = n0(s.saleValue);
-  const fmvCap = s.kind === '112A' && s.acquiredBefore1Feb2018 ? Math.min(n0(s.fmv31Jan2018), sale) : 0;
-  const cost = Math.max(n0(s.cost), fmvCap);
-  return { sale, cost, fmvCap, improvement: n0(s.improvement), expenses: n0(s.expenses), gain: sale - cost - n0(s.improvement) - n0(s.expenses) };
-}
 
 export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null; issues: ItrIssue[]; summary: Record<string, number> } {
   const p = i.person;
@@ -96,18 +104,27 @@ export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null;
   const err = (field: string, message: string) => issues.push({ field, message });
   const f = i.flags ?? {};
   if (f.director || f.unlistedShares) err('flags', 'Directors and holders of unlisted shares must give company details in the return; this file does not write them yet.');
-  if (f.foreignAssets) err('flags', 'Foreign assets and income (Schedules FA, FSI, TR) are not written by this file.');
-  if (f.landOrBuildingSold) err('flags', 'Sale of land or building needs stamp value, buyer details and the indexation option for property bought before 23 July 2024; not written by this file.');
-  if (f.lossesBroughtForward) err('flags', 'Losses brought forward from earlier years (Schedule BFLA and CFL rows) are not written by this file.');
+  if (f.foreignIncome) err('flags', 'Foreign income and relief for foreign tax (Schedules FSI and TR) are not written by this file.');
+  if (f.foreignAssets && !i.foreignAssets) err('foreignAssets', 'Foreign assets are held: give them for Schedule FA (validation rule 746).');
+  if (f.landOrBuildingSold && !i.propertySales?.length) err('propertySales', 'A sale of land or building is flagged: give each sale with its stamp value and buyers for Schedule CG.');
+  if (f.lossesBroughtForward && !i.lossesBroughtForward?.length) err('lossesBroughtForward', 'Losses brought forward: give each earlier year as in Schedule CFL of that return.');
   issues.push(...tanIssues([...(i.salary?.employers ?? []).filter((e) => e.tan).map((e) => ({ tan: e.tan! })), ...(i.tdsOther ?? []), ...(i.tcs ?? [])], 'tan'));
   const age = ageBandFromDob(p.dob);
 
   // Salary (Schedule S): standard deduction 16(ia) Rs 75,000 new regime, Rs 50,000 old; professional tax 16(iii) old regime up to Rs 2,500.
+  // Section 89A and rule 21AAA: income of a notified-country retirement account may be taxed on withdrawal instead (item 3a).
   const employers = i.salary?.employers ?? [];
-  const gross = sum(employers.map((e) => n0(e.gross)));
-  const std = Math.min(gross, old ? 50000 : 75000);
-  const pt = old ? Math.min(n0(i.salary?.professionalTax), 2500, gross - std) : 0;
-  const salary = gross - std - pt;
+  const empGross = (e: Itr2Employer) => n0(e.gross) + n0(e.retirement89A?.amount) + n0(e.retirementOther) + n0(e.retirementPriorRelief);
+  const gross = sum(employers.map(empGross));
+  const notified89A = sum(employers.map((e) => n0(e.retirement89A?.amount)));
+  const r89 = i.salary?.relief89A;
+  const relief89A = r89 ? n0(r89.amount) : 0;
+  if (relief89A > notified89A) err('salary', 'Relief under section 89A can be claimed only on income from a retirement benefit account in a notified country.');
+  if (relief89A && !r89?.form10EEFiled) err('salary', 'Relief under section 89A needs Form 10-EE furnished by the due date under section 139(1) (rule 21AAA(2)).');
+  const netSalary = gross - relief89A;
+  const std = Math.min(netSalary, old ? 50000 : 75000);
+  const pt = old ? Math.min(n0(i.salary?.professionalTax), 2500, netSalary - std) : 0;
+  const salary = netSalary - std - pt;
 
   // House property (Schedule HP): 30% of annual value under 24(a), interest under 24(b); self-occupied interest up to Rs 2 lakh in all, old regime only.
   let soInterestLeft = old ? 200000 : 0;
@@ -144,53 +161,44 @@ export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null;
   const sav = n0(os.savingsInterest), dep = n0(os.depositInterest), ref = n0(os.refundInterest), div = n0(os.dividends), oth = n0(os.other);
   const osIncome = sav + dep + ref + div + oth;
 
-  // Capital gains by category.
-  const sales = (i.capitalGains ?? []).map((s) => ({ s, g: cgGain(s) }));
-  for (const { s } of sales) {
-    if (!/^2025-(0[4-9]|1[0-2])-\d{2}$|^2026-0[1-3]-\d{2}$/.test(s.date)) err('capitalGains', `Transfer date ${s.date} is not in 2025-26.`);
-    if (s.kind === '112A' && !/^IN[0-9A-Z]{10}$/.test(s.isin ?? '')) err('capitalGains', `${s.name ?? 'A 112A sale'} needs its ISIN for Schedule 112A.`);
-  }
-  const of = (k: CgSale['kind']) => sales.filter((x) => x.s.kind === k);
-  const net = (k: CgSale['kind']) => sum(of(k).map((x) => x.g.gain));
-  const byPeriod = (ks: CgSale['kind'][]) => PERIODS.map((_, n) => sum(sales.filter((x) => ks.includes(x.s.kind) && periodOf(x.s.date) === n).map((x) => x.g.gain)));
-  const st20Raw = net('111A'), stAppRaw = net('STCG'), ltARaw = net('112A'), ltORaw = net('LTCG');
-  // 12.5% row nets 112A and 112 (one row in the schema); a loss in one is set against the other.
-  let ltA = ltARaw, ltO = ltORaw;
-  const ltNet = ltA + ltO;
-  if (ltNet <= 0) { ltA = 0; ltO = 0; } else if (ltO < 0) { ltA = ltNet; ltO = 0; } else if (ltA < 0) { ltO = ltNet; ltA = 0; }
-  const ltLoss = Math.max(0, -ltNet);
-  // Section 70(2): a short-term loss goes against any capital gain; 70(3): a long-term loss only against long-term gains.
-  let st20 = Math.max(0, st20Raw), stApp = Math.max(0, stAppRaw);
-  let st20Loss = Math.max(0, -st20Raw), stAppLoss = Math.max(0, -stAppRaw);
-  const so = { appIn20: 0, s20InApp: 0, s20InLt: 0, appInLt: 0 };
-  const use = (avail: number, against: number) => Math.min(avail, against);
-  so.appIn20 = use(stAppLoss, st20); st20 -= so.appIn20; stAppLoss -= so.appIn20;
-  so.s20InApp = use(st20Loss, stApp); stApp -= so.s20InApp; st20Loss -= so.s20InApp;
-  const ltBefore = ltA + ltO;
-  const reduceLt = (amt: number) => { const a = Math.min(amt, ltO); ltO -= a; const b = Math.min(amt - a, ltA); ltA -= b; return a + b; };
-  so.s20InLt = reduceLt(st20Loss); st20Loss -= so.s20InLt;
-  so.appInLt = reduceLt(stAppLoss); stAppLoss -= so.appInLt;
-  const cgAfter = { st20, stApp, lt: ltA + ltO };
+  // Capital gains (Schedules CG, 112A, VDA) with set-off within the head (section 70).
+  const cg = capitalGains({ form: 'ITR-2', sales: i.capitalGains ?? [], property: i.propertySales ?? [], vda: i.vda ?? [] });
+  issues.push(...cg.issues);
+  const cgAfter = cg.after;
+  const vda = cg.vda.total;
 
   // Schedule CYLA: a house property loss against other heads, old regime only, up to Rs 2 lakh (71(3A)); none in the new regime (rule 264).
   const hpLoss = Math.max(0, -hpTotal);
   let hpLossLeft = old ? Math.min(hpLoss, 200000) : 0;
   const take = (v: number) => { const t = Math.min(hpLossLeft, v); hpLossLeft -= t; return t; };
   const hpIn = { sal: take(salary), os: take(osIncome), stApp: take(cgAfter.stApp), st20: take(cgAfter.st20), lt: 0 };
-  const ltBeforeHp = ltA + ltO;
-  hpIn.lt = Math.min(hpLossLeft, ltBeforeHp); hpLossLeft -= hpIn.lt; reduceLt(hpIn.lt);
+  const ltBeforeHp = cgAfter.lt;
+  hpIn.lt = Math.min(hpLossLeft, ltBeforeHp); hpLossLeft -= hpIn.lt; cg.reduceLt(hpIn.lt);
   const hpSetOff = hpIn.sal + hpIn.os + hpIn.stApp + hpIn.st20 + hpIn.lt;
   const hpCarried = hpLoss - hpSetOff;
-  const after = { sal: salary - hpIn.sal, hp: Math.max(0, hpTotal), os: osIncome - hpIn.os, st20: cgAfter.st20 - hpIn.st20, stApp: cgAfter.stApp - hpIn.stApp, lt: ltA + ltO };
-  const stclCarried = st20Loss + stAppLoss;
+  const lt0 = cg.current();
+  const cyla = { sal: salary - hpIn.sal, hp: Math.max(0, hpTotal), bp: 0, spec: 0, os: osIncome - hpIn.os, st20: cgAfter.st20 - hpIn.st20, stApp: cgAfter.stApp - hpIn.stApp, ltA: lt0.ltA, ltO: lt0.ltO };
 
-  const cgIncome = after.st20 + after.stApp + after.lt;
-  const totalTI = salary + Math.max(0, hpTotal) + (cgAfter.st20 + cgAfter.stApp + cgAfter.lt) + osIncome;
-  const gti = after.sal + after.hp + after.os + cgIncome;
-  const splIncome = after.st20 + after.lt; // 111A, 112 and 112A in Part B-TI item 9
+  // Schedule BFLA: losses of earlier years (sections 71B, 74).
+  const bf = setOffBroughtForward(cyla, i.lossesBroughtForward ?? [], [], 'ITR-2');
+  issues.push(...bf.issues);
+  const after = { ...bf.left, lt: bf.left.ltA + bf.left.ltO };
+
+  const totalTI = salary + Math.max(0, hpTotal) + (cgAfter.st20 + cgAfter.stApp + cgAfter.lt) + vda + osIncome;
+  const bflaTotal = after.sal + after.hp + after.os + after.st20 + after.stApp + after.lt;
+  const gti = bflaTotal + vda;
+  const splIncome = after.st20 + after.lt + vda; // 111A, 112, 112A and 115BBH in Part B-TI item 10
+
+  // Schedule SPI: income of specified persons included under section 64.
+  const ei = scheduleEI(i.exemptIncome, [], EI_SUBCATEGORIES, 'ITR-2');
+  issues.push(...ei.issues);
+  const spi = scheduleSpi(i.clubbedIncome ?? [], { SA: salary, HP: Math.abs(hpTotal), CG: Math.abs(cg.raw.st20Raw) + Math.abs(cg.raw.stAppRaw) + Math.abs(cg.raw.ltARaw) + Math.abs(cg.raw.ltORaw) + vda, OS: osIncome, EI: ei.total });
+  issues.push(...spi.issues);
+  if ((i.clubbedIncome ?? []).some((r) => r.head === 'BP')) err('clubbedIncome', 'Business income of a specified person goes in ITR-3.');
 
   // Chapter VI-A (old regime only) up to GTI less special-rate income (rule 509).
   const d = old ? i.deductions ?? {} : {};
+  if (!old && (i.deductions?.section80QQB || i.deductions?.section80RRB)) err('deductions', 'Deductions under 80QQB and 80RRB are not allowed in the new regime (validation rule 342).');
   const c80Claimed = sum((d.section80C ?? []).map((r) => n0(r.amount)));
   const c80 = Math.min(c80Claimed, 150000);
   const c80ccd1b = Math.min(n0(d.section80CCD1B), 50000);
@@ -198,81 +206,70 @@ export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null;
   issues.push(...d80.issues);
   const c80tta = old && age === 'BELOW_60' ? Math.min(sav, 10000) : 0;
   const c80ttb = old && age !== 'BELOW_60' ? Math.min(sav + dep, 50000) : 0;
-  const viaClaimed = c80 + c80ccd1b + d80.allowed + c80tta + c80ttb;
+  // 80QQB and 80RRB: up to Rs 3 lakh each (80QQB(1), 80RRB(1)), not more than the royalty in other sources (rule 337), return by the due date (rules 340, 341).
+  const qqb = Math.min(n0(d.section80QQB?.amount), 300000);
+  const rrb = Math.min(n0(d.section80RRB?.amount), 300000);
+  if (qqb + rrb > oth) err('deductions', 'Deductions under 80QQB and 80RRB cannot exceed the royalty income entered under other sources (validation rule 337).');
+  if ((qqb || rrb) && i.createdOn > ITR2_DUE_DATE) err('deductions', 'Deductions under 80QQB and 80RRB need the return filed by the due date (validation rules 340 and 341).');
+  if (qqb && !/^\d{15}$/.test(d.section80QQB?.form10CCDAck ?? '')) err('deductions', 'Give the acknowledgement number of Form 10CCD for 80QQB (validation rule 648).');
+  if (rrb && !/^\d{15}$/.test(d.section80RRB?.form10CCEAck ?? '')) err('deductions', 'Give the acknowledgement number of Form 10CCE for 80RRB (validation rule 649).');
+  const viaClaimed = c80 + c80ccd1b + d80.allowed + c80tta + c80ttb + qqb + rrb;
   const via = Math.min(viaClaimed, Math.max(0, gti - splIncome));
+  // Specified deductions for 115JC: Part C of Chapter VI-A as allowed (rule 421).
+  const specified = Math.min(qqb + rrb, via);
   // Total income rounded to the nearest Rs 10 (section 288A; rule 506).
   const totalIncome = Math.round((gti - via) / 10) * 10;
-  if (totalIncome > 5000000) err('income', 'Total income above Rs 50 lakh needs Schedule AL (assets and liabilities) and may carry surcharge; not written by this file.');
+  const al = i.assetsLiabilities;
+  if (totalIncome > 10000000 && !al) err('assetsLiabilities', 'Total income exceeds Rs 1 crore: Schedule AL (assets and liabilities on 31 Mar 2026) is required (validation rule 456).');
+  const fa = scheduleFA(i.foreignAssets ?? {});
+  issues.push(...fa.issues);
+  if (vda && !old && totalIncome <= 1200000) err('vda', 'With total income up to Rs 12 lakh the 87A rebate question for tax under 115BBH arises; this file does not write it.');
+  if (vda && old && totalIncome <= 500000) err('vda', 'With total income up to Rs 5 lakh the 87A rebate question for tax under 115BBH arises; this file does not write it.');
 
-  const tx = specialRateTax({ regime, age, totalIncome, st111A: after.st20, lt112A: ltA, lt112: ltO });
+  const taxOn = (ti: number, st: number, ltA: number, ltO: number, vd: number) => specialRateTax({ regime, age, totalIncome: ti, st111A: st, lt112A: ltA, lt112: ltO, vda: vd, excess112: cg.excess, agri: ei.netAgri, dividends: div });
+  const tx = taxOn(totalIncome, after.st20, after.ltA, after.ltO, vda);
+  if (tx.refusal) err('income', tx.refusal);
+  const regular = tx.liability; // Part B-TTI item 7
+  const am = amt(totalIncome, specified, regular, i.amtCredit ?? [], old);
+  issues.push(...am.issues);
+  const grossPayable = Math.max(regular, am.deemed); // item 8
+  const afterCredit = grossPayable - am.utilised; // item 10
+  const netTax = afterCredit;
+
   const salaryTds = sum(employers.map((e) => n0(e.tds)));
   const otherTds = sum((i.tdsOther ?? []).map((t) => n0(t.tds)));
   const tcs = sum((i.tcs ?? []).map((t) => n0(t.tcs)));
   const payments = i.taxPayments ?? [];
   const advance = sum(payments.filter((t) => t.kind === 'ADVANCE').map((t) => n0(t.amount)));
   const selfTax = sum(payments.filter((t) => t.kind === 'SELF').map((t) => n0(t.amount)));
-  const ii = interestAndFee({ liability: tx.liability, tdsTcs: salaryTds + otherTds + tcs, payments, filedOn: i.createdOn, dueDate: ITR2_DUE_DATE, totalIncome, exemption: (old ? oldSlabs(age) : NEW_SLABS)[0][0], entered234C: i.interest234C ?? 0 });
+  // Second proviso to 234C(1): tax due at each instalment leaving out gains that arose after its date (Table F quarters).
+  const tf = cg.tableF({ st20: after.st20, stApp: after.stApp, lt: after.lt });
+  const later = (k: number, q: number[]) => sum(q.slice(k + 1));
+  const dueBeforeLaterGains = [0, 1, 2, 3].map((k) => {
+    const lst = later(k, tf.quarters.st20), lapp = later(k, tf.quarters.stApp), llt = later(k, tf.quarters.lt), lv = later(k, tf.quarters.vda);
+    const ltOcut = Math.min(after.ltO, llt);
+    const t = taxOn(Math.max(0, totalIncome - lst - lapp - llt - lv), after.st20 - lst, after.ltA - (llt - ltOcut), after.ltO - ltOcut, vda - lv);
+    return Math.max(t.liability, am.deemed) - am.utilised;
+  });
+  const ii = interestAndFee({
+    liability: netTax, tdsTcs: salaryTds + otherTds + tcs, payments, filedOn: i.createdOn, dueDate: ITR2_DUE_DATE, totalIncome, exemption: (old ? oldSlabs(age) : NEW_SLABS)[0][0],
+    dueBeforeLaterGains, noAdvanceTax: age !== 'BELOW_60',
+  });
   const interest = ii.i234A + ii.i234B + ii.i234C + ii.fee234F;
-  const aggregate = tx.liability + interest;
+  const aggregate = netTax + interest;
   const paid = salaryTds + otherTds + tcs + advance + selfTax;
 
-  // Schedule CG
-  const agg = (k: CgSale['kind']) => of(k).reduce((a, x) => ({ sale: a.sale + x.g.sale, cost: a.cost + x.g.cost, imp: a.imp + x.g.improvement, exp: a.exp + x.g.expenses }), { sale: 0, cost: 0, imp: 0, exp: 0 });
-  const zero94 = () => ({ FullValueConsdRecvUnqshr: 0, FairMrktValueUnqshr: 0, FullValueConsdSec50CA: 0, FullValueConsdOthUnqshr: 0, FullConsideration: 0, DeductSec48: ded48(0, 0, 0), BalanceCG: 0, LossSec94of7Or94of8: 0, CapgainonAssets: 0 });
-  const a111 = agg('111A'), aSt = agg('STCG'), aLt = agg('LTCG');
-  const sl = (a: ReturnType<typeof agg>, extra: Record<string, number> = {}) => ({
-    FullValueConsdRecvUnqshr: 0, FairMrktValueUnqshr: 0, FullValueConsdSec50CA: 0, FullValueConsdOthUnqshr: a.sale, FullConsideration: a.sale,
-    DeductSec48: ded48(a.cost, a.imp, a.exp), BalanceCG: a.sale - a.cost - a.imp - a.exp, ...extra,
-  });
-  const rows112A = of('112A');
-  const sch112A = rows112A.map(({ s, g }) => ({
-    ShareOnOrBefore: s.acquiredBefore1Feb2018 ? 'BE' : 'AE', ISINCode: s.isin, ShareUnitName: clean(s.name || s.isin, 125),
-    TotSaleValue: g.sale, CostAcqWithoutIndx: n0(s.cost), AcquisitionCost: g.cost, LTCGBeforelowerB1B2: g.fmvCap,
-    FairMktValuePerShareunit: 0, TotFairMktValueCapAst: s.acquiredBefore1Feb2018 ? n0(s.fmv31Jan2018) : 0, ExpExclCnctTransfer: g.expenses + g.improvement,
-    TotalDeductions: g.cost + g.expenses + g.improvement, Balance: g.gain,
-  }));
-  const sumRow = (k: keyof (typeof sch112A)[number]) => sum(sch112A.map((r) => Number(r[k])));
-  const scheduleCG = {
-    ShortTermCapGainFor23: {
-      ...(a111.sale ? { EquityMFonSTT: [{ MFSectionCode: '1A', EquityMFonSTTDtls: { FullConsideration: a111.sale, DeductSec48: ded48(a111.cost, a111.imp, a111.exp), BalanceCG: st20Raw, LossSec94of7Or94of8: 0, CapgainonAssets: st20Raw } }] } : {}),
-      NRITransacSec48Dtl: { NRItaxSTTPaid: 0, NRItaxSTTNotPaid: 0 },
-      NRISecur115AD: zero94(),
-      SaleOnOtherAssets: aSt.sale ? sl(aSt, { LossSec94of7Or94of8: 0, CapgainonAssets: stAppRaw }) : zero94(),
-      TotalAmtDeemedStcg: 0, PassThrIncNatureSTCG: 0, TotalAmtNotTaxUsDTAAStcg: 0, TotalAmtTaxUsDTAAStcg: 0,
-      TotalSTCG: st20Raw + stAppRaw,
-    },
-    LongTermCapGain23: {
-      SaleOfEquityShareUs112A: { BalanceCG: ltARaw, DeductionUs54F: 0, CapgainonAssets: ltARaw },
-      NRISaleOfEquityShareUs112A: { BalanceCG: 0, DeductionUs54F: 0, CapgainonAssets: 0 },
-      NRISaleofForeignAsset: { SaleonSpecAsset: 0, DednSpecAssetus115: 0, BalonSpeciAsset: 0 },
-      SaleofAssetNADtls: aLt.sale ? { SaleofAssetNA: sl(aLt, { DeductionUs54F: 0, CapgainonAssets: ltORaw }) } : {},
-      TotalAmtDeemedLtcg: 0, PassThrIncNatureLTCG: 0, TotalAmtNotTaxUsDTAALtcg: 0, TotalAmtTaxUsDTAALtcg: 0,
-      TotalLTCG: ltARaw + ltORaw,
-    },
-    SumOfCGIncm: cgAfter.st20 + cgAfter.stApp + cgAfter.lt,
-    IncmFromVDATrnsf: 0,
-    TotScheduleCGFor23: cgAfter.st20 + cgAfter.stApp + cgAfter.lt,
-    CurrYrLosses: {
-      InLossSetOff: { StclSetoff20Per: Math.max(0, -st20Raw), StclSetoff30Per: 0, StclSetoffAppRate: Math.max(0, -stAppRaw), StclSetoffDTAARate: 0, LtclSetOff12_5Per: ltLoss, LtclSetOffDTAARate: 0 },
-      InStcg20Per: { CurrYearIncome: Math.max(0, st20Raw), StclSetoff30Per: 0, StclSetoffAppRate: so.appIn20, StclSetoffDTAARate: 0, CurrYrCapGain: cgAfter.st20 },
-      InStcg30Per: { CurrYearIncome: 0, StclSetoff20Per: 0, StclSetoffAppRate: 0, StclSetoffDTAARate: 0, CurrYrCapGain: 0 },
-      InStcgAppRate: { CurrYearIncome: Math.max(0, stAppRaw), StclSetoff20Per: so.s20InApp, StclSetoff30Per: 0, StclSetoffDTAARate: 0, CurrYrCapGain: cgAfter.stApp },
-      InStcgDTAARate: { CurrYearIncome: 0, StclSetoff20Per: 0, StclSetoff30Per: 0, StclSetoffAppRate: 0, CurrYrCapGain: 0 },
-      InLtcg12_5Per: { CurrYearIncome: ltBefore, StclSetoff20Per: so.s20InLt, StclSetoff30Per: 0, StclSetoffAppRate: so.appInLt, StclSetoffDTAARate: 0, LtclSetOffDTAARate: 0, CurrYrCapGain: cgAfter.lt },
-      InLtcgDTAARate: { CurrYearIncome: 0, StclSetoff20Per: 0, StclSetoff30Per: 0, StclSetoffAppRate: 0, StclSetoffDTAARate: 0, LtclSetOff12_5Per: 0, CurrYrCapGain: 0 },
-      TotLossSetOff: { StclSetoff20Per: so.s20InApp + so.s20InLt, StclSetoff30Per: 0, StclSetoffAppRate: so.appIn20 + so.appInLt, StclSetoffDTAARate: 0, LtclSetOff12_5Per: 0, LtclSetOffDTAARate: 0 },
-      LossRemainSetOff: { StclSetoff20Per: st20Loss, StclSetoff30Per: 0, StclSetoffAppRate: stAppLoss, StclSetoffDTAARate: 0, LtclSetOff12_5Per: ltLoss, LtclSetOffDTAARate: 0 },
-    },
-    AccruOrRecOfCG: {
-      ShortTermUnder20Per: spread(after.st20, byPeriod(['111A'])), ShortTermUnder30Per: zeroRange(), ShortTermUnderAppRate: spread(after.stApp, byPeriod(['STCG'])),
-      ShortTermUnderDTAARate: zeroRange(), LongTermUnder12_5Per: spread(after.lt, byPeriod(['112A', 'LTCG'])), LongTermUnderDTAARate: zeroRange(),
-    },
-  };
-
-  const cyla = (incomeHead: number, hpSet: number) => ({ IncCYLA: { IncOfCurYrUnderThatHead: incomeHead, HPlossCurYrSetoff: hpSet, OthSrcLossNoRaceHorseSetoff: 0, IncOfCurYrAfterSetOff: incomeHead - hpSet } });
-  const bfla = (v: number, withSame = true) => ({ IncBFLA: { IncOfCurYrUndHeadFromCYLA: v, ...(withSame ? { BFlossPrevYrUndSameHeadSetoff: 0 } : {}), IncOfCurYrAfterSetOffBFLosses: v } });
+  const cyl = (incomeHead: number, hpSet: number) => ({ IncCYLA: { IncOfCurYrUnderThatHead: incomeHead, HPlossCurYrSetoff: hpSet, OthSrcLossNoRaceHorseSetoff: 0, IncOfCurYrAfterSetOff: incomeHead - hpSet } });
+  const bfla = (from: number, set: number) => ({ IncBFLA: { IncOfCurYrUndHeadFromCYLA: from, BFlossPrevYrUndSameHeadSetoff: set, IncOfCurYrAfterSetOffBFLosses: from - set } });
+  const plain = (v: number) => ({ IncBFLA: { IncOfCurYrUndHeadFromCYLA: v, IncOfCurYrAfterSetOffBFLosses: v } });
   const zeroCyla = () => ({ IncCYLA: { IncOfCurYrUnderThatHead: 0, IncOfCurYrAfterSetOff: 0 } });
-  const carried = hpCarried + stclCarried + ltLoss;
+  const currentCarried = hpCarried + cg.stclCarried + cg.ltLoss;
+  // Losses of AY 2018-19 not used this year lapse: the 8 assessment years end with AY 2026-27 (sections 71B, 74).
+  const y18 = bf.used.find((u) => u.y.ay === '2018-19');
+  const lapse = y18 ? { hp: n0(y18.y.hp) - y18.hp, st: n0(y18.y.stcl) - y18.st, lt: n0(y18.y.ltcl) - y18.lt } : { hp: 0, st: 0, lt: 0 };
+  const bfRemain = { hp: bf.earlier.hp - bf.adjusted.hp - lapse.hp, st: bf.earlier.st - bf.adjusted.st - lapse.st, lt: bf.earlier.lt - bf.adjusted.lt - lapse.lt };
+  const lossRow = (hp: number, st: number, lt: number) => ({ LossSummaryDetail: { TotalHPPTILossCF: hp, TotalSTCGPTILossCF: st, TotalLTCGPTILossCF: lt } });
+  const bfYears = i.lossesBroughtForward ?? [];
 
   const json = {
     ITR: {
@@ -291,14 +288,19 @@ export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null;
             Salaries: employers.map((e) => ({
               NameOfEmployer: clean(e.name, 125), NatureOfEmployment: e.nature, ...(e.tan ? { TANofEmployer: e.tan } : {}),
               AddressDetail: { AddrDetail: clean(e.address.line, 200), CityOrTownOrDistrict: clean(e.address.city, 50), StateCode: e.address.stateCode, PinCode: Number(e.address.pin) },
-              Salarys: { GrossSalary: n0(e.gross), Salary: n0(e.gross), ValueOfPerquisites: 0, ProfitsinLieuOfSalary: 0, IncomeNotified89A: 0, IncomeNotifiedOther89A: 0 },
+              Salarys: {
+                GrossSalary: empGross(e), Salary: n0(e.gross), ValueOfPerquisites: 0, ProfitsinLieuOfSalary: 0,
+                IncomeNotified89A: n0(e.retirement89A?.amount), ...(e.retirement89A && n0(e.retirement89A.amount) ? { IncomeNotified89AType: [{ NOT89ACountrycode: e.retirement89A.country, NOT89AAmount: n0(e.retirement89A.amount) }] } : {}),
+                IncomeNotifiedOther89A: n0(e.retirementOther), ...(n0(e.retirementPriorRelief) ? { IncomeNotifiedPrYr89A: n0(e.retirementPriorRelief) } : {}),
+              },
             })),
-            TotalGrossSalary: gross, AllwncExtentExemptUs10: 0, NetSalary: gross, DeductionUS16: std + pt, DeductionUnderSection16ia: std, EntertainmntalwncUs16ii: 0, ProfessionalTaxUs16iii: pt, TotIncUnderHeadSalaries: salary,
+            TotalGrossSalary: gross, AllwncExtentExemptUs10: 0, ...(relief89A ? { Increliefus89A: relief89A } : {}), NetSalary: netSalary, DeductionUS16: std + pt, DeductionUnderSection16ia: std, EntertainmntalwncUs16ii: 0, ProfessionalTaxUs16iii: pt, TotIncUnderHeadSalaries: salary,
           },
         } : {}),
         ...(props.length ? { ScheduleHP: { PropertyDetails: props.map((x) => x.row), TotalIncomeChargeableUnHP: hpTotal } } : {}),
-        ...(sales.length ? { ScheduleCGFor23: scheduleCG } : {}),
-        ...(rows112A.length ? { Schedule112A: { Schedule112ADtls: sch112A, SaleValue112A: sumRow('TotSaleValue'), CostAcqWithoutIndx112A: sumRow('CostAcqWithoutIndx'), AcquisitionCost112A: sumRow('AcquisitionCost'), LTCGBeforelowerB1B2112A: sumRow('LTCGBeforelowerB1B2'), FairMktValueCapAst112A: sumRow('TotFairMktValueCapAst'), ExpExclCnctTransfer112A: sumRow('ExpExclCnctTransfer'), Deductions112A: sumRow('TotalDeductions'), Balance112A: sumRow('Balance'), TotalBalance112A: sumRow('Balance') } } : {}),
+        ...(cg.any || vda ? { ScheduleCGFor23: { ...cg.scheduleCG, AccruOrRecOfCG: tf.table } } : {}),
+        ...(cg.schedule112A ? { Schedule112A: cg.schedule112A } : {}),
+        ...(cg.vda.rows.length ? { ScheduleVDA: { ScheduleVDADtls: cg.vda.rows.map(({ _date, ...r }) => r), TotIncCapGain: vda } } : {}),
         ...(osIncome ? {
           ScheduleOS: {
             IncOthThanOwnRaceHorse: {
@@ -316,63 +318,76 @@ export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null;
           },
         } : {}),
         ScheduleCYLA: {
-          ...(employers.length ? { Salary: cyla(salary, hpIn.sal) } : {}),
+          ...(employers.length ? { Salary: cyl(salary, hpIn.sal) } : {}),
           ...(hpTotal > 0 ? { HP: { IncCYLA: { IncOfCurYrUnderThatHead: hpTotal, OthSrcLossNoRaceHorseSetoff: 0, IncOfCurYrAfterSetOff: hpTotal } } } : {}),
-          STCG20Per: cyla(cgAfter.st20, hpIn.st20), STCG30Per: zeroCyla(), STCGAppRate: cyla(cgAfter.stApp, hpIn.stApp), STCGDTAARate: zeroCyla(),
-          LTCG12_5Per: cyla(ltBeforeHp, hpIn.lt), LTCGDTAARate: zeroCyla(),
-          ...(osIncome ? { OthSrcExclRaceHorse: { IncCYLA: { IncOfCurYrUnderThatHead: osIncome, HPlossCurYrSetoff: hpIn.os, IncOfCurYrAfterSetOff: after.os } } } : {}),
+          STCG20Per: cyl(cgAfter.st20, hpIn.st20), STCG30Per: zeroCyla(), STCGAppRate: cyl(cgAfter.stApp, hpIn.stApp), STCGDTAARate: zeroCyla(),
+          LTCG12_5Per: cyl(ltBeforeHp, hpIn.lt), LTCGDTAARate: zeroCyla(),
+          ...(osIncome ? { OthSrcExclRaceHorse: { IncCYLA: { IncOfCurYrUnderThatHead: osIncome, HPlossCurYrSetoff: hpIn.os, IncOfCurYrAfterSetOff: cyla.os } } } : {}),
           TotalCurYr: { TotHPlossCurYr: hpLoss, TotOthSrcLossNoRaceHorse: 0 },
           TotalLossSetOff: { TotHPlossCurYrSetoff: hpSetOff, TotOthSrcLossNoRaceHorseSetoff: 0 },
           LossRemAftSetOff: { BalHPlossCurYrAftSetoff: hpCarried, BalOthSrcLossNoRaceHorseAftSetoff: 0 },
         },
         ScheduleBFLA: {
-          Salary: bfla(after.sal, false), ...(after.hp ? { HP: bfla(after.hp) } : {}),
-          STCG20Per: bfla(after.st20), STCG30Per: bfla(0), STCGAppRate: bfla(after.stApp), STCGDTAARate: bfla(0), LTCG12_5Per: bfla(after.lt), LTCGDTAARate: bfla(0),
-          ...(osIncome ? { OthSrcExclRaceHorse: bfla(after.os, false) } : {}),
-          TotalBFLossSetOff: { TotBFLossSetoff: 0 },
-          IncomeOfCurrYrAftCYLABFLA: gti,
+          Salary: plain(after.sal), ...(cyla.hp ? { HP: bfla(cyla.hp, bf.setOff.hp) } : {}),
+          STCG20Per: bfla(cyla.st20, bf.setOff.st20), STCG30Per: bfla(0, 0), STCGAppRate: bfla(cyla.stApp, bf.setOff.stApp), STCGDTAARate: bfla(0, 0),
+          LTCG12_5Per: bfla(cyla.ltA + cyla.ltO, bf.setOff.ltA + bf.setOff.ltO), LTCGDTAARate: bfla(0, 0),
+          ...(osIncome ? { OthSrcExclRaceHorse: plain(after.os) } : {}),
+          TotalBFLossSetOff: { TotBFLossSetoff: bf.lossTotal },
+          IncomeOfCurrYrAftCYLABFLA: bflaTotal,
         },
-        ...(carried ? {
+        ...(currentCarried || bfYears.length ? {
           ScheduleCFL: {
-            TotalOfBFLossesEarlierYrs: { LossSummaryDetail: { TotalHPPTILossCF: 0, TotalSTCGPTILossCF: 0, TotalLTCGPTILossCF: 0 } },
-            CurrentAYloss: { LossSummaryDetail: { TotalHPPTILossCF: hpCarried, TotalSTCGPTILossCF: stclCarried, TotalLTCGPTILossCF: ltLoss } },
-            TotalLossCFSummary: { LossSummaryDetail: { TotalHPPTILossCF: hpCarried, TotalSTCGPTILossCF: stclCarried, TotalLTCGPTILossCF: ltLoss } },
+            ...Object.fromEntries(bfYears.filter((y) => ITR2_CFL_KEYS[y.ay]).map((y) => [ITR2_CFL_KEYS[y.ay], { CarryFwdLossDetail: { DateOfFiling: y.filedOn, TotalHPPTILossCF: n0(y.hp), TotalSTCGPTILossCF: n0(y.stcl), TotalLTCGPTILossCF: n0(y.ltcl) } }])),
+            TotalOfBFLossesEarlierYrs: lossRow(bf.earlier.hp, bf.earlier.st, bf.earlier.lt),
+            ...(bfYears.length ? { AdjTotBFLossInBFLA: lossRow(bf.adjusted.hp, bf.adjusted.st, bf.adjusted.lt) } : {}),
+            CurrentAYloss: lossRow(hpCarried, cg.stclCarried, cg.ltLoss),
+            TotalLossCFSummary: lossRow(bfRemain.hp + hpCarried, bfRemain.st + cg.stclCarried, bfRemain.lt + cg.ltLoss),
           },
         } : {}),
         ScheduleVIA: {
-          UsrDeductUndChapVIA: { Section80C: old ? c80Claimed : 0, Section80CCD1B: old ? n0(d.section80CCD1B) : 0, Section80D: old ? d80.claimed : 0, Section80G: 0, Section80GGA: 0, Section80TTA: c80tta, Section80TTB: c80ttb, TotalChapVIADeductions: old ? c80Claimed + n0(d.section80CCD1B) + d80.claimed + c80tta + c80ttb : 0 },
-          DeductUndChapVIA: { Section80C: c80, Section80CCD1B: c80ccd1b, Section80D: d80.allowed, Section80G: 0, Section80GGA: 0, Section80TTA: c80tta, Section80TTB: c80ttb, TotalChapVIADeductions: via },
+          UsrDeductUndChapVIA: {
+            Section80C: old ? c80Claimed : 0, Section80CCD1B: old ? n0(d.section80CCD1B) : 0, Section80D: old ? d80.claimed : 0, Section80G: 0, Section80GGA: 0,
+            ...(qqb ? { Section80QQB: n0(d.section80QQB?.amount), Form10CCDAckNum: d.section80QQB?.form10CCDAck } : {}), ...(rrb ? { Section80RRB: n0(d.section80RRB?.amount), Form10CCEAckNum: d.section80RRB?.form10CCEAck } : {}),
+            Section80TTA: c80tta, Section80TTB: c80ttb, TotalChapVIADeductions: old ? c80Claimed + n0(d.section80CCD1B) + d80.claimed + c80tta + c80ttb + n0(d.section80QQB?.amount) + n0(d.section80RRB?.amount) : 0,
+          },
+          DeductUndChapVIA: { Section80C: c80, Section80CCD1B: c80ccd1b, Section80D: d80.allowed, Section80G: 0, Section80GGA: 0, ...(qqb ? { Section80QQB: qqb } : {}), ...(rrb ? { Section80RRB: rrb } : {}), Section80TTA: c80tta, Section80TTB: c80ttb, TotalChapVIADeductions: via },
         },
         ...(old && c80Claimed ? { Schedule80C: { Schedule80CDtls: (d.section80C ?? []).map((r) => ({ Amount: n0(r.amount), IdentificationNo: clean(r.id, 50) })), TotalAmt: c80Claimed } } : {}),
         ...(old && d80.allowed ? { Schedule80D: d80.schedule } : {}),
+        ...(old && (specified || (i.amtCredit ?? []).length) ? { ScheduleAMT: { TotalIncItemPartBTI: totalIncome, DeductionClaimUndrAnySec: specified, AdjustedUnderSec115JC: am.ati, TaxPayableUnderSec115JC: am.tax } } : {}),
+        ...(old && (am.deemed || (i.amtCredit ?? []).length) ? { ScheduleAMTC: am.amtc } : {}),
+        ...(spi.schedule ? { ScheduleSPI: spi.schedule } : {}),
         ...(tx.si.length ? { ScheduleSI: { SplCodeRateTax: tx.si.map(([c, r, inc, t]) => ({ SecCode: c, SplRatePercent: r, SplRateInc: inc, SplRateIncTax: t })), TotSplRateInc: sum(tx.si.map((x) => x[2])), TotSplRateIncTax: tx.taxSpecial } } : {}),
+        ...(ei.schedule ? { ScheduleEI: ei.schedule } : {}),
+        ...(fa.any ? { ScheduleFA: fa.schedule } : {}),
+        ...(al ? { ScheduleAL: scheduleAL(al, 'ITR-2') } : {}),
         'PartB-TI': {
           Salaries: after.sal + hpIn.sal, IncomeFromHP: Math.max(0, hpTotal),
           CapGain: {
             ShortTerm: { ShortTerm20Per: cgAfter.st20, ShortTerm30Per: 0, ShortTermAppRate: cgAfter.stApp, ShortTermSplRateDTAA: 0, TotalShortTerm: cgAfter.st20 + cgAfter.stApp },
             LongTerm: { LongTerm12_5Per: ltBeforeHp, LongTermSplRateDTAA: 0, TotalLongTerm: ltBeforeHp },
-            ShortTermLongTermTotal: cgAfter.st20 + cgAfter.stApp + ltBeforeHp, CapGains30Per115BBH: 0, TotalCapGains: cgAfter.st20 + cgAfter.stApp + ltBeforeHp,
+            ShortTermLongTermTotal: cgAfter.st20 + cgAfter.stApp + ltBeforeHp, CapGains30Per115BBH: vda, TotalCapGains: cgAfter.st20 + cgAfter.stApp + ltBeforeHp + vda,
           },
           IncFromOS: { OtherSrcThanOwnRaceHorse: osIncome, IncChargblSplRate: 0, FromOwnRaceHorse: 0, TotIncFromOS: osIncome },
-          TotalTI: totalTI, CurrentYearLoss: hpSetOff, BalanceAfterSetoffLosses: totalTI - hpSetOff, BroughtFwdLossesSetoff: 0, GrossTotalIncome: gti,
+          TotalTI: totalTI, CurrentYearLoss: hpSetOff, BalanceAfterSetoffLosses: totalTI - hpSetOff, BroughtFwdLossesSetoff: bf.lossTotal, GrossTotalIncome: gti,
           IncChargeTaxSplRate111A112: splIncome, DeductionsUnderScheduleVIA: via, TotalIncome: totalIncome,
-          IncChargeableTaxSplRates: splIncome, NetAgricultureIncomeOrOtherIncomeForRate: 0, AggregateIncome: totalIncome - splIncome,
-          LossesOfCurrentYearCarriedFwd: carried, DeemedIncomeUs115JC: 0,
+          IncChargeableTaxSplRates: splIncome, NetAgricultureIncomeOrOtherIncomeForRate: ei.netAgri, AggregateIncome: totalIncome - splIncome + ei.netAgri,
+          LossesOfCurrentYearCarriedFwd: currentCarried, DeemedIncomeUs115JC: old && (specified || (i.amtCredit ?? []).length) ? am.ati : 0,
         },
         PartB_TTI: {
-          TaxPayDeemedTotIncUs115JC: 0, Surcharge: 0, HealthEduCess: 0, TotalTaxPayablDeemedTotInc: 0,
+          TaxPayDeemedTotIncUs115JC: am.tax, Surcharge: 0, HealthEduCess: am.cess, TotalTaxPayablDeemedTotInc: am.deemed,
           ComputationOfTaxLiability: {
-            TaxPayableOnTI: { TaxAtNormalRatesOnAggrInc: tx.taxNormal, TaxAtSpecialRates: tx.taxSpecial, RebateOnAgriInc: 0, TaxPayableOnTotInc: tx.taxNormal + tx.taxSpecial },
+            TaxPayableOnTI: { TaxAtNormalRatesOnAggrInc: tx.taxNormal, TaxAtSpecialRates: tx.taxSpecial, RebateOnAgriInc: tx.agriRebate, TaxPayableOnTotInc: tx.taxNormal + tx.taxSpecial - tx.agriRebate },
             Rebate87A: tx.rebate, TaxPayableOnRebate: tx.afterRebate,
-            Surcharge25ofSI: 0, SurchargeOnAboveCrore: 0, Surcharge25ofSIBeforeMarginal: 0, SurchargeOnAboveCroreBeforeMarginal: 0, TotalSurcharge: 0,
-            EducationCess: tx.cess, GrossTaxLiability: tx.liability, GrossTaxPayable: tx.liability, CreditUS115JD: 0, TaxPayAfterCreditUs115JD: tx.liability,
-            TaxRelief: { Section89: 0, TotTaxRelief: 0 }, NetTaxLiability: tx.liability,
+            Surcharge25ofSI: 0, SurchargeOnAboveCrore: tx.surcharge, Surcharge25ofSIBeforeMarginal: 0, SurchargeOnAboveCroreBeforeMarginal: tx.surchargeBeforeRelief, TotalSurcharge: tx.surcharge,
+            EducationCess: tx.cess, GrossTaxLiability: regular, GrossTaxPayable: grossPayable, CreditUS115JD: am.utilised, TaxPayAfterCreditUs115JD: afterCredit,
+            TaxRelief: { Section89: 0, TotTaxRelief: 0 }, NetTaxLiability: netTax,
             IntrstPay: { IntrstPayUs234A: ii.i234A, IntrstPayUs234B: ii.i234B, IntrstPayUs234C: ii.i234C, LateFilingFee234F: ii.fee234F, TotalIntrstPay: interest },
             AggregateTaxInterestLiability: aggregate,
           },
           TaxPaid: { TaxesPaid: { AdvanceTax: advance, TDS: salaryTds + otherTds, TCS: tcs, SelfAssessmentTax: selfTax, TotalTaxesPaid: paid }, BalTaxPayable: Math.max(0, aggregate - paid) },
           Refund: { RefundDue: Math.max(0, paid - aggregate), BankAccountDtls: { BankDtlsFlag: 'Y', AddtnlBankDetails: [bankRow(i.bank)] } },
-          AssetOutIndiaFlag: 'NO',
+          AssetOutIndiaFlag: fa.any ? 'YES' : 'NO',
         },
         ...(payments.length ? { ScheduleIT: { TaxPayment: payments.map((x) => ({ BSRCode: x.bsr, DateDep: x.date, SrlNoOfChaln: x.serial, Amt: n0(x.amount) })), TotalTaxPayments: advance + selfTax } } : {}),
         ...(employers.some((e) => e.tan) ? { ScheduleTDS1: { TDSonSalary: employers.filter((e) => e.tan).map((e) => ({ EmployerOrDeductorOrCollectDetl: { TAN: e.tan, EmployerOrDeductorOrCollecterName: clean(e.name, 125) }, IncChrgSal: n0(e.gross), TotalTDSSal: n0(e.tds) })), TotalTDSonSalaries: salaryTds } } : {}),
@@ -382,6 +397,10 @@ export function writeItr2(i: Itr2Input): { json: Record<string, unknown> | null;
       },
     },
   };
-  const summary = { grossTotalIncome: gti, totalIncome, tax: tx.liability, interest, paid, payable: Math.max(0, aggregate - paid), refund: Math.max(0, paid - aggregate), lossCarriedForward: carried };
+  const summary = {
+    grossTotalIncome: gti, totalIncome, tax: netTax, surcharge: tx.surcharge, amt: am.deemed, amtCreditUsed: am.utilised, interest, paid,
+    payable: Math.max(0, aggregate - paid), refund: Math.max(0, paid - aggregate), lossCarriedForward: currentCarried, broughtForwardSetOff: bf.lossTotal, excessTaxIgnored112: cg.excess,
+  };
   return { json: issues.length ? null : json, issues, summary };
 }
+

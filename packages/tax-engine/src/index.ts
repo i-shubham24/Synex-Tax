@@ -55,3 +55,6 @@ export * from './taxAudit/applicability.js';
 export * from './taxAudit/form3cdWriter.js';
 export * from './taxAudit/codes.js';
 export * from './itr/advanceTaxForecaster.js';
+export * from './itrStatements/index.js';
+export { parseEarlierReturn, earlierReturnPrefill, EarlierReturnError, LOSS_KINDS as EARLIER_RETURN_LOSS_KINDS, type EarlierReturnImport, type LossAmounts, type LossKind, type LossYearRow } from './itrImport/earlierReturn.js';
+export { parseAis, matchAis, AisImportError, classify as classifyAisLine, CATEGORY_LABEL as AIS_CATEGORY_LABEL, type AisImport, type AisLine, type AisMatch, type AisMatchRow, type AisAddAction, type AisReturnInput, type AisCategory, type AisHead, type MatchStatus as AisMatchStatus } from './itrImport/ais.js';

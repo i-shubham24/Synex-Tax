@@ -299,10 +299,10 @@ export default function MasterInvoicesPage() {
                   const zebraBg = idx % 2 === 0 ? 'bg-white dark:bg-[#17191C]' : 'bg-[#F9FAFB] dark:bg-[#121417]';
                   const rowBg = isSelected ? 'bg-[#ECF4FD] dark:bg-[#2F8AE0]/15' : zebraBg;
 
-                  let statusPill = 'bg-[#DCFCE7] text-[#15803D]';
-                  if (row.status === 'PENDING') statusPill = 'bg-[#FEF3C7] text-[#B45309]';
-                  if (row.status === 'MISMATCH') statusPill = 'bg-[#FEE2E2] text-[#B91C1C]';
-                  if (row.status === 'RECONCILED') statusPill = 'bg-[#ECF4FD] text-[#2F8AE0]';
+                  let statusPill = 'bg-[#DCFCE7] text-[#15803D] dark:bg-[#15803D]/20 dark:text-[#5fe88a]';
+                  if (row.status === 'PENDING') statusPill = 'bg-[#FEF3C7] text-[#B45309] dark:bg-[#B45309]/20 dark:text-[#f2b53a]';
+                  if (row.status === 'MISMATCH') statusPill = 'bg-[#FEE2E2] text-[#B91C1C] dark:bg-[#B91C1C]/20 dark:text-[#f87171]';
+                  if (row.status === 'RECONCILED') statusPill = 'bg-[#ECF4FD] text-[#2F8AE0] dark:bg-[#2F8AE0]/20 dark:text-[#52B0F8]';
 
                   const totalTax = row.cgst + row.sgst + row.igst;
 

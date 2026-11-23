@@ -385,18 +385,18 @@ export default function ReconPage() {
 
       {/* 48-Hour Pre-14th Deemed Acceptance Guard Banner */}
       {unactionedRiskCount > 0 && (
-        <div className="bg-[#FFF6E0] border border-[#F59E0B]/40 rounded-xl p-4 flex items-start gap-3.5 shadow-lg shadow-[#F59E0B]/10">
-          <AlertTriangle className="w-5 h-5 text-[#C2410C] shrink-0 mt-0.5" />
+        <div className="bg-[#FFF6E0] dark:bg-amber-950/40 border border-[#F59E0B]/40 dark:border-amber-500/40 rounded-xl p-4 flex items-start gap-3.5 shadow-lg shadow-[#F59E0B]/10">
+          <AlertTriangle className="w-5 h-5 text-[#C2410C] dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <div className="flex items-center gap-2 font-semibold text-[#C2410C]">
+            <div className="flex items-center gap-2 font-semibold text-[#C2410C] dark:text-amber-400">
               <span>Statutory Alert: 48-Hour Pre-14th Deemed Acceptance Guard</span>
-              <span className="bg-amber-500/20 text-[#C2410C] text-[12px] px-2 py-0.5 rounded font-mono border border-amber-500/30">
+              <span className="bg-amber-500/20 dark:bg-amber-500/30 text-[#C2410C] dark:text-amber-300 text-[12px] px-2 py-0.5 rounded font-mono border border-amber-500/30 dark:border-amber-500/50">
                 {unactionedRiskCount} At-Risk Record(s)
               </span>
             </div>
-            <p className="text-pos-ink/80 leading-relaxed">
+            <p className="text-amber-950/90 dark:text-amber-100/90 leading-relaxed">
               Under Section 38 & IMS Rules, any invoice left with status{' '}
-              <span className="font-mono font-semibold text-pos-ink">NONE</span> on the 14th cutoff is automatically deemed
+              <span className="font-mono font-semibold text-amber-950 dark:text-amber-200">NONE</span> on the 14th cutoff is automatically deemed
               accepted. We flagged {unactionedRiskCount} unactioned invoice(s) exceeding the ₹25,000 threshold or falling
               under Section 17(5) blocked credit (e.g. Golden Temple Roadways). Take action now to avoid erroneous ITC
               claims and Section 50 interest penalties.
@@ -514,7 +514,7 @@ export default function ReconPage() {
                   <tr
                     key={item.id}
                     className={`hover:bg-pos-tint transition-colors ${
-                      item.isAmendedPostAcceptance ? 'bg-[#FFFAEE]' : ''
+                      item.isAmendedPostAcceptance ? 'bg-[#FFFAEE] dark:bg-amber-950/25' : ''
                     }`}
                   >
                     {/* Status Badge */}
@@ -572,30 +572,30 @@ export default function ReconPage() {
 
                       {/* Amended Post-Acceptance Side-by-Side Delta Badge */}
                       {item.isAmendedPostAcceptance && item.originalTaxableValue && (
-                        <div className="mt-1 p-1.5 rounded bg-[#FFF1D2] border border-[#F59E0B]/40 text-[12px] text-left">
-                          <div className="flex items-center justify-between text-[#C2410C] font-semibold">
+                        <div className="mt-1 p-1.5 rounded bg-[#FFF1D2] dark:bg-amber-950/60 border border-[#F59E0B]/40 dark:border-amber-500/40 text-[12px] text-left">
+                          <div className="flex items-center justify-between text-[#C2410C] dark:text-amber-400 font-semibold">
                             <span>Amended by Supplier</span>
-                            <span className="text-pos-accent">
+                            <span className="text-pos-accent dark:text-sky-400">
                               +₹
                               {(
                                 parseFloat(item.taxableValue) - parseFloat(item.originalTaxableValue)
                               ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
-                          <div className="text-pos-ink/60 mt-0.5">
+                          <div className="text-amber-950/80 dark:text-amber-200/80 mt-0.5">
                             Original: ₹
                             {parseFloat(item.originalTaxableValue).toLocaleString('en-IN', {
                               minimumFractionDigits: 2,
                             })}
                           </div>
-                          <label className="mt-1.5 flex items-center gap-1.5 text-pos-ink/80 cursor-pointer select-none">
+                          <label className="mt-1.5 flex items-center gap-1.5 cursor-pointer select-none">
                             <input
                               type="checkbox"
                               checked={!!acknowledgedDeltas[item.id]}
                               onChange={() => toggleDeltaAck(item.id)}
                               className="rounded bg-pos-muted border-pos-line text-pos-green focus:ring-0 w-3 h-3"
                             />
-                            <span className="text-[11px] text-[#C2410C] font-medium">Verify & acknowledge delta</span>
+                            <span className="text-[11px] text-[#C2410C] dark:text-amber-300 font-medium">Verify & acknowledge delta</span>
                           </label>
                         </div>
                       )}

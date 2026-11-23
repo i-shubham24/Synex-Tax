@@ -84,7 +84,43 @@ export interface InterestInput {
   exemption: number; // basic exemption for the regime and age
   /** 44AD or 44ADA income with no other reason to follow the instalment dates: section 211(1)(b) and 234C(1)(b). */
   presumptive234C?: boolean;
+  /** An amount worked outside this file; when given it is used as it is. */
   entered234C?: number;
+  /**
+   * Second proviso to section 234C(1): tax on the returned income leaving out capital gains that first
+   * arose after each of 15 Jun, 15 Sep, 15 Dec 2025 and 15 Mar 2026 (four amounts of tax, surcharge and cess; TDS and TCS are taken off here).
+   * Left out, the whole tax counts at every instalment.
+   */
+  dueBeforeLaterGains?: number[];
+  /** Section 207(2): a resident senior citizen with no business or profession income pays no advance tax, so 234B and 234C do not arise. */
+  noAdvanceTax?: boolean;
+}
+
+/** Advance tax instalments under section 211(1)(a): date and share of the tax due, and the months of interest under 234C(1)(a). */
+export const INSTALMENTS_211 = [
+  { by: '2025-06-15', pct: 0.15, months: 3, floorPct: 0.12 },
+  { by: '2025-09-15', pct: 0.45, months: 3, floorPct: 0.36 },
+  { by: '2025-12-15', pct: 0.75, months: 3, floorPct: undefined },
+  { by: '2026-03-15', pct: 1, months: 1, floorPct: undefined },
+] as const;
+
+/**
+ * Interest under section 234C(1)(a), instalment by instalment: 1% a month for three months on the shortfall of
+ * advance tax paid by 15 Jun, 15 Sep and 15 Dec against 15%, 45% and 75% of the tax due on the returned income,
+ * and for one month on the shortfall by 15 Mar against 100%. First proviso: none for June or September where
+ * the advance tax paid is at least 12% or 36%. Second proviso: capital gains arising after an instalment date
+ * are left out of the tax due for that instalment (dueBeforeLaterGains). Amounts rounded down to Rs 100 (rule 119A).
+ */
+export function interest234CInstalments(due: number, payments: ItrTaxPayment[], dueBeforeLaterGains?: number[]) {
+  const adv = payments.filter((p) => p.kind === 'ADVANCE');
+  return INSTALMENTS_211.map((s, k) => {
+    const base = Math.max(0, Math.min(due, dueBeforeLaterGains?.[k] ?? due));
+    const paid = sum(adv.filter((p) => p.date <= s.by).map((p) => n0(p.amount)));
+    const required = base * s.pct;
+    const exempt = s.floorPct !== undefined && paid >= base * s.floorPct;
+    const shortfall = exempt ? 0 : floor100(required - paid);
+    return { by: s.by, required: n0(required), paid, shortfall, interest: n0(shortfall * 0.01 * s.months) };
+  });
 }
 
 /**
@@ -93,7 +129,8 @@ export interface InterestInput {
  * 234B: where advance tax paid is under 90% of the assessed tax (and the assessee was liable under section 208, tax of
  * Rs 10,000 or more), 1% a month from 1 April 2026; under 234B(2) self-assessment tax paid earlier cuts the amount from
  * the month after it is paid. 234C: for 44AD or 44ADA income, 1% on the shortfall of advance tax paid by 15 March from
- * the tax due on the returned income (234C(1)(b)); otherwise as entered, since it needs the dates income arose.
+ * the tax due on the returned income (234C(1)(b)); otherwise instalment by instalment under 234C(1)(a) (see
+ * interest234CInstalments). Section 207(2): none of 234B or 234C for a resident senior citizen without business income.
  * 234F: Rs 5,000 for a return after the due date, Rs 1,000 where total income does not exceed Rs 5 lakh; none where
  * total income does not exceed the basic exemption.
  */
@@ -104,7 +141,7 @@ export function interestAndFee(i: InterestInput) {
   const i234A = belated ? floor100(assessed - advance) * 0.01 * monthsFrom(nextDay(i.dueDate), i.filedOn) : 0;
 
   let i234B = 0;
-  if (assessed >= 10000 && advance < assessed * 0.9) {
+  if (!i.noAdvanceTax && assessed >= 10000 && advance < assessed * 0.9) {
     const selfPaid = i.payments.filter((p) => p.kind === 'SELF' && p.date >= '2026-04-01' && p.date <= i.filedOn).sort((a, b) => a.date.localeCompare(b.date));
     let start = '2026-04-01';
     let paidSoFar = 0;
@@ -121,9 +158,14 @@ export function interestAndFee(i: InterestInput) {
   }
 
   let i234C = n0(i.entered234C);
-  if (i.entered234C === undefined && i.presumptive234C && assessed >= 10000) {
-    const byMarch15 = sum(i.payments.filter((p) => p.kind === 'ADVANCE' && p.date <= '2026-03-15').map((p) => n0(p.amount)));
-    i234C = floor100(assessed - byMarch15) * 0.01;
+  if (i.entered234C === undefined && !i.noAdvanceTax && assessed >= 10000) {
+    if (i.presumptive234C) {
+      const byMarch15 = sum(i.payments.filter((p) => p.kind === 'ADVANCE' && p.date <= '2026-03-15').map((p) => n0(p.amount)));
+      i234C = floor100(assessed - byMarch15) * 0.01;
+    } else {
+      const net = i.dueBeforeLaterGains?.map((t) => Math.max(0, t - i.tdsTcs));
+      i234C = sum(interest234CInstalments(assessed, i.payments, net).map((x) => x.interest));
+    }
   }
   const fee234F = belated && i.totalIncome > i.exemption ? (i.totalIncome > 500000 ? 5000 : 1000) : 0;
   return { i234A: n0(i234A), i234B: n0(i234B), i234C: n0(i234C), fee234F, belated, advance, assessed };
