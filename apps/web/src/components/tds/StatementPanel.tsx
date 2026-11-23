@@ -123,13 +123,13 @@ export function StatementPanel({ tan }: { tan: string }) {
         <ul>
           {returns.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-pos-line px-4 py-2.5 text-[13px] first:border-t-0">
-              <span className="text-pos-ink">Form {r.form_code}, {r.quarter} {/Q$/.test(r.form_code) ? 'FY' : 'TY'} {ty(r.tax_year)} <span className="text-pos-ink/45">({r.workflow_status.toLowerCase()}{r.source === 'IMPORTED' ? ', imported' : ''}, {r.total_deductees} {Number(r.total_deductees) === 1 ? 'row' : 'rows'})</span></span>
+              <span className="text-pos-ink">Form {r.form_code}, {r.quarter} {/Q$/.test(r.form_code) ? 'FY' : 'TY'} {ty(r.tax_year)} <span className="text-pos-ink/60">({r.workflow_status.toLowerCase()}{r.source === 'IMPORTED' ? ', imported' : ''}, {r.total_deductees} {Number(r.total_deductees) === 1 ? 'row' : 'rows'})</span></span>
               {['FILED', 'CLOSED'].includes(r.workflow_status) ? (
                 <button type="button" onClick={() => saveToken(r.id)} className="rounded-full border border-pos-line px-3 py-1 text-[12px] text-pos-ink/70">Record token number</button>
               ) : ['138', '140', '144', '143'].includes(r.form_code) ? (
                 <button type="button" onClick={() => write(r.id)} className="inline-flex items-center gap-1.5 rounded-full bg-pos-accent px-3 py-1 text-[12px] font-medium text-white"><Download className="h-3.5 w-3.5" /> Write statement file</button>
               ) : (
-                <span className="text-[12px] text-pos-ink/45">Form {r.form_code} files are coming</span>
+                <span className="text-[12px] text-pos-ink/60">Form {r.form_code} files are coming</span>
               )}
             </li>
           ))}

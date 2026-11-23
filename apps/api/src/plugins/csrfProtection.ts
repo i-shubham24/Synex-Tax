@@ -56,6 +56,8 @@ export function createCsrfHook(secret: string = secrets.csrf(), headerName: stri
     if (request.routeOptions?.url?.startsWith('/api/v1/compliance/webhook')) return;
     // Public upload links: the unguessable link is the credential and no cookie is involved.
     if (request.routeOptions?.url?.startsWith('/api/v1/portal/')) return;
+    // The desktop agent uploads backups with its own device token and no cookies; the route checks the token.
+    if (request.routeOptions?.url?.startsWith('/api/v1/backups/agent/') && request.headers.authorization?.startsWith('Device ')) return;
 
     if (request.headers.authorization?.startsWith('Bearer ')) {
       try {

@@ -51,6 +51,10 @@ the roles the API switches to (`synextax_app`, `synextax_auth` and others); the 
 | `TRUST_PROXY` | Number of proxy hops in front of the API (default `1`), so rate limits and audit logs see the client's address. `false` when the API is reached directly. |
 | `REDIS_URL` | Optional: a Redis in Mumbai (`rediss://...`, ElastiCache or Upstash). Rate-limit counters and the webhook replay check are then shared by every instance. |
 | `METRICS_TOKEN` | Optional, 24 characters or more: turns on `GET /metrics` for the monitoring service, which sends it as a bearer token. Alert rules are in `docs/ops/alerts.yml`. |
+| `CRON_SECRET` | 32 random hex characters. Vercel sends it to the scheduled jobs in `vercel.json` (reminders 09:00 IST, late backups 10:30 IST, notification feed 07:00 IST); without it they do not run. |
+| `MESSAGES_ENCRYPTION_KEY` | 32 random bytes, base64. Encrypts client messages at rest; without it messaging answers "not set up". |
+| `WHATSAPP_CERTIFICATE_TEMPLATE` | Optional: the approved WhatsApp template (four values) for sending TDS certificate links to payees. |
+| `BACKUP_STORE_DIR` | Optional, only on a server with a disk: where agent backups are kept when S3 is not set up. |
 | `RATE_LIMIT_PER_MINUTE` | Optional, default 300 per client address. Sign-in, MFA, upload links and exports have tighter limits of their own. |
 | `POSTGRES_POOL_MAX` | Default 10 per instance. On Vercel use 2 or 3 and point `DATABASE_URL` at a transaction pooler (RDS Proxy, PgBouncer). |
 | `POSTGRES_STATEMENT_TIMEOUT_MS` | Default 15000. Any statement running longer is cancelled by the database. |

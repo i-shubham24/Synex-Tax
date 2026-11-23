@@ -144,7 +144,7 @@ export function RegistersPanel({ tan }: { tan: string }) {
               <tbody>{a.noPanLowRate.map((x) => <tr key={x.rowId} className="border-t border-pos-line"><td className={td}>{x.name}</td><td className={`${td} font-mono`}>{x.pan}</td><td className={td}>{x.sectionCode}</td><td className={num}>{inr(x.amountPaid)}</td><td className={num}>{x.rate}% (min {x.floor}%)</td><td className={num}>{inr(x.shortBy)}</td></tr>)}</tbody></table>
           </Card>
           <Card title="No deduction on a declaration, but no Form 121 on file" note="Rows with reason flag B need a declaration from that payee in the Form 121 register." count={a.declarationsMissing.length} empty="Every flag B row has a declaration on file.">
-            <ul>{a.declarationsMissing.map((x) => <li key={x.rowId} className="flex flex-wrap justify-between gap-2 border-t border-pos-line px-4 py-2.5 text-[13px] first:border-t-0"><span className="text-pos-ink">{x.name} <span className="font-mono text-pos-ink/50">{x.pan}</span> {x.sectionCode}</span><span className="text-[#b45309]">{x.reason}</span></li>)}</ul>
+            <ul>{a.declarationsMissing.map((x) => <li key={x.rowId} className="flex flex-wrap justify-between gap-2 border-t border-pos-line px-4 py-2.5 text-[13px] first:border-t-0"><span className="text-pos-ink">{x.name} <span className="font-mono text-pos-ink/60">{x.pan}</span> {x.sectionCode}</span><span className="text-[#b45309]">{x.reason}</span></li>)}</ul>
           </Card>
         </>
       )}
@@ -214,7 +214,7 @@ export function RegistersPanel({ tan }: { tan: string }) {
             <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Payee</th><th className={th}>PAN</th><th className={th}>Received</th><th className={th}>Identification no.</th><th className={`${th} text-right`}>Income covered</th><th className={`${th} text-right`}>Total income</th><th className={th}></th></tr></thead>
               <tbody>{data.form121.map((f) => (
                 <tr key={f.id} className={`border-t border-pos-line ${f.status === 'WITHDRAWN' ? 'opacity-50' : ''}`}>
-                  <td className={td}>{f.name}{f.seniorCitizen ? <span className="ml-1.5 rounded-full bg-pos-tint px-2 py-0.5 text-[11px] text-pos-ink/60">Senior citizen</span> : null}</td>
+                  <td className={td}>{f.name}{f.seniorCitizen ? <span className="ml-1.5 rounded-full bg-pos-tint px-2 py-0.5 text-[12px] text-pos-ink/60">Senior citizen</span> : null}</td>
                   <td className={`${td} font-mono`}>{f.pan}</td><td className={td}>{nice(f.receivedOn)}</td><td className={`${td} font-mono text-[12px]`}>{f.identificationNo ?? ''}</td>
                   <td className={num}>{inr(f.estimatedIncome)}</td><td className={num}>{inr(f.estimatedTotalIncome)}</td>
                   <td className={td}>{f.status === 'ACTIVE' ? <button type="button" onClick={() => withdraw(f.id)} className="text-[12px] text-pos-ink/55 hover:text-[#dc2626]">Withdraw</button> : 'Withdrawn'}</td>

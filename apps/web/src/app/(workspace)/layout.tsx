@@ -1,24 +1,11 @@
-'use client';
+import { connection } from 'next/server';
+import { WorkspaceLayout } from './WorkspaceLayoutClient';
 
-import { AuthGate } from '../../components/AuthGate';
-import { DashboardShell } from '../../components/dashboard/DashboardShell';
-import { useAuth } from '../../context/AuthContext';
-import { WorkspaceProvider } from '../../workspace/WorkspaceContext';
-
-/** Every authenticated workspace route (/dashboard, /clients, /gst/*, /tds, /audit, /settings) shares this shell. */
-function Workspace({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
-  return (
-    <WorkspaceProvider token={token}>
-      <DashboardShell>{children}</DashboardShell>
-    </WorkspaceProvider>
-  );
-}
-
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthGate>
-      <Workspace>{children}</Workspace>
-    </AuthGate>
-  );
+/**
+ * Signed-in pages render per request, so each carries the nonce of the strict script policy set in
+ * src/proxy.ts. Public pages (home, login, sign-up, features) stay prebuilt for speed.
+ */
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  await connection();
+  return <WorkspaceLayout>{children}</WorkspaceLayout>;
 }

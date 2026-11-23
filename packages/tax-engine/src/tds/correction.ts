@@ -26,10 +26,11 @@ import {
  * PANINVALID), C9 for adding challans. File one, wait for its token, then prepare the next from a
  * fresh consolidated file.
  *
- * C1 and C2 follow the batch header and challan positions already used for C3, C5 and C9 and the
- * regular statement writer. Fields 31 and 46 (address changed since the last statement), 53 (last
- * deductor type) and the zero counts of a C1 batch and of C2 payee rows follow the 1961 Act
- * correction formats, as the 2025 Act files keep that layout; check them against the FVU.
+ * Every field follows the "REMARKS FOR CORRECTION" columns of the Protean spreadsheets for Forms
+ * 138, 140, 143 and 144 (version 1.2). The spec titles C2 "deductor and/or challan" and C3
+ * "deductor and/or challan and/or deductee", so deductor changes ride in a C2 or C3 batch (Batch
+ * Updation Indicator 1) when that type is chosen. docs/product/protean-correction-check.md has the
+ * field by field comparison.
  */
 
 export type CorrectionType = 'C1' | 'C2' | 'C3' | 'C5' | 'C9';
@@ -152,6 +153,8 @@ export interface ConsoStatement {
   issues: string[];
   bh: string[];
   deductor: ConsoDeductor;
+  /** File header of the consolidated file; field 18 carries its hash. */
+  fh?: string[];
 }
 
 export interface DeducteeEdit {
@@ -250,6 +253,34 @@ const GSTIN_RE = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const STATE_CODES = new Set(Object.values(PROTEAN_STATE_CODES));
 const same = (a: string | undefined, b: string | undefined) => clean(a).toUpperCase() === clean(b).toUpperCase();
 
+/**
+ * Deductee / collectee fields (1-based) the spec says must be blank, per form, for rows in a C3
+ * (modes U, F and A) and a C9 (mode O). Built from the "No value should be specified" remarks.
+ */
+const DD_BLANK: Record<'C3' | 'C9', Record<StatementForm, number[]>> = {
+  C3: {
+    '138': [10, 11, 12, 13, 14, 16, 17, 21, 22, 23, 28, 30, 31, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45],
+    '140': [10, 11, 12, 13, 14, 16, 17, 21, 29, 30, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45],
+    '143': [10, 16, 17, 21, 22, 23, 28, 29, 30, 31, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45],
+    '144': [10, 11, 13, 29, 34, 35, 36, 40, 43, 44, 45],
+  },
+  C9: {
+    '138': [7, 10, 11, 12, 13, 14, 16, 17, 18, 21, 22, 23, 26, 28, 30, 31, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45],
+    '140': [7, 10, 11, 12, 13, 14, 16, 17, 18, 21, 22, 23, 26, 29, 30, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45],
+    '143': [7, 10, 11, 13, 14, 16, 17, 18, 21, 22, 23, 26, 28, 29, 30, 31, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45],
+    '144': [7, 10, 11, 13, 14, 18, 22, 23, 26, 29, 30, 34, 35, 36, 40, 42, 43, 44, 45],
+  },
+};
+const blankFields = (f: string[], nums: number[]) => {
+  for (const n of nums) f[n - 1] = '';
+};
+/** DD field 28 (rate): only Forms 140 and 144 carry it; these codes take a zero rate. */
+const RATE_ZERO: Partial<Record<StatementForm, Set<string>>> = {
+  '140': new Set(['1059', '1034', '1038', '1061']),
+  '144': new Set(['1059', '1061']),
+};
+const hasRate = (form: StatementForm) => form === '140' || form === '144';
+
 function readDeductor(bh: string[]): ConsoDeductor {
   const d: Record<string, unknown> = {};
   for (const [path, at] of BH_DEDUCTOR) setPath(d, path, bh[at] ?? '');
@@ -273,7 +304,9 @@ export function parseConsoFile(text: string): ConsoStatement {
     }
     if (f.length !== want) issues.push(`Line ${i + 1}: ${type} has ${f.length} fields, the format has ${want}.`);
     while (f.length < want) f.push('');
-    if (type === 'BH') {
+    if (type === 'FH') {
+      out.fh = f.slice(0, want);
+    } else if (type === 'BH') {
       out.bh = f.slice(0, want);
       const form = f[4];
       out.form = (['138', '140', '143', '144'] as const).find((x) => x === form) ?? null;
@@ -420,7 +453,9 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
   });
   const c3Challans = changedChallans.filter((ce) => explicitC3 || withPayees.has(ce.recordNo) || !conso.challans.some((c) => c.recordNo === ce.recordNo));
   const c2Challans = changedChallans.filter((ce) => !withPayees.has(ce.recordNo) && conso.challans.some((c) => c.recordNo === ce.recordNo));
-  const pending = needed.filter((t) => t !== type && !(explicitC3 && t === 'C2'));
+  // BH field 7 (C2, C3): deductor changes go in the same batch with Batch Updation Indicator 1.
+  const foldDeductor = (type === 'C2' || type === 'C3') && deductorChanges(conso, edits.deductor).length > 0;
+  const pending = needed.filter((t) => t !== type && !(explicitC3 && t === 'C2') && !(foldDeductor && t === 'C1'));
   if (!type) return { type: null, text: '', issues: [{ where: 'Statement', message: 'Nothing has changed, so there is nothing to correct.' }], pending };
   if (!needed.includes(type) && !(explicitC3 && c3Challans.length)) err('Statement', `None of the changes needs a ${type} correction.`);
   const form = conso.form;
@@ -433,6 +468,10 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
   if (!isIso(opts.fileCreated)) err('Statement', 'File date is missing.');
   const payee = form === '143' ? 'collectee' : form === '138' ? 'employee' : 'deductee';
   const qStart = conso.taxYear && conso.quarter ? [`${conso.taxYear}-04-01`, `${conso.taxYear}-07-01`, `${conso.taxYear}-10-01`, `${conso.taxYear + 1}-01-01`][conso.quarter - 1] : '';
+  const qEnd = conso.taxYear && conso.quarter ? [`${conso.taxYear}-06-30`, `${conso.taxYear}-09-30`, `${conso.taxYear}-12-31`, `${conso.taxYear + 1}-03-31`][conso.quarter - 1] : '';
+  /** DD field 28: rate with 4 decimals on Forms 140 and 144, zero for no tax or the listed codes. */
+  const rateFor = (section: string, ded: Decimal, rate: string | undefined) =>
+    ded.isZero() || RATE_ZERO[form]?.has(clean(section)) ? '0.0000' : D(rate).toFixed(4);
 
   // Payee edits grouped by challan, for the chosen type.
   const byChallan = new Map<number, { row: ConsoDeductee; e: DeducteeEdit }[]>();
@@ -469,7 +508,8 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
     if (!isIso(n.paidOn)) err(where, 'Date paid or credited is required.');
     if (!D(n.amount).gt(0)) err(where, 'Amount must be more than 0.00.');
     if (D(n.amount).lt(ded)) err(where, 'Amount cannot be less than the tax deducted.');
-    if (form !== '140' && !ded.eq(dep)) err(where, 'Tax deducted must equal tax deposited.');
+    // DD fields 24 and 25 (C3 mode A, C9): tax deducted must equal tax deposited, on every form.
+    if (!ded.eq(dep)) err(where, 'Tax deducted must equal tax deposited.');
     if (ded.gt(0) && (!isIso(n.deductedOn) || (qStart && n.deductedOn < qStart))) err(where, `Date of deduction is required and cannot be before ${qStart}.`);
     if (clean(n.reason).toUpperCase() === 'A' && !/^[A-Z0-9]{10}([A-Z0-9]{5})?$/.test(clean(n.certificate).toUpperCase())) err(where, 'Reason A needs the section 395 certificate number.');
     const f = blank(RECORD_FIELD_COUNT.DD);
@@ -480,16 +520,20 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
     f[19] = money(n.amount); f[23] = ded.toFixed(2); f[24] = dep.toFixed(2);
     f[26] = ded.gt(0) && isIso(n.deductedOn) ? toDdmmyyyy(n.deductedOn) : '';
     f[31] = clean(n.reason).toUpperCase(); f[32] = clean(n.certificate).toUpperCase();
-    if (form === '138') f[28] = dep.gt(0) && isIso(challanDate) ? toDdmmyyyy(challanDate) : '';
-    else f[27] = ded.isZero() ? '0.0000' : D(n.rate).toFixed(4);
+    // Form 138 DD field 29: date of deposit; in a C9 it is the challan date (CD field 19).
+    if (form === '138') f[28] = isIso(challanDate) && (mode === 'O' || dep.gt(0)) ? toDdmmyyyy(challanDate) : '';
+    if (hasRate(form)) f[27] = rateFor(n.section, ded, n.rate);
     if (form === '140') f[30] = clean(n.form121Uin).toUpperCase();
+    // C9 DD field 18 (deposited Y/N) and the other fields listed in DD_BLANK stay blank.
+    blankFields(f, DD_BLANK[mode === 'O' ? 'C9' : 'C3'][form]);
     return { f, ded, dep };
   };
 
   /** Challan record with its "last" values from the consolidated file. */
   const challanHeader = (ch: ConsoChallan, payeeRows: number) => {
     const cd = blank(RECORD_FIELD_COUNT.CD);
-    cd[1] = 'CD'; cd[2] = '1'; cd[3] = String(ch.recordNo); cd[4] = String(payeeRows); cd[5] = ch.nil ? 'Y' : 'N';
+    // CD field 5: no value in a C2 (no payee rows go with it); the row count in a C3 or C5.
+    cd[1] = 'CD'; cd[2] = '1'; cd[3] = String(ch.recordNo); cd[4] = type === 'C2' ? '' : String(payeeRows); cd[5] = ch.nil ? 'Y' : 'N';
     cd[12] = ch.nil ? '' : ch.mode;
     cd[13] = ch.nil ? '' : ch.bsr; cd[15] = ch.nil ? '' : ch.challanNo;
     cd[17] = isIso(ch.date) ? toDdmmyyyy(ch.date) : ''; cd[19] = ch.total;
@@ -500,11 +544,15 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
   const applyChallanEdit = (cd: string[], ch: ConsoChallan, ce: ChallanEdit, at: string) => {
     const v = { tax: ce.tax || ch.tax, interest: ce.interest || ch.interest, fee: ce.fee || ch.fee, others: ce.others || ch.others };
     for (const [k, x] of Object.entries(v)) if (!D(x).isInteger() || D(x).isNeg()) err(at, `${k[0].toUpperCase()}${k.slice(1)} must be in whole rupees.`);
-    cd[6] = '1';
+    // CD field 7: Challan Updation Indicator is 1 in a C3 with a challan change; no value in a C2.
+    cd[6] = type === 'C3' ? '1' : '';
     cd[7] = money(v.tax); cd[8] = money(v.interest); cd[9] = money(v.fee); cd[10] = money(v.others);
     const total = D(v.tax).add(D(v.interest)).add(D(v.fee)).add(D(v.others));
     cd[22] = ch.nil ? '' : clean(ce.minorHead || ch.minorHead);
-    cd[23] = money(v.interest); cd[24] = money(v.others);
+    // CD fields 24 and 25 (interest and others allocation): C3 only; no value in a C2.
+    if (type === 'C3') {
+      cd[23] = money(v.interest); cd[24] = money(v.others);
+    }
     const bsr = clean(ce.bsr || ch.bsr);
     const cno = clean(ce.challanNo || ch.challanNo);
     if (ch.nil && ((ce.bsr && !same(ce.bsr, ch.bsr)) || (ce.challanNo && !same(ce.challanNo, ch.challanNo)))) err(at, 'A nil challan has no BSR code or serial to correct.');
@@ -543,6 +591,8 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
           if (!PAN_RE.test(pan)) err(where, 'The new PAN must be a valid 10 character PAN.');
           f[1] = 'DD'; f[2] = '1'; f[3] = String(row.recordNo); f[4] = String(no);
           f[7] = pan; f[25] = row.deducted; f[41] = row.deposited;
+          // Form 144 DD field 12 (status, Annexure 8) is also required in a C5.
+          if (form === '144') f[11] = row.raw[11] ?? '';
         } else {
           row.raw.forEach((v, i) => (f[i] = v));
           f[2] = '1'; f[3] = String(row.recordNo); f[4] = String(no);
@@ -559,21 +609,24 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
           if (e.paidOn !== undefined) f[18] = isIso(e.paidOn) ? toDdmmyyyy(e.paidOn) : (err(where, 'Date paid is not a date.'), f[18]);
           if (e.amount !== undefined) f[19] = money(e.amount);
           const ded = e.deducted !== undefined ? D(e.deducted) : D(row.deducted);
-          const dep = e.deposited !== undefined ? D(e.deposited) : e.deducted !== undefined && form !== '140' ? ded : D(row.deposited);
+          const dep = e.deposited !== undefined ? D(e.deposited) : e.deducted !== undefined ? ded : D(row.deposited);
           if (row.reason === 'C' && (!ded.eq(D(row.deducted)) || (e.reason !== undefined && clean(e.reason).toUpperCase() !== 'C'))) {
             err(where, 'Rows filed with reason C (higher rate, no PAN): the tax deducted and the reason cannot be changed.');
           }
-          if (form !== '140' && !ded.eq(dep)) err(where, 'Tax deducted must equal tax deposited.');
+          // DD fields 24 and 25 (mode U): equal on every form, except rows with reason C (field 32).
+          if (row.reason !== 'C' && !ded.eq(dep)) err(where, 'Tax deducted must equal tax deposited.');
           f[23] = ded.toFixed(2); f[24] = dep.toFixed(2);
           f[17] = dep.gte(ded) ? 'Y' : 'N';
           if (e.deductedOn !== undefined) f[26] = isIso(e.deductedOn) ? toDdmmyyyy(e.deductedOn) : '';
           if (ded.gt(0) && !f[26]) err(where, 'Date of deduction is required when tax is deducted.');
           if (ded.isZero()) f[26] = '';
-          if (form !== '138') f[27] = ded.isZero() ? '0.0000' : D(e.rate ?? row.rate).toFixed(4);
+          if (hasRate(form)) f[27] = rateFor(f[14], ded, e.rate ?? row.rate);
           if (e.reason !== undefined) f[31] = clean(e.reason).toUpperCase();
           if (e.certificate !== undefined) f[32] = clean(e.certificate).toUpperCase();
           if (f[31] === 'A' && !/^[A-Z0-9]{10}([A-Z0-9]{5})?$/.test(f[32])) err(where, 'Reason A needs the section 395 certificate number.');
           if (D(f[19]).lt(ded) && !D(f[19]).isZero()) err(where, 'Amount cannot be less than the tax deducted.');
+          // Fields the consolidated file may carry but a C3 row must leave blank (remarks, fillers, hash).
+          blankFields(f, DD_BLANK.C3[form]);
           dDep = dDep.add(dep.sub(D(row.deposited)));
           dDed = dDed.add(ded.sub(D(row.deducted)));
         }
@@ -594,6 +647,7 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
         const row = ch.deductees[0];
         const f = [...row.raw];
         f[2] = '1'; f[5] = row.mode === 'F' ? 'F' : 'U'; f[6] = row.pan; f[25] = row.deducted; f[41] = row.deposited;
+        blankFields(f, DD_BLANK.C3[form]);
         rows.push(f);
       }
       const cd = challanHeader(ch, rows.length);
@@ -601,9 +655,12 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
         let total = D(ch.total);
         if (ce) total = applyChallanEdit(cd, ch, ce, at).total;
         else {
+          // CD field 7 is 0: fields 8 to 11 and 23 stay blank, 15, 17 and 19 repeat the last values
+          // (14, 16, 18), field 12 is the challan total and 24 and 25 carry the allocations of 9 and 11.
           cd[6] = '0';
           cd[14] = cd[13]; cd[16] = cd[15]; cd[18] = cd[17];
           cd[11] = total.toFixed(2);
+          cd[23] = ch.interest; cd[24] = ch.others;
         }
         cd[20] = dDep.toFixed(2); cd[21] = dDed.toFixed(2);
         batchTotal = batchTotal.add(total);
@@ -642,6 +699,8 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
       if (!nil && !/^\d{7}$/.test(clean(nc.bsr))) err(at, 'BSR code (or Form 24G receipt number) must be 7 digits.');
       if (!nil && !/^\d{1,5}$/.test(clean(nc.challanNo))) err(at, 'Challan serial must be up to 5 digits.');
       if (!isIso(nc.date)) err(at, 'Challan date is required.');
+      // C9 CD field 19: a nil challan is dated the last day of the quarter.
+      else if (nil && qEnd && nc.date !== qEnd) err(at, `A nil challan must be dated ${qEnd}, the last day of the quarter.`);
       for (const k of ['tax', 'interest', 'fee', 'others'] as const) if (!D(nc[k]).isInteger()) err(at, `${k} must be in whole rupees.`);
       const total = D(nc.tax).add(D(nc.interest)).add(D(nc.fee)).add(D(nc.others));
       if (!nil && sDep.gt(total)) err(at, `Tax deposited for the ${payee}s is more than the challan.`);
@@ -664,17 +723,29 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
   const fh = blank(RECORD_FIELD_COUNT.FH);
   fh[1] = 'FH'; fh[2] = FILE_TYPE[form]; fh[3] = 'C'; fh[4] = isIso(opts.fileCreated) ? toDdmmyyyy(opts.fileCreated) : '';
   fh[5] = String(opts.fileSequence ?? 1); fh[6] = 'D'; fh[7] = conso.tan; fh[8] = '1'; fh[9] = clean(opts.preparedWith ?? 'SynexTax').slice(0, 75);
-  const bh = type === 'C1' ? deductorHeader(conso, edits.deductor, err) : blank(RECORD_FIELD_COUNT.BH);
-  bh[1] = 'BH'; bh[2] = '1'; bh[3] = String(challanBlocks.length); bh[4] = form; bh[5] = type;
-  bh[6] = type === 'C3' ? '0' : '';
+  // FH field 18: Forms 138 and 144 carry the consolidated file's hash; 140 and 143 leave it blank.
+  if (form === '138' || form === '144') {
+    fh[17] = clean(conso.fh?.[17]);
+    if (!fh[17]) err('Statement', `Form ${form} corrections must carry the consolidated file hash (file header field 18), and the consolidated file has none.`);
+  }
+  const withDeductor = type === 'C1' || foldDeductor;
+  const bh = withDeductor ? deductorHeader(conso, edits.deductor, err) : blank(RECORD_FIELD_COUNT.BH);
+  // BH field 4: no value in a C1; the challan count otherwise.
+  bh[1] = 'BH'; bh[2] = '1'; bh[3] = type === 'C1' ? '' : String(challanBlocks.length); bh[4] = form; bh[5] = type;
+  // BH field 7: Batch Updation Indicator 1 or 0 in a C2 or C3; no value in a C1, C5 or C9.
+  bh[6] = type === 'C2' || type === 'C3' ? (foldDeductor ? '1' : '0') : '';
   bh[7] = original; bh[8] = previous;
+  // BH field 13: TAN, no value in a C5.
   bh[11] = conso.tan; bh[12] = type === 'C5' ? '' : conso.tan;
   bh[15] = src[15] ?? ''; bh[16] = src[16] ?? ''; bh[17] = src[17] ?? '';
-  if (type !== 'C1') {
+  if (!withDeductor) {
+    // Indicator 0, C5 and C9: only name (19), state (26), deductor type (32), responsible PAN (59)
+    // and GSTIN (69) are given, as in the last statement.
     bh[18] = src[18] ?? ''; bh[25] = src[25] ?? ''; bh[31] = src[31] ?? '';
-    bh[46] = type === 'C5' ? '' : batchTotal.toFixed(2);
     bh[58] = src[58] ?? ''; bh[68] = src[68] ?? '';
   }
+  // BH field 47: batch total in a C2, C3 and C9; no value in a C1 or C5.
+  bh[46] = type === 'C1' || type === 'C5' ? '' : batchTotal.toFixed(2);
   if (!PAN_RE.test(bh[58])) err('Statement', 'PAN of the person responsible is missing from the consolidated file.');
 
   records.push(fh, bh);
@@ -684,15 +755,17 @@ export function writeCorrection(conso: ConsoStatement, edits: CorrectionEdits, o
 }
 
 /**
- * C1 batch header: the deductor block carried from the consolidated file with the changes applied,
- * the two "address changed" flags (fields 31 and 46) and the last deductor type (field 53).
- * No challan records follow, so the challan count is 0 and there is no batch total.
+ * Batch header with the deductor block (C1, or C2 and C3 with Batch Updation Indicator 1): the
+ * block carried from the consolidated file with the changes applied, and the last deductor type.
+ * Fields 31 and 46 are fillers (no value), as are 55, 56 and 60 to 67.
  */
 function deductorHeader(conso: ConsoStatement, edit: DeductorEdit | undefined, err: (where: string, message: string) => void): string[] {
   const src = conso.bh;
   const bh = blank(RECORD_FIELD_COUNT.BH);
-  for (let i = 14; i <= 45; i++) bh[i] = src[i] ?? '';
-  for (let i = 52; i <= 68; i++) bh[i] = src[i] ?? '';
+  // BH fields 15 to 30 (PAN, name, address, email, phone), 32 to 45 (type, responsible person),
+  // 54 (state), 57 and 58 (ministry), 59 (responsible PAN), 68 (AIN) and 69 (GSTIN).
+  const carried = [...Array.from({ length: 16 }, (_, i) => 15 + i), ...Array.from({ length: 14 }, (_, i) => 32 + i), 54, 57, 58, 59, 68, 69];
+  for (const n of carried) bh[n - 1] = src[n - 1] ?? '';
   const changes = deductorChanges(conso, edit);
   if (!changes.length) err('Deductor', 'None of the deductor details has changed.');
   const upper = new Set(['email', 'type', 'gstin', 'responsible.email', 'responsible.pan', 'government.ain']);
@@ -747,9 +820,7 @@ function deductorHeader(conso: ConsoStatement, edit: DeductorEdit | undefined, e
     if (!GOVERNMENT_DEDUCTOR_TYPES.has(type)) bh[67] = '';
   }
 
-  const addressChanged = (prefix: string) => [...changed].some((p) => p.startsWith(prefix));
-  bh[30] = addressChanged('address.') ? 'Y' : 'N';
-  bh[45] = addressChanged('responsible.address.') ? 'Y' : 'N';
+  // BH field 53: last deductor type, as in the last statement (regular or correction).
   bh[52] = src[31] ?? '';
   return bh;
 }

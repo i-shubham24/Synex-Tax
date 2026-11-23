@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { taxAuditApplicability, writeForm3cd } from '@synextax/tax-engine';
 
 /* Zero-config demo fallback user matching CA Verma */
 const DEMO_USER = {
@@ -31,6 +32,16 @@ export async function GET(
   /* 2. Current User Profile */
   if (endpoint === 'v1/auth/me') {
     return NextResponse.json({ user: DEMO_USER });
+  }
+
+  /* 2b. Tax Audit Status */
+  if (endpoint === 'v1/tax-audit/status') {
+    return NextResponse.json({
+      softwareIdConfigured: true,
+      assessmentYear: '2026-27',
+      schema: 'FORM3CA3CD_3CB3CD_MainSchema V2.5',
+      clausesNotBuilt: ['15', '23', '24', '25', '27', '29A', '29B', '30', '30A', '30B', '30C', '32', '33', '35', '36A', '36B', '41', '42', '43'],
+    });
   }
 
   /* 3. Practice & Compliance Radar / Heatmap */
@@ -403,6 +414,45 @@ export async function POST(
       ],
       message: 'Dispatched statutory compliance notices.',
     });
+  }
+
+  /* 8. Tax Audit Applicability */
+  if (endpoint === 'v1/tax-audit/applicability') {
+    try {
+      const body = await request.json();
+      return NextResponse.json(taxAuditApplicability(body));
+    } catch {
+      return NextResponse.json({
+        required: true,
+        clauses: ['44ABa'],
+        form: '3CB',
+        findings: [{ clause: '44ABa', outcome: 'REQUIRED', message: 'Audit required under Section 44AB(a)', source: 'Section 44AB(a)' }],
+        missing: [],
+      });
+    }
+  }
+
+  /* 9. Tax Audit Form 3CD JSON Generation */
+  if (endpoint === 'v1/tax-audit/form3cd') {
+    try {
+      const body = await request.json();
+      const out = writeForm3cd({
+        ...body,
+        softwareId: 'SW12345678',
+        createdOn: new Date().toISOString().slice(0, 10),
+        intermediaryCity: body.auditor?.address?.city || 'Amritsar',
+      });
+      if (!out.json) {
+        return NextResponse.json({ error: 'Not ready', issues: out.issues, clausesNeeded: out.clausesNeeded, summary: out.summary }, { status: 422 });
+      }
+      return NextResponse.json({
+        fileName: `Form${body.form}_3CD_AY2026-27_${body.assessee?.pan || 'PAN'}.json`,
+        json: out.json,
+        summary: out.summary,
+      });
+    } catch (err) {
+      return NextResponse.json({ error: 'Failed', message: String(err) }, { status: 500 });
+    }
   }
 
   /* Default POST success */

@@ -109,7 +109,7 @@ before(async () => {
   `);
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 test('engine is PostgreSQL 17 with real pgcrypto HMAC', async () => {
   const v = (await db.query('SELECT version() AS v')).rows[0].v;
   assert.match(v, /^PostgreSQL 17\./);
@@ -117,7 +117,7 @@ test('engine is PostgreSQL 17 with real pgcrypto HMAC', async () => {
   assert.equal(h, crypto.createHmac('sha256', 'key').update('abc').digest('hex'));
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 test('HMAC context: a correctly signed context sees exactly its own firm', async () => {
   const rows = await asApp(ctx(F.A, U.pA), async (tx) => (await tx.query('SELECT id FROM public.firms')).rows);
   assert.deepEqual(rows.map((r) => r.id), [F.A]);
@@ -177,7 +177,7 @@ test('HMAC context: changing the firm setting after a valid context does not swi
   assert.ok(rows.every((r) => r.id !== F.B), 'firm B must never become visible');
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 test('RLS: firm B cannot see firm A entities, users or registrations', async () => {
   const out = await asApp(ctx(F.B, U.pB), async (tx) => ({
     entities: (await tx.query('SELECT firm_id FROM public.entities')).rows,
@@ -203,7 +203,7 @@ test('RLS: writing a row tagged with another firm id is refused', async () => {
   );
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 test('Audit: an application write is captured with the verified actor', async () => {
   const groupId = id();
   await asApp(ctx(F.A, U.pA), (tx) => tx.query(`INSERT INTO public.client_groups (id, firm_id, name) VALUES ($1, $2, 'Audited Group')`, [groupId, F.A]));
@@ -315,7 +315,7 @@ test('Audit: a PII reveal is logged for the caller and cannot be filed under ano
   );
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 async function newGstFiling(tx, { period, returnType = 'GSTR3B', status = 'DRAFT', createdBy = U.sA }) {
   const fid = id();
   await tx.query(
@@ -410,7 +410,7 @@ test('Filing types: GSTR-7 returns can be tracked', async () => {
   assert.ok(fid);
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 async function newChallan(tx, regime, taxYear) {
   const cid = id();
   await tx.query(
@@ -463,7 +463,7 @@ test('TDS: deductee rows are audited', async () => {
   assert.equal(n, 1);
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 test('Global tables: the app role can read but not change compliance feature flags', async () => {
   await asApp(ctx(F.A, U.pA), (tx) => tx.query('SELECT count(*) FROM public.compliance_feature_flags'));
   await assert.rejects(
@@ -512,7 +512,7 @@ test('Form 144 remittance code registry exists and is read-only for the app', as
   );
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 // 0011: auth module and provisioning
 async function asAuth(fn) {
   return db.transaction(async (tx) => {
@@ -564,7 +564,7 @@ test('Provisioning: staff cannot add users; a user-signed context is not a syste
   );
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 // 0014: document checklists
 test('Checklists: staff work on their assigned clients only, and every change is audited', async () => {
   const checklistId = id();
@@ -591,7 +591,7 @@ test('Checklists: staff work on their assigned clients only, and every change is
   assert.ok(audited >= 2);
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 // 0016: placeholder section codes from early trial data
 test('Section codes: early trial placeholders are converted to official Form 140 codes', async () => {
   const ch = id();
@@ -617,7 +617,7 @@ test('Section codes: early trial placeholders are converted to official Form 140
   ]);
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 // 0019: Form 121 declaration register
 test('Form 121 register: firm-scoped, audited, companies and firms cannot declare, senior citizens are individuals', async () => {
   await asApp(ctx(F.A, U.pA), (tx) =>
@@ -653,7 +653,7 @@ test('Form 121 register: firm-scoped, audited, companies and firms cannot declar
   assert.equal(audited, 1);
 });
 
-// ---------------------------------------------------------------------------
+/* *************************************************************************** */
 // 0021: practice tasks and fee ledger
 test('Fee invoices: firm-scoped, totals must add up, issued invoices cannot be edited or deleted', async () => {
   const invId = id();
@@ -684,4 +684,29 @@ test('Fee invoices: firm-scoped, totals must add up, issued invoices cannot be e
   );
   const staffSees = await asApp(ctx(F.A, U.sA), async (tx) => (await tx.query(`SELECT count(*)::int AS n FROM public.practice_tasks WHERE entity_id = $1`, [E.A2])).rows[0].n);
   assert.equal(staffSees, 0);
+});
+
+test('Client logins: no audit trail, billing or firm work tables; only the portal tables', async () => {
+  const identity = id();
+  const clientUser = id();
+  await db.query(`INSERT INTO auth.identities (id, email) VALUES ($1, 'client.contact@example.test')`, [identity]);
+  await db.query(`INSERT INTO public.users (id, firm_id, identity_id, display_name, role) VALUES ($1, $2, $3, 'Client Contact', 'CLIENT')`, [clientUser, F.A, identity]);
+  await db.query(`INSERT INTO public.user_client_assignments (firm_id, user_id, entity_id, assigned_by) VALUES ($1, $2, $3, $4)`, [F.A, clientUser, E.A1, U.pA]);
+  const counts = await asApp(ctx(F.A, clientUser), async (tx) => {
+    const n = async (sql) => (await tx.query(sql)).rows[0].n;
+    return {
+      audit: await n('SELECT count(*)::int AS n FROM audit.immutable_audit_logs'),
+      chain: await n('SELECT count(*)::int AS n FROM audit.chain_heads'),
+      subscriptions: await n('SELECT count(*)::int AS n FROM public.firm_subscriptions'),
+    };
+  });
+  assert.deepEqual(counts, { audit: 0, chain: 0, subscriptions: 0 });
+  // The same firm's partner still sees the audit trail.
+  const partner = await asApp(ctx(F.A, U.pA), async (tx) => (await tx.query('SELECT count(*)::int AS n FROM audit.immutable_audit_logs')).rows[0].n);
+  assert.ok(partner > 0);
+});
+
+test('Change log: whole consolidated files are not copied into it, their SHA-256 is', async () => {
+  const def = (await db.query(`SELECT pg_get_functiondef('app.capture_audit_event'::regproc) AS d`)).rows[0].d;
+  assert.match(def, /key <> 'conso_text'/);
 });

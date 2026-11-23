@@ -55,7 +55,7 @@ export function ColumnMapping(props: {
           </thead>
           <tbody>{samples.map((row, r) => (
             <tr key={r} className="border-t border-pos-line">{Array.from({ length: width }, (_, i) => (
-              <td key={i} className="max-w-[180px] truncate px-2 py-1.5 font-mono text-[11px] text-pos-ink/75">{maskNarration(row[i] ?? '')}</td>
+              <td key={i} className="max-w-[180px] truncate px-2 py-1.5 font-mono text-[12px] text-pos-ink/75">{maskNarration(row[i] ?? '')}</td>
             ))}</tr>
           ))}</tbody>
         </table>

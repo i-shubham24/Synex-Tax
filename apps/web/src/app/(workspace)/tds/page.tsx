@@ -551,7 +551,7 @@ export default function TdsPage() {
               {returnSummary.workflowStatus}
             </span>
           </div>
-          <p className="text-[11px] text-pos-ink/50 mt-1">Single quarterly unified statement</p>
+          <p className="text-[12px] text-pos-ink/60 mt-1">Single quarterly unified statement</p>
         </div>
 
         <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
@@ -563,7 +563,7 @@ export default function TdsPage() {
             <span className="text-2xl font-semibold text-pos-ink">{deductees.length}</span>
             <span className="text-xs text-pos-ink/60 font-medium">Assessees</span>
           </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-1">100% PAN & Section checked</p>
+          <p className="text-[12px] text-emerald-600 font-semibold mt-1">100% PAN & Section checked</p>
         </div>
 
         <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
@@ -576,7 +576,7 @@ export default function TdsPage() {
               ₹{totalAllocatedTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </span>
           </div>
-          <p className="text-[11px] text-pos-ink/50 mt-1">Allocated across {allocations.length} section lines</p>
+          <p className="text-[12px] text-pos-ink/60 mt-1">Allocated across {allocations.length} section lines</p>
         </div>
 
         <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm">
@@ -590,7 +590,7 @@ export default function TdsPage() {
             </span>
             <span className="text-xs font-semibold text-pos-ink/60">remaining</span>
           </div>
-          <p className="text-[11px] text-[#C2410C] font-medium mt-1">
+          <p className="text-[12px] text-[#C2410C] font-medium mt-1">
             2-Year Freeze: {returnSummary.correctionWindowExpiresAt}
           </p>
         </div>
@@ -603,7 +603,7 @@ export default function TdsPage() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span className="font-mono font-semibold">{csiFeedback}</span>
           </div>
-          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
+          <span className="text-[12px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
             OLTAS Verified
           </span>
         </div>
@@ -631,7 +631,7 @@ export default function TdsPage() {
                 <Calculator className="w-4 h-4 text-pos-accent" />
                 <h2 className="font-semibold text-sm text-pos-ink">Statutory TDS Calculator</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface border border-pos-line text-pos-accent font-semibold">
+              <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-surface border border-pos-line text-pos-accent font-semibold">
                 Section 516 Compliant
               </span>
             </div>
@@ -640,7 +640,7 @@ export default function TdsPage() {
             <div className="space-y-1.5">
               <label className="text-xs text-pos-ink/60 font-semibold flex items-center justify-between">
                 <span>Deductee PAN / Literal</span>
-                <span className="text-[10px] text-pos-ink/50">4th Char identifies constitution</span>
+                <span className="text-[12px] text-pos-ink/60">4th Char identifies constitution</span>
               </label>
               <div className="flex gap-2">
                 <input
@@ -654,14 +654,14 @@ export default function TdsPage() {
                 <button
                   type="button"
                   onClick={() => setCalcPan('PANNOTAVBL')}
-                  className="px-2.5 py-1 rounded bg-pos-surface hover:bg-pos-line text-[10px] font-mono text-pos-ink/80 font-semibold border border-pos-line"
+                  className="px-2.5 py-1 rounded bg-pos-surface hover:bg-pos-line text-[12px] font-mono text-pos-ink/80 font-semibold border border-pos-line"
                 >
                   No PAN
                 </button>
               </div>
 
               {/* PAN Validation Feedback */}
-              <div className="flex items-center gap-2 text-[11px] pt-1">
+              <div className="flex items-center gap-2 text-[12px] pt-1">
                 {isCompany ? (
                   <span className="inline-flex items-center gap-1 text-[#3A6FE8]">
                     <Building2 className="w-3 h-3" />
@@ -724,7 +724,7 @@ export default function TdsPage() {
             <div className="space-y-1.5">
               <label className="text-xs text-pos-ink/60 font-semibold flex items-center justify-between">
                 <span>Delay in Deposit (Months)</span>
-                <span className="text-[10px] text-pos-ink/50">Sec 201(1A): 1.5% per month</span>
+                <span className="text-[12px] text-pos-ink/60">Sec 201(1A): 1.5% per month</span>
               </label>
               <input
                 type="number"
@@ -777,7 +777,7 @@ export default function TdsPage() {
                     ? 'ITNS 281N Multi-Section Challan Builder'
                     : 'ITNS 281 Single-Section Challan'}
                 </h2>
-                <p className="text-[11px] text-pos-ink/60">
+                <p className="text-[12px] text-pos-ink/60">
                   {statutoryRegime === 'IT_ACT_2025'
                     ? 'Income-tax Act, 2025: Allocate up to 20 tax sections in a single payment challan.'
                     : 'Income-tax Act, 1961: Exactly 1 section code allowed per physical/OLTAS challan.'}
@@ -786,11 +786,11 @@ export default function TdsPage() {
 
               <div className="flex items-center gap-2">
                 {csiMatched ? (
-                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="text-[12px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center gap-1">
                     <Check className="w-3 h-3" /> CSI Matched
                   </span>
                 ) : (
-                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                  <span className="text-[12px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30">
                     CSI Pending
                   </span>
                 )}
@@ -840,7 +840,7 @@ export default function TdsPage() {
                   value={majorHead}
                   onChange={(val) => setMajorHead(val as any)}
                   className="w-full"
-                  buttonClassName="w-full h-9 font-bold"
+                  buttonClassName="w-full h-9 font-semibold"
                   options={[
                     { value: '0020', label: '0020 (Company Deductee)', badge: '0020' },
                     { value: '0021', label: '0021 (Non-Company Deductee)', badge: '0021' },
@@ -859,7 +859,7 @@ export default function TdsPage() {
                   <button
                     type="button"
                     onClick={addSectionAllocation}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-pos-accent hover:text-pos-accent bg-pos-tint hover:bg-pos-tint px-2.5 py-1 rounded border border-pos-accent/30 transition-colors"
+                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-pos-accent hover:text-pos-accent bg-pos-tint hover:bg-pos-tint px-2.5 py-1 rounded border border-pos-accent/30 transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Add Section</span>
@@ -870,7 +870,7 @@ export default function TdsPage() {
               <div className="border border-pos-line rounded-lg overflow-hidden">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-pos-surface text-pos-ink/60 text-[11px] border-b border-pos-line">
+                    <tr className="bg-pos-surface text-pos-ink/60 text-[12px] border-b border-pos-line">
                       <th className="py-2.5 px-3">Section</th>
                       <th className="py-2.5 px-3 text-right">Income Tax (₹)</th>
                       <th className="py-2.5 px-3 text-right">Surcharge/Cess (₹)</th>
@@ -926,7 +926,7 @@ export default function TdsPage() {
                           {allocations.length > 1 && (
                             <button
                               onClick={() => removeSection(alloc.id)}
-                              className="text-pos-ink/50 hover:text-pos-red p-1 transition-colors"
+                              className="text-pos-ink/60 hover:text-pos-red p-1 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -946,7 +946,7 @@ export default function TdsPage() {
                 <span className="text-pos-ink font-semibold text-sm">
                   ₹{totalAllocatedTax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-[10px] text-pos-accent ml-2">({allocations.length} Section lines)</span>
+                <span className="text-[12px] text-pos-accent ml-2">({allocations.length} Section lines)</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -984,14 +984,14 @@ export default function TdsPage() {
               <User className="w-4 h-4 text-pos-accent" />
               <span>Deductee Compliance Master Grid ({deductees.length} Records)</span>
             </h2>
-            <p className="text-[11px] text-pos-ink/60 mt-0.5">
+            <p className="text-[12px] text-pos-ink/60 mt-0.5">
               Verified deductee line items mapped to ITNS 281N allocations and Section 206AA penal rate audit.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-pos-ink/40 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-pos-ink/60 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search PAN or Name..."
@@ -1007,7 +1007,7 @@ export default function TdsPage() {
         <div className="overflow-x-auto border border-pos-line rounded-lg">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-pos-muted text-pos-ink/60 text-[11px] border-b border-pos-line">
+              <tr className="bg-pos-muted text-pos-ink/60 text-[12px] border-b border-pos-line">
                 <th className="py-2.5 px-3">PAN</th>
                 <th className="py-2.5 px-3">Deductee Name</th>
                 <th className="py-2.5 px-2 text-center">Section</th>
@@ -1044,11 +1044,11 @@ export default function TdsPage() {
                   </td>
                   <td className="py-2.5 px-3 text-center">
                     {d.status === 'OPERATIVE' ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                         <Check className="w-3 h-3" /> Valid PAN
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20">
+                      <span className="inline-flex items-center gap-1 text-[12px] font-semibold px-2 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20">
                         <AlertCircle className="w-3 h-3" /> Sec 206AA (20%)
                       </span>
                     )}

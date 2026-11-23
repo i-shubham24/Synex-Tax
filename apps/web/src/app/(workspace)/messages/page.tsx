@@ -95,14 +95,14 @@ export default function MessagesPage() {
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-[13.5px] font-medium text-pos-ink">{c.entityName}</span>
-                    <span className="shrink-0 text-[11.5px] text-pos-ink/45">{when(c.lastMessageAt)}</span>
+                    <span className="shrink-0 text-[12.5px] text-pos-ink/60">{when(c.lastMessageAt)}</span>
                   </span>
                   <span className="mt-0.5 flex items-center justify-between gap-2">
                     <span className="truncate text-[12.5px] text-pos-ink/55">
                       {c.lastSide === 'FIRM' ? 'You: ' : ''}
                       {c.preview ?? ''}
                     </span>
-                    {c.unread > 0 && <span className="shrink-0 rounded-full bg-pos-accent px-2 py-0.5 text-[11px] font-medium text-white">{c.unread}</span>}
+                    {c.unread > 0 && <span className="shrink-0 rounded-full bg-pos-accent px-2 py-0.5 text-[12px] font-medium text-white">{c.unread}</span>}
                   </span>
                 </button>
               </li>

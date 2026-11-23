@@ -258,7 +258,7 @@ export default function AuditRadarPage() {
                 <Calendar className="w-4 h-4 text-[#3A6FE8]" />
                 <h2 className="font-semibold text-sm text-pos-ink">Correction windows and time bars</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-semibold border border-pos-line">
+              <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-semibold border border-pos-line">
                 Section 39(9) and 39(11)
               </span>
             </div>
@@ -280,28 +280,28 @@ export default function AuditRadarPage() {
                 >
                   <div className="flex items-center justify-between font-semibold text-pos-ink">
                     <span className="truncate max-w-[200px]" title={item.taxpayerName}>{item.taxpayerName}</span>
-                    <span className="text-pos-accent font-semibold px-2 py-0.5 rounded bg-pos-muted text-[11px]">
+                    <span className="text-pos-accent font-semibold px-2 py-0.5 rounded bg-pos-muted text-[12px]">
                       {item.formType}
                     </span>
                   </div>
 
-                  <div className="text-[11px] text-pos-ink/60 mt-1">
+                  <div className="text-[12px] text-pos-ink/60 mt-1">
                     GSTIN / TAN: <span className="font-semibold text-pos-ink">{item.gstin}</span>
                   </div>
-                  <div className="text-[11px] text-pos-ink/60">
+                  <div className="text-[12px] text-pos-ink/60">
                     Period: <span className="font-semibold">{item.returnPeriod}</span> | Status: <span className="text-emerald-600 font-semibold">{item.workflowStatus || 'DRAFT'}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-pos-line text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-pos-line text-[12px]">
                     <div>
-                      <span className="text-pos-ink/50 text-[10px] block">Amendment Cutoff:</span>
+                      <span className="text-pos-ink/60 text-[12px] block">Amendment Cutoff:</span>
                       <span className="text-[#C2410C] font-semibold">{item.correctionWindowCutoff}</span>
-                      <div className="text-pos-ink/70 font-sans text-[10px]">({item.daysRemainingCorrection} days left)</div>
+                      <div className="text-pos-ink/70 font-sans text-[12px]">({item.daysRemainingCorrection} days left)</div>
                     </div>
                     <div>
-                      <span className="text-pos-ink/50 text-[10px] block">3-Year Statutory Bar:</span>
+                      <span className="text-pos-ink/60 text-[12px] block">3-Year Statutory Bar:</span>
                       <span className="text-pos-red font-semibold">{item.threeYearStatutoryBar}</span>
-                      <div className="text-pos-ink/70 font-sans text-[10px]">(Portal Hard Block)</div>
+                      <div className="text-pos-ink/70 font-sans text-[12px]">(Portal Hard Block)</div>
                     </div>
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export default function AuditRadarPage() {
                 <Activity className="w-4 h-4 text-pos-accent" />
                 <span>Government portals</span>
               </div>
-              <span className="text-[10px] font-mono text-pos-ink/70 font-semibold px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
+              <span className="text-[12px] font-mono text-pos-ink/70 font-semibold px-2 py-0.5 rounded bg-pos-muted border border-pos-line">
                 {portals.length === 0
                   ? 'Not checked yet'
                   : portals.every((p) => p.status === 'OPERATIONAL')
@@ -335,13 +335,13 @@ export default function AuditRadarPage() {
                 <div key={p.portal} className="p-3 rounded-lg bg-pos-muted border border-pos-line space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-pos-ink">{p.portal}</span>
-                    <span className={`font-semibold text-[10px] flex items-center gap-1 ${p.status === 'OPERATIONAL' ? 'text-emerald-600' : p.status === 'UNKNOWN' ? 'text-pos-ink/50' : 'text-amber-600'}`}>
+                    <span className={`font-semibold text-[12px] flex items-center gap-1 ${p.status === 'OPERATIONAL' ? 'text-emerald-600' : p.status === 'UNKNOWN' ? 'text-pos-ink/60' : 'text-amber-600'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${p.status === 'OPERATIONAL' ? 'bg-emerald-500' : p.status === 'UNKNOWN' ? 'bg-pos-ink/30' : 'bg-amber-500'}`}></span>
                       {p.status === 'UNKNOWN' ? 'Unknown' : `${p.latencyMs} ms`}
                     </span>
                   </div>
-                  <div className="text-[11px] text-pos-ink/70 truncate">{p.name}</div>
-                  <div className="text-[10px] text-pos-ink/50 leading-tight">{p.message}</div>
+                  <div className="text-[12px] text-pos-ink/70 truncate">{p.name}</div>
+                  <div className="text-[12px] text-pos-ink/60 leading-tight">{p.message}</div>
                 </div>
               ))}
             </div>
@@ -360,7 +360,7 @@ export default function AuditRadarPage() {
                 <Lock className="w-4 h-4 text-pos-accent" />
                 <h2 className="font-semibold text-sm text-pos-ink">Reveal a client's full PAN</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-semibold border border-pos-line">
+              <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent font-semibold border border-pos-line">
                 Every reveal logged
               </span>
             </div>
@@ -373,7 +373,7 @@ export default function AuditRadarPage() {
             <div className="bg-pos-surface border border-pos-line rounded-lg p-4 space-y-3 text-xs">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-pos-ink/60 block text-[11px]">Client PAN:</span>
+                  <span className="text-pos-ink/60 block text-[12px]">Client PAN:</span>
                   <span className="text-pos-ink font-semibold text-sm">
                     {revealedValue || 'XXXXX####X'}
                   </span>
@@ -401,7 +401,7 @@ export default function AuditRadarPage() {
                     placeholder="For example: checking PAN for the GST registration application"
                     className="w-full bg-pos-surface border border-pos-line rounded-md px-3 py-2 text-xs text-pos-ink focus:outline-none focus:border-pos-accent font-mono"
                   />
-                  {piiError && <p className="text-[11px] text-pos-red">{piiError}</p>}
+                  {piiError && <p className="text-[12px] text-pos-red">{piiError}</p>}
                   <div className="flex justify-end gap-2 pt-1">
                     <button
                       type="button"
@@ -449,11 +449,11 @@ export default function AuditRadarPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-pos-ink font-mono">Audit trail</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent border border-pos-line font-semibold">
+                <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-surface text-pos-accent border border-pos-line font-semibold">
                   MCA Rule 3 & CGST Rule 56(15)
                 </span>
               </div>
-              <p className="text-[11px] text-pos-ink/60 mt-0.5">
+              <p className="text-[12px] text-pos-ink/60 mt-0.5">
                 Every change, DSC signing and PII reveal, newest first. Entries cannot be edited or deleted.
               </p>
             </div>
@@ -489,7 +489,7 @@ export default function AuditRadarPage() {
               <ShieldCheck className="w-4 h-4" />
               <span>Entries cannot be changed</span>
             </span>
-            <span className="text-[11px]">
+            <span className="text-[12px]">
               The database refuses any edit or deletion of an entry, even by its owner, and each entry carries the hash of the one before it.
             </span>
           </div>
@@ -497,7 +497,7 @@ export default function AuditRadarPage() {
           <div className="overflow-x-auto border border-pos-line rounded-lg">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-pos-surface text-pos-ink/60 text-[11px] border-b border-pos-line">
+                <tr className="bg-pos-surface text-pos-ink/60 text-[12px] border-b border-pos-line">
                   <th className="py-2.5 px-3">Event</th>
                   <th className="py-2.5 px-3">Performed By</th>
                   <th className="py-2.5 px-3">IP Address</th>
@@ -510,17 +510,17 @@ export default function AuditRadarPage() {
                 {filteredLogs.map((entry) => (
                   <tr key={entry.id} className="hover:bg-pos-tint transition-colors">
                     <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-pos-surface text-pos-accent border border-pos-line">
+                      <span className="px-2 py-0.5 rounded text-[12px] font-semibold bg-pos-surface text-pos-accent border border-pos-line">
                         {entry.eventType}
                       </span>
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="text-pos-ink font-semibold">{entry.performedBy}</div>
-                      <div className="text-[10px] text-pos-ink/60">{entry.userRole}</div>
+                      <div className="text-[12px] text-pos-ink/60">{entry.userRole}</div>
                     </td>
                     <td className="py-2.5 px-3 text-pos-ink/60">{entry.ipAddress}</td>
                     <td className="py-2.5 px-3 text-pos-ink/80">{new Date(entry.timestamp).toLocaleString('en-IN')}</td>
-                    <td className="py-2.5 px-3 text-[#3A6FE8] text-[10px]">{entry.hmacSignature}</td>
+                    <td className="py-2.5 px-3 text-[#3A6FE8] text-[12px]">{entry.hmacSignature}</td>
                     <td className="py-2.5 px-3 font-sans text-pos-ink/80 text-xs">{entry.details}</td>
                   </tr>
                 ))}
@@ -528,7 +528,7 @@ export default function AuditRadarPage() {
             </table>
           </div>
 
-          <div className="text-[11px] text-pos-ink/50 text-right pt-1">
+          <div className="text-[12px] text-pos-ink/60 text-right pt-1">
             {filteredLogs.length} entries
           </div>
         </div>

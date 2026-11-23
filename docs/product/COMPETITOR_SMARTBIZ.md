@@ -196,3 +196,24 @@ TDS statements for Forms 138 (Q1 to Q3), 140, 143 and 144 in both Acts; imports 
 ### Not planned
 
 Local network installation, and portal automation that stores client passwords.
+
+## 9. Comparison, 23 Nov 2026
+
+SmartBiz as read on 22 Nov 2026 (section 8). Closed since then, each with tests:
+
+| Was behind | Now |
+|---|---|
+| C1 and C2 corrections, drafts, versions, revert, Excel in and out | Built; C1 and C2 positions to be checked against Protean's v1.2 spreadsheets |
+| ITR-2, ITR-3, ITR-4 | Built for AY 2026-27, every file checked against the Department's schema; filing needs the ERI software ID |
+| Forms 3CA, 3CB, 3CD | Being built |
+| Reminders that send themselves (day 1, 5, 10) | Built, daily job |
+| Client folders, versions, previews, open log, fee lock | Built |
+| Client logins, client portal, encrypted messages | Built; client logins isolated in the database |
+| Staff invitations, password reset, signed-in sessions | Built |
+| Task board and calendar | Built |
+| Certificates to payees by email and WhatsApp | Built (TRACES PDFs only) |
+| Backup agent uploading on a schedule, late alert, Zoho and Vyapar | Built |
+| AI questions, notice drafts, deeds, calculators, daily feed | Built; model features need Bedrock in India |
+| Bank statements from PDF and scans, ten banks | Built, in the browser |
+
+Still behind only where outside access is needed: GST filing, GSTR-2 download and ledgers (GSP); TDS filing help, CSI and TRACES downloads, bulk PAN checks (TRACES route, Protean registration); ITR filing and AIS/26AS fetch (ERI); Form 138 Q4 (Protean); an Android app with push (Play Console; the site works on phones and can be installed). Also not matched: billing with a stock register and single-entry VAT accounts (outside a GST and TDS workspace), and local network installation (not planned).

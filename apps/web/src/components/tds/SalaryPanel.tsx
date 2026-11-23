@@ -121,9 +121,9 @@ export function SalaryPanel({ tan }: { tan: string }) {
           <table className="w-full"><thead className="text-pos-ink/55"><tr><th className={th}>Employee</th><th className={th}>Regime</th><th className={`${th} text-right`}>Months</th><th className={`${th} text-right`}>Gross for the year</th><th className={`${th} text-right`}>Taxable</th><th className={`${th} text-right`}>Tax for the year</th><th className={`${th} text-right`}>Other regime</th><th className={`${th} text-right`}>Deducted so far</th><th className={`${th} text-right`}>Each month now</th></tr></thead>
             <tbody>{lines.map((l) => (
               <tr key={l.id} className="border-t border-pos-line align-top">
-                <td className={td}>{l.name} <span className="font-mono text-pos-ink/50">{l.pan}</span></td><td className={td}>{l.regime === 'NEW' ? 'New' : 'Old'}</td><td className={num}>{l.monthsWorked}</td>
+                <td className={td}>{l.name} <span className="font-mono text-pos-ink/60">{l.pan}</span></td><td className={td}>{l.regime === 'NEW' ? 'New' : 'Old'}</td><td className={num}>{l.monthsWorked}</td>
                 <td className={num}>{inr(l.annualGross)}</td><td className={num}>{inr(l.taxableIncome)}</td><td className={num}>{inr(l.annualTax)}</td>
-                <td className={`${num} ${Number(l.otherRegimeTax) < Number(l.annualTax) ? 'text-[#b45309]' : 'text-pos-ink/50'}`}>{inr(l.otherRegimeTax)}</td>
+                <td className={`${num} ${Number(l.otherRegimeTax) < Number(l.annualTax) ? 'text-[#b45309]' : 'text-pos-ink/60'}`}>{inr(l.otherRegimeTax)}</td>
                 <td className={num}>{inr(Number(l.deductedSoFar) + Number(l.previousEmployerTds))}</td><td className={`${num} font-semibold`}>{inr(l.monthlyTds)}</td>
               </tr>
             ))}</tbody></table>

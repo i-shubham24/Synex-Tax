@@ -99,7 +99,7 @@ export function NoticePanel({ modelReady }: { modelReady: boolean }) {
               <Citations citations={latest.citations ?? []} removed={latest.removed ?? []} />
             </>
           ) : (
-            <p className="text-[13px] text-pos-ink/50">The draft appears here.</p>
+            <p className="text-[13px] text-pos-ink/60">The draft appears here.</p>
           )}
         </div>
       </div>

@@ -155,12 +155,12 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
               <Usb className="h-4 w-4 text-[#3A6FE8]" />
               <h2 className="text-sm font-semibold text-pos-ink">DSC on this computer</h2>
             </div>
-            <button type="button" onClick={scan} className="flex items-center gap-1 rounded border border-pos-line bg-pos-surface px-2 py-0.5 text-[10px] font-semibold text-pos-ink/70 hover:text-pos-ink">
+            <button type="button" onClick={scan} className="flex items-center gap-1 rounded border border-pos-line bg-pos-surface px-2 py-0.5 text-[12px] font-semibold text-pos-ink/70 hover:text-pos-ink">
               <RefreshCw className={`h-3 w-3 ${agent === 'checking' ? 'animate-spin' : ''}`} /> Check again
             </button>
           </div>
 
-          {agent === 'checking' && <div className="p-4 text-center text-xs text-pos-ink/50">Looking for the desktop agent…</div>}
+          {agent === 'checking' && <div className="p-4 text-center text-xs text-pos-ink/60">Looking for the desktop agent…</div>}
           {agent === 'offline' && (
             <div className="space-y-1.5 rounded-lg border border-pos-line bg-pos-surface p-3 text-xs text-pos-ink/70">
               <div className="font-semibold text-pos-ink">The SynexTax desktop agent is not running</div>
@@ -174,28 +174,28 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
             </div>
           )}
           {agent === 'ready' && hidden > 0 && (
-            <button type="button" onClick={() => setShowAll((v) => !v)} className="text-[11px] font-semibold text-pos-accent hover:underline">
+            <button type="button" onClick={() => setShowAll((v) => !v)} className="text-[12px] font-semibold text-pos-accent hover:underline">
               {showAll ? 'Hide certificates not on a token' : `Show ${hidden} certificate${hidden === 1 ? '' : 's'} not on a token`}
             </button>
           )}
           {visible.map((c) => (
-            <label key={c.id} className={`block cursor-pointer space-y-1.5 rounded-lg border p-3 text-[11px] ${c.id === certId ? 'border-pos-accent bg-pos-surface' : 'border-pos-line bg-pos-surface/60'}`}>
+            <label key={c.id} className={`block cursor-pointer space-y-1.5 rounded-lg border p-3 text-[12px] ${c.id === certId ? 'border-pos-accent bg-pos-surface' : 'border-pos-line bg-pos-surface/60'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <input type="radio" name="dsc-cert" checked={c.id === certId} onChange={() => setCertId(c.id)} className="accent-pos-accent" />
                   <span className="text-xs font-semibold text-pos-ink">{c.commonName || 'Unnamed certificate'}</span>
                 </div>
-                <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${c.token ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600' : 'border-amber-500/30 bg-amber-500/10 text-amber-600'}`}>
+                <span className={`rounded border px-1.5 py-0.5 text-[12px] font-semibold ${c.token ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600' : 'border-amber-500/30 bg-amber-500/10 text-amber-600'}`}>
                   {c.token ? 'Token' : 'Not on a token'}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-1 text-[10px] text-pos-ink/60">
+              <div className="grid grid-cols-2 gap-2 pt-1 text-[12px] text-pos-ink/60">
                 <div>PAN<span className="block font-semibold text-pos-ink">{maskPan(c.pan)}</span></div>
                 <div>Valid until<span className="block font-semibold text-pos-ink">{new Date(c.validTo).toLocaleDateString('en-IN')}</span></div>
                 <div>Issued by<span className="block text-pos-ink">{issuerName(c.issuer)}</span></div>
                 <div>Key<span className="block text-pos-ink">{c.keyAlgorithm}</span></div>
               </div>
-              <div className="truncate text-[10px] text-pos-ink/40">{c.provider}</div>
+              <div className="truncate text-[12px] text-pos-ink/60">{c.provider}</div>
             </label>
           ))}
         </div>
@@ -207,9 +207,9 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
           <div className="flex items-center justify-between border-b border-pos-line pb-3">
             <div>
               <h2 className="text-sm font-semibold text-pos-ink">Sign a return</h2>
-              <p className="text-[11px] text-pos-ink/60">SynexTax prepares the return; your token signs it; the server checks the signature and records it.</p>
+              <p className="text-[12px] text-pos-ink/60">SynexTax prepares the return; your token signs it; the server checks the signature and records it.</p>
             </div>
-            <span className="rounded border border-pos-line bg-pos-surface px-2 py-0.5 text-[10px] font-semibold text-pos-accent">Partner or manager</span>
+            <span className="rounded border border-pos-line bg-pos-surface px-2 py-0.5 text-[12px] font-semibold text-pos-accent">Partner or manager</span>
           </div>
 
           <div className="space-y-3 text-xs">
@@ -223,25 +223,25 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
                   value={filingId}
                   onChange={(v) => setFilingId(v)}
                   className="w-full"
-                  buttonClassName="w-full h-10 font-bold"
+                  buttonClassName="w-full h-10 font-semibold"
                   options={returns.map((f) => ({ value: f.id, label: `${f.client} | ${formLabel(f.form)}`, description: `Period: ${f.period}`, badge: formLabel(f.form) }))}
                 />
               )}
             </div>
 
-            <div className="space-y-2 rounded-lg border border-pos-line bg-pos-surface p-3.5 text-[11px] text-pos-ink/70">
+            <div className="space-y-2 rounded-lg border border-pos-line bg-pos-surface p-3.5 text-[12px] text-pos-ink/70">
               <div className="flex justify-between gap-3"><span>Signed with</span><span className="text-right font-semibold text-pos-ink">{cert ? `${cert.commonName}, ${maskPan(cert.pan)}` : 'Choose a certificate'}</span></div>
               <div className="flex justify-between gap-3"><span>PIN</span><span className="text-right">Entered in your token’s own window; SynexTax never sees it</span></div>
               <div className="flex justify-between gap-3"><span>Time to sign</span><span className="text-right">Two minutes from pressing Sign</span></div>
             </div>
 
             {error && (
-              <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-[11px] text-red-700">
+              <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-[12px] text-red-700">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
-            {step && <div role="status" aria-live="polite" className="rounded-lg border border-pos-line bg-pos-surface p-3 text-[11px] text-pos-ink/70">{step}</div>}
+            {step && <div role="status" aria-live="polite" className="rounded-lg border border-pos-line bg-pos-surface p-3 text-[12px] text-pos-ink/70">{step}</div>}
 
             <div className="flex justify-end pt-1">
               <button
@@ -262,14 +262,14 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
                 <CheckCircle2 className="h-4 w-4" />
                 <span>{receipt.status === 'SIGNED' ? 'Signed and checked' : 'Signature checked; certificate not checked'}</span>
               </div>
-              <div className="space-y-1 text-[11px] text-pos-ink/70">
+              <div className="space-y-1 text-[12px] text-pos-ink/70">
                 <div>Return: <span className="font-semibold text-pos-ink">{receipt.client}, {formLabel(receipt.form)} {receipt.period}</span></div>
                 <div>Signed by: <span className="font-semibold text-pos-ink">{receipt.certificate.commonName}</span> ({receipt.certificate.pan ?? 'PAN not in certificate'})</div>
                 <div>Certificate: <span className="text-pos-ink">{issuerName(receipt.certificate.issuer)}, serial {receipt.certificate.serialNumber}</span></div>
                 <div>Time: <span className="text-pos-ink">{new Date(receipt.signedAt).toLocaleString('en-IN')}</span></div>
                 <div className="truncate">SHA-256: <span className="text-[#3A6FE8]">{receipt.digestSha256}</span></div>
                 {receipt.status !== 'SIGNED' && (
-                  <div className="pt-1 text-[10px] text-pos-ink/50">
+                  <div className="pt-1 text-[12px] text-pos-ink/60">
                     This DSC does not chain to a CCA India root, so it was not issued by a licensed certifying authority. It is recorded in the signing trail as unverified; the live service refuses such a DSC.
                   </div>
                 )}

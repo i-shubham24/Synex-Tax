@@ -60,7 +60,7 @@ const PERIOD_OBLIGATIONS: Record<Period, Obligation[] | null> = {
 const DONUT = ['#52B0F8', '#5FE88A', '#5A50F2', '#F2B53A', '#141416'];
 
 const STATE_STYLE: Record<FilingState, string> = {
-  NA: 'bg-transparent text-pos-ink/30',
+  NA: 'bg-transparent text-pos-ink/60',
   DRAFT: 'bg-pos-muted text-pos-ink/70',
   VALIDATED: 'bg-[#5A50F2]/15 text-[#5A50F2] dark:text-[#a7a1ff]',
   RECONCILED: 'bg-pos-accent/15 text-pos-accent',
@@ -156,11 +156,11 @@ function Velocity({ values }: { values: number[] }) {
           <path d={`${d} L ${W} ${H} L 0 ${H} Z`} fill="url(#vel-fill)" />
           <path d={d} fill="none" stroke="#2F8AE0" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
         </svg>
-        <span className="absolute -translate-x-1/2 -translate-y-full rounded-full bg-pos-accent px-2.5 py-0.5 text-[11.5px] font-semibold text-white" style={{ left: `${(px / W) * 100}%`, top: `${(py / H) * 100}%` }}>
+        <span className="absolute -translate-x-1/2 -translate-y-full rounded-full bg-pos-accent px-2.5 py-0.5 text-[12.5px] font-semibold text-white" style={{ left: `${(px / W) * 100}%`, top: `${(py / H) * 100}%` }}>
           {values[peak]} on the {ordinal(peak + 1)}
         </span>
       </div>
-      <div className="mt-2 flex justify-between text-[11.5px] text-pos-ink/50">
+      <div className="mt-2 flex justify-between text-[12.5px] text-pos-ink/60">
         {[1, 5, 10, 11, 14, 18, 20, 25, 30].map((d) => (
           <span key={d}>{d}</span>
         ))}
@@ -193,7 +193,7 @@ function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
                 </div>
               ))}
             </div>
-            <span className="text-[9px] text-pos-ink/45">{m.month}</span>
+            <span className="text-[11px] text-pos-ink/60">{m.month}</span>
           </div>
         ))}
       </div>
@@ -349,7 +349,7 @@ export default function ControlTowerPage() {
           <h2 id="radar-title" className="flex items-center gap-2 text-[15px] font-semibold text-pos-ink">
             <ShieldAlert className="h-4 w-4 text-pos-accent" /> Statutory Risk Radar
           </h2>
-          <ChevronDown className={`h-4 w-4 text-pos-ink/50 transition-transform ${radarOpen ? '' : '-rotate-90'}`} />
+          <ChevronDown className={`h-4 w-4 text-pos-ink/60 transition-transform ${radarOpen ? '' : '-rotate-90'}`} />
         </button>
         <AnimatePresence initial={false}>
           {radarOpen && (
@@ -395,7 +395,7 @@ export default function ControlTowerPage() {
                             <span className="ident block truncate font-mono text-[12.5px] font-medium text-pos-ink">{it.title}</span>
                             <span className="block text-[12.5px] text-pos-ink/60">{it.detail}</span>
                           </span>
-                          <ArrowUpRight className="h-4 w-4 shrink-0 text-pos-ink/40" />
+                          <ArrowUpRight className="h-4 w-4 shrink-0 text-pos-ink/60" />
                         </button>
                       </li>
                     ))}
@@ -451,7 +451,7 @@ export default function ControlTowerPage() {
                   </span>
                 </span>
                 <span className="mt-auto pt-4 text-[26px] font-semibold tabular-nums" style={{ color: c.tone }}>{c.value}</span>
-                <span className="mt-1 flex items-center gap-1 text-[11.5px] text-pos-ink/45 group-hover:text-pos-accent">
+                <span className="mt-1 flex items-center gap-1 text-[12.5px] text-pos-ink/60 group-hover:text-pos-accent">
                   Open queue <ArrowUpRight className="h-3 w-3" />
                 </span>
               </button>
@@ -487,7 +487,7 @@ export default function ControlTowerPage() {
                     onClick={() => setActiveClient({ entityId: d.entity.id, gstin: d.entity.gstins[0]?.gstin })}
                     className="flex w-full items-center gap-3 py-2.5 text-left"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pos-tint text-[11.5px] font-semibold text-pos-accent">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pos-tint text-[12.5px] font-semibold text-pos-accent">
                       {d.entity.legalName.split(' ').slice(0, 2).map((w) => w[0]).join('')}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -498,7 +498,7 @@ export default function ControlTowerPage() {
                       <span className={`block text-[12.5px] font-semibold ${d.daysLeft < 0 ? 'text-pos-red' : d.daysLeft <= 2 ? 'text-[#b9800f] dark:text-[#f2c66a]' : 'text-pos-ink/70'}`}>
                         {d.daysLeft < 0 ? `${-d.daysLeft}d overdue` : d.daysLeft === 0 ? 'Due today' : `${d.daysLeft}d left`}
                       </span>
-                      {d.amount ? <span className="block text-[11.5px] tabular-nums text-pos-ink/45">{inr(d.amount)}</span> : null}
+                      {d.amount ? <span className="block text-[12.5px] tabular-nums text-pos-ink/60">{inr(d.amount)}</span> : null}
                     </span>
                   </button>
                 </li>
@@ -515,7 +515,7 @@ export default function ControlTowerPage() {
               <h2 id="matrix-title" className="text-[15px] font-semibold text-pos-ink">Filing matrix</h2>
               <button onClick={() => setApprovalsOpen(true)} className="flex h-9 items-center gap-2 rounded-full bg-pos-head px-4 text-[13px] font-medium text-white">
                 <UserCheck className="h-4 w-4" /> Partner approvals
-                <span className="rounded-full bg-[#5fe88a] px-1.5 text-[11px] font-semibold text-[#141416]">{approvals.length}</span>
+                <span className="rounded-full bg-[#5fe88a] px-1.5 text-[12px] font-semibold text-[#141416]">{approvals.length}</span>
               </button>
             </div>
             <div className="pos-scroll overflow-x-auto px-4 pb-4">
@@ -533,19 +533,19 @@ export default function ControlTowerPage() {
                     <tr key={e.id} className={i % 2 ? 'bg-pos-surface' : 'bg-pos-muted/60'}>
                       <td className="px-3 py-2.5">
                         <p className="max-w-[220px] truncate font-medium text-pos-ink">{e.legalName}</p>
-                        <p className="text-[11.5px] text-pos-ink/50">
+                        <p className="text-[12.5px] text-pos-ink/60">
                           {staffName(e.assignedTo)?.name ?? ''}
                           {e.gstins.some((g) => g.filingCategory === 'QRMP') ? ', QRMP' : e.gstins.some((g) => g.filingCategory === 'COMPOSITION') ? ', Composition' : ''}
                         </p>
                       </td>
                       {columns.map((o) => {
                         const c = scoped.filings.find((x) => x.entityId === e.id && x.obligation === o.id);
-                        if (!c || c.state === 'NA') return <td key={o.id} className="px-3 py-2.5 text-[12px] text-pos-ink/30">Not due</td>;
+                        if (!c || c.state === 'NA') return <td key={o.id} className="px-3 py-2.5 text-[12px] text-pos-ink/60">Not due</td>;
                         return (
                           <td key={o.id} className="px-2 py-2">
                             <button onClick={() => openCell(c)} title={`${o.label} ${c.periodLabel}: ${STATE_LABEL[c.state]}`} className="w-full rounded-[12px] px-2 py-1.5 text-left hover:bg-pos-tint">
-                              <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold ${STATE_STYLE[c.state]}`}>{STATE_LABEL[c.state]}</span>
-                              <span className="mt-1 flex items-center gap-1.5 text-[11px] text-pos-ink/45">
+                              <span className={`inline-block rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold ${STATE_STYLE[c.state]}`}>{STATE_LABEL[c.state]}</span>
+                              <span className="mt-1 flex items-center gap-1.5 text-[12px] text-pos-ink/60">
                                 <span className="rounded-full bg-pos-surface px-1.5 font-semibold text-pos-ink/60 ring-1 ring-pos-line">{staffName(c.assignee)?.initials}</span>
                                 {timeShort(c.updatedAt)}
                               </span>
@@ -578,7 +578,7 @@ export default function ControlTowerPage() {
                       <div className="bg-pos-green" style={{ width: `${(w.filed / w.total) * 100}%` }} />
                       <div className="bg-[#f2b53a]" style={{ width: `${(w.awaitingPartner / w.total) * 100}%` }} />
                     </div>
-                    <p className="mt-1 text-[11.5px] text-pos-ink/50">
+                    <p className="mt-1 text-[12.5px] text-pos-ink/60">
                       GSTR-3B {w.threeBFiled}/{w.threeBTotal} filed, {w.pendingClientData} waiting on client data, {w.awaitingPartner} awaiting sign-off
                     </p>
                   </li>
@@ -621,7 +621,7 @@ export default function ControlTowerPage() {
                             {OBLIGATIONS.find((o) => o.id === c.obligation)?.label} {c.periodLabel}, prepared by {staffName(c.assignee)?.name}
                           </p>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATE_STYLE[c.state]}`}>{STATE_LABEL[c.state]}</span>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${STATE_STYLE[c.state]}`}>{STATE_LABEL[c.state]}</span>
                       </div>
                       <div className="mt-2.5 flex items-center justify-between">
                         <span className="text-[13px] font-semibold tabular-nums">{c.amount ? inr(c.amount) : ''}</span>

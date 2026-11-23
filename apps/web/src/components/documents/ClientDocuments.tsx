@@ -123,7 +123,7 @@ export function ClientDocuments({ clients }: { clients: Array<{ id: string; name
             <button type="button" onClick={() => setFolderId(null)} className={folderId ? 'text-pos-accent' : 'font-medium text-pos-ink'}>All documents</button>
             {path.map((f) => (
               <span key={f.id} className="flex items-center gap-1">
-                <ChevronRight className="h-3.5 w-3.5 text-pos-ink/35" />
+                <ChevronRight className="h-3.5 w-3.5 text-pos-ink/60" />
                 <button type="button" onClick={() => setFolderId(f.id)} className={f.id === folderId ? 'font-medium text-pos-ink' : 'text-pos-accent'}>{f.name}</button>
               </span>
             ))}
@@ -138,14 +138,14 @@ export function ClientDocuments({ clients }: { clients: Array<{ id: string; name
               <input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} maxLength={80} placeholder="New folder" aria-label="New folder name" className="h-9 w-40 rounded-full border border-pos-line bg-pos-surface px-3 text-[13px] text-pos-ink" />
               <button type="submit" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-pos-line px-3 text-[13px] text-pos-ink"><FolderPlus className="h-4 w-4" /> Add</button>
             </form>
-            <span className="text-[12px] text-pos-ink/50">PDF, photos, Excel, Word, CSV or ZIP, up to 20 MB each.</span>
+            <span className="text-[12px] text-pos-ink/60">PDF, photos, Excel, Word, CSV or ZIP, up to 20 MB each.</span>
           </div>
 
           <ul className="divide-y divide-pos-line rounded-[14px] border border-pos-line">
             {children.map((f) => (
               <li key={f.id} className="flex items-center justify-between gap-2 px-3 py-2.5 text-[13px]">
-                <button type="button" onClick={() => setFolderId(f.id)} className="inline-flex items-center gap-2 text-pos-ink"><Folder className="h-4 w-4 text-pos-ink/50" /> {f.name}</button>
-                <button type="button" onClick={() => removeFolder(f.id)} className="text-[12px] text-pos-ink/45 hover:text-[#dc2626]">Remove if empty</button>
+                <button type="button" onClick={() => setFolderId(f.id)} className="inline-flex items-center gap-2 text-pos-ink"><Folder className="h-4 w-4 text-pos-ink/60" /> {f.name}</button>
+                <button type="button" onClick={() => removeFolder(f.id)} className="text-[12px] text-pos-ink/60 hover:text-[#dc2626]">Remove if empty</button>
               </li>
             ))}
             {docs.map((d) => (
@@ -159,8 +159,8 @@ export function ClientDocuments({ clients }: { clients: Array<{ id: string; name
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {d.sharedWithClient && <span className="inline-flex items-center gap-1 rounded-full bg-[#2f8ae0]/10 px-2 py-0.5 text-[11px] text-[#1f6fc4]"><Share2 className="h-3 w-3" /> Shared</span>}
-                    {d.sharedWithClient && d.lockedForClient && <span className="inline-flex items-center gap-1 rounded-full bg-[#f2b53a]/20 px-2 py-0.5 text-[11px] text-[#8a5a00]"><Lock className="h-3 w-3" /> Until <span className="font-mono">{d.invoice?.invoiceNo}</span> is paid</span>}
+                    {d.sharedWithClient && <span className="inline-flex items-center gap-1 rounded-full bg-[#2f8ae0]/10 px-2 py-0.5 text-[12px] text-[#1f6fc4]"><Share2 className="h-3 w-3" /> Shared</span>}
+                    {d.sharedWithClient && d.lockedForClient && <span className="inline-flex items-center gap-1 rounded-full bg-[#f2b53a]/20 px-2 py-0.5 text-[12px] text-[#8a5a00]"><Lock className="h-3 w-3" /> Until <span className="font-mono">{d.invoice?.invoiceNo}</span> is paid</span>}
                     {d.previewable && <button type="button" onClick={async () => setMessage(await openFile(authFetch, d.id, d.currentVersion, d.fileName, true))} className="inline-flex items-center gap-1 text-pos-accent"><Eye className="h-3.5 w-3.5" /> Preview</button>}
                     <button type="button" onClick={async () => setMessage(await openFile(authFetch, d.id, d.currentVersion, d.fileName, false))} className="inline-flex items-center gap-1 text-pos-accent"><Download className="h-3.5 w-3.5" /> Download</button>
                     <button type="button" aria-expanded={openDoc === d.id} onClick={() => setOpenDoc(openDoc === d.id ? null : d.id)} className="inline-flex items-center gap-1 text-pos-ink/70"><History className="h-3.5 w-3.5" /> Versions and sharing</button>

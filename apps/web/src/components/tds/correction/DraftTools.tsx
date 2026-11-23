@@ -133,7 +133,7 @@ export function DraftTools({
                 <span className="font-medium">Version {v.version}</span>
                 <span className="ml-2 text-pos-ink/60">{when(v.createdAt)}{v.createdBy ? ` · ${v.createdBy}` : ''}{v.note ? ` · ${v.note}` : ''}{v.consoChanged && v.version > 1 ? ' · new consolidated file' : ''}</span>
               </span>
-              {v.version === draft.currentVersion ? <span className="text-[12px] text-pos-ink/50">Current</span>
+              {v.version === draft.currentVersion ? <span className="text-[12px] text-pos-ink/60">Current</span>
                 : canWrite && <button type="button" onClick={() => revert(v.version)} className={pill}><RotateCcw className="h-3.5 w-3.5" /> Revert to this</button>}
             </li>
           ))}

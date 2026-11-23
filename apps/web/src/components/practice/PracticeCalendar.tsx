@@ -126,11 +126,11 @@ export function PracticeCalendar() {
         <span className="tabular-nums text-pos-ink/60">{it.time}</span> {it.label}
         {view === 'week' && it.sub && <span className="block text-pos-ink/55">{it.sub}</span>}
         {view === 'week' && it.meeting.canEdit && it.meeting.status === 'SCHEDULED' && (
-          <button type="button" onClick={() => cancelMeeting(it.meeting)} className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] text-[#dc2626] hover:underline"><X className="h-3 w-3" /> Cancel</button>
+          <button type="button" onClick={() => cancelMeeting(it.meeting)} className="mt-0.5 inline-flex items-center gap-0.5 text-[12px] text-[#dc2626] hover:underline"><X className="h-3 w-3" /> Cancel</button>
         )}
       </li>
     ) : (
-      <li key={it.key} className={`truncate rounded-[6px] px-1.5 py-0.5 ${it.done ? 'text-pos-ink/40 line-through' : it.overdue ? 'bg-[#dc2626]/5 text-[#dc2626]' : it.tone === 'deposit' ? 'bg-[#d97706]/10 text-pos-ink' : 'bg-pos-tint text-pos-ink'}`} title={`${it.tone === 'deposit' ? 'Deposit' : 'Return'}: ${it.label}, ${it.sub}`}>
+      <li key={it.key} className={`truncate rounded-[6px] px-1.5 py-0.5 ${it.done ? 'text-pos-ink/60 line-through' : it.overdue ? 'bg-[#dc2626]/5 text-[#dc2626]' : it.tone === 'deposit' ? 'bg-[#d97706]/10 text-pos-ink' : 'bg-pos-tint text-pos-ink'}`} title={`${it.tone === 'deposit' ? 'Deposit' : 'Return'}: ${it.label}, ${it.sub}`}>
         {it.label}
         {view === 'week' && <span className="block truncate text-pos-ink/55">{it.sub}</span>}
       </li>
@@ -190,12 +190,12 @@ export function PracticeCalendar() {
             const faded = view === 'month' && d.slice(0, 7) !== thisMonth;
             return (
               <div key={d} className={`border-b border-r border-pos-line p-1.5 ${view === 'week' ? 'min-h-[320px]' : 'min-h-[104px]'} ${faded ? 'bg-pos-muted/60' : ''}`} aria-label={`${dayTitle(d)}: ${items.length} item${items.length === 1 ? '' : 's'}`}>
-                <p className={`mb-1 text-[12px] tabular-nums ${d === today ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-pos-accent px-1 font-medium text-white' : faded ? 'text-pos-ink/35' : 'text-pos-ink/65'}`}>{view === 'week' ? dayTitle(d) : Number(d.slice(8))}</p>
-                <ul className="space-y-0.5 text-[11.5px] leading-snug">
+                <p className={`mb-1 text-[12px] tabular-nums ${d === today ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-pos-accent px-1 font-medium text-white' : faded ? 'text-pos-ink/60' : 'text-pos-ink/65'}`}>{view === 'week' ? dayTitle(d) : Number(d.slice(8))}</p>
+                <ul className="space-y-0.5 text-[12.5px] leading-snug">
                   {items.slice(0, limit).map(renderItem)}
                   {items.length > limit && (
                     <li>
-                      <button type="button" onClick={() => { setAnchor(d); setView('week'); }} className="px-1.5 text-[11.5px] text-pos-accent hover:underline">{items.length - limit} more</button>
+                      <button type="button" onClick={() => { setAnchor(d); setView('week'); }} className="px-1.5 text-[12.5px] text-pos-accent hover:underline">{items.length - limit} more</button>
                     </li>
                   )}
                 </ul>

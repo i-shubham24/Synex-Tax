@@ -92,8 +92,8 @@ export function ReminderSettings() {
         </label>
         <fieldset className="flex items-center gap-3 text-[13px] text-pos-ink" disabled={!canEdit}>
           <legend className="sr-only">Channels</legend>
-          <label className="flex items-center gap-1.5"><input type="checkbox" checked={settings.channels.includes('EMAIL')} onChange={() => toggleChannel('EMAIL')} /> Email{!sending.email && <span className="text-pos-ink/45">(not set up)</span>}</label>
-          <label className="flex items-center gap-1.5"><input type="checkbox" checked={settings.channels.includes('WHATSAPP')} onChange={() => toggleChannel('WHATSAPP')} /> WhatsApp{!sending.whatsapp && <span className="text-pos-ink/45">(not set up)</span>}</label>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={settings.channels.includes('EMAIL')} onChange={() => toggleChannel('EMAIL')} /> Email{!sending.email && <span className="text-pos-ink/60">(not set up)</span>}</label>
+          <label className="flex items-center gap-1.5"><input type="checkbox" checked={settings.channels.includes('WHATSAPP')} onChange={() => toggleChannel('WHATSAPP')} /> WhatsApp{!sending.whatsapp && <span className="text-pos-ink/60">(not set up)</span>}</label>
         </fieldset>
         {canEdit && <button type="submit" className="h-10 rounded-full bg-pos-accent px-4 text-[13px] font-medium text-white">Save</button>}
         {canEdit && (
@@ -101,7 +101,7 @@ export function ReminderSettings() {
             {settings.paused ? <><BellRing className="h-4 w-4" /> Resume for the firm</> : <><BellOff className="h-4 w-4" /> Pause for the firm</>}
           </button>
         )}
-        {!canEdit && <p className="text-[12px] text-pos-ink/50">A partner or manager changes these settings.</p>}
+        {!canEdit && <p className="text-[12px] text-pos-ink/60">A partner or manager changes these settings.</p>}
       </form>
       {settings.paused && <p className="text-[13px] font-medium text-[#b45309]">Paused for the whole firm. Nothing is sent until a partner or manager resumes.</p>}
       {message && <p role="status" className="text-[12.5px] text-pos-ink/70">{message}</p>}
@@ -123,12 +123,12 @@ export function ReminderSettings() {
           <tbody className="divide-y divide-pos-line">
             {rows.map((r) => (
               <tr key={r.id} className="align-top text-pos-ink">
-                <td className="py-2 pr-3">{r.clientName}, {r.periodLabel}<div className="text-pos-ink/50"><span className="font-mono">{r.outstanding}</span> outstanding, due {nice(r.dueDate)}</div></td>
+                <td className="py-2 pr-3">{r.clientName}, {r.periodLabel}<div className="text-pos-ink/60"><span className="font-mono">{r.outstanding}</span> outstanding, due {nice(r.dueDate)}</div></td>
                 <td className="pr-3">{r.sentOn ? nice(r.sentOn) : <button type="button" onClick={() => startToday(r)} className="text-pos-accent">Not sent yet. Start today</button>}</td>
                 <td className="pr-3">
-                  {r.steps.length ? r.steps.map((s) => <div key={`${s.kind}${s.stepDay}`}>Day <span className="font-mono">{s.stepDay}</span> {s.kind === 'FIRM' ? 'note' : 'reminder'}, {OUTCOME[s.outcome] ?? s.outcome}</div>) : <span className="text-pos-ink/45">Nothing yet</span>}
+                  {r.steps.length ? r.steps.map((s) => <div key={`${s.kind}${s.stepDay}`}>Day <span className="font-mono">{s.stepDay}</span> {s.kind === 'FIRM' ? 'note' : 'reminder'}, {OUTCOME[s.outcome] ?? s.outcome}</div>) : <span className="text-pos-ink/60">Nothing yet</span>}
                 </td>
-                <td className="pr-3">{r.paused ? 'Paused' : r.next ? `${r.next.kind === 'FIRM' ? 'Note to the firm' : 'Reminder'} on ${nice(r.next.on)}` : <span className="text-pos-ink/45">None</span>}</td>
+                <td className="pr-3">{r.paused ? 'Paused' : r.next ? `${r.next.kind === 'FIRM' ? 'Note to the firm' : 'Reminder'} on ${nice(r.next.on)}` : <span className="text-pos-ink/60">None</span>}</td>
                 <td className="text-right"><button type="button" onClick={() => pauseOne(r)} className="text-pos-ink/60 hover:text-pos-ink">{r.paused ? 'Resume' : 'Pause'}</button></td>
               </tr>
             ))}

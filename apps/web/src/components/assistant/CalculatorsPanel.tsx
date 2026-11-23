@@ -120,7 +120,7 @@ function CapitalGains() {
       </div>
       <div className="rounded-[10px] border border-pos-line p-3">
         {err && <p className="text-[13px] text-[#dc2626]">{err}</p>}
-        {!r && !err && <p className="text-[13px] text-pos-ink/50">Enter the dates and values.</p>}
+        {!r && !err && <p className="text-[13px] text-pos-ink/60">Enter the dates and values.</p>}
         {r && (
           <>
             <Rows rows={[
@@ -216,7 +216,7 @@ function Gst() {
         <p className="text-[12px] text-pos-ink/55">Rates as notified from 22 September 2025 (Notifications 9/2025 and 15/2025, Central Tax (Rate)). The rate for an item comes from those notifications.</p>
       </div>
       <div className="rounded-[10px] border border-pos-line p-3">
-        {r ? <Rows rows={[['Taxable value', r.taxableValue], ['CGST', r.cgst], ['SGST', r.sgst], ['IGST', r.igst], ['Total GST', r.totalTax, true], ['Value with GST', r.grossValue, true]]} /> : <p className="text-[13px] text-pos-ink/50">Enter an amount.</p>}
+        {r ? <Rows rows={[['Taxable value', r.taxableValue], ['CGST', r.cgst], ['SGST', r.sgst], ['IGST', r.igst], ['Total GST', r.totalTax, true], ['Value with GST', r.grossValue, true]]} /> : <p className="text-[13px] text-pos-ink/60">Enter an amount.</p>}
         {r?.rateNote && <p className="mt-1 text-[12px] text-pos-ink/55">{r.rateNote}</p>}
       </div>
     </div>
@@ -246,7 +246,7 @@ function Tds() {
       <div className="rounded-[10px] border border-pos-line p-3">
         {r ? (
           <Rows rows={[['2025 Act', `section ${r.section2025}`], ['1961 Act', r.section1961 ? `section ${r.section1961}` : 'Not in the mapping table'], ['Threshold', r.threshold], ['Rate', `${r.rate}%`], ['Tax to deduct', r.applies === false ? 'Nil, below the threshold' : r.tax, true]]} />
-        ) : <p className="text-[13px] text-pos-ink/50">Enter the payment.</p>}
+        ) : <p className="text-[13px] text-pos-ink/60">Enter the payment.</p>}
       </div>
     </div>
   );

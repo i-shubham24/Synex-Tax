@@ -1,21 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Content Security Policy with a fresh nonce on every page request. Scripts run only when they
- * carry the nonce (Next.js adds it to its own scripts) or were loaded by such a script
- * ('strict-dynamic'), so an injected <script> or inline handler does not run. Pages render per
- * request for this (the root layout waits for the connection).
+ * Content Security Policy.
+ *
+ * Signed-in areas (the workspace and the client portal) get a fresh nonce on every request: scripts
+ * run only when they carry it (Next.js adds it to its own scripts) or were loaded by such a script
+ * ('strict-dynamic'), so an injected <script> or inline handler does not run there. Those pages
+ * render per request for this (their layouts wait for the connection).
+ *
+ * Public pages (home, login, sign-up, features, legal, tools) are prebuilt so they open fast; a
+ * prebuilt page cannot carry a per-request nonce, so their scripts are limited to this site with
+ * inline allowed. They hold no client data.
  *
  * Styles keep 'unsafe-inline': server-rendered style attributes cannot carry a nonce, and styles
  * cannot run code.
  */
+
+/** First path segments of the pages that render per request (app/(workspace) and app/client). */
+const SIGNED_IN = new Set([
+  'dashboard', 'clients', 'gst', 'tds', 'itr', 'tax-audit', 'practice', 'documents', 'bank', 'audit',
+  'settings', 'messages', 'assistant', 'client',
+]);
+
 export function proxy(request: NextRequest) {
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const isDev = process.env.NODE_ENV === 'development';
+  const signedIn = SIGNED_IN.has(request.nextUrl.pathname.split('/')[1] ?? '');
+  const nonce = signedIn ? Buffer.from(crypto.randomUUID()).toString('base64') : null;
+  const scripts = nonce ? `'nonce-${nonce}' 'strict-dynamic'` : "'unsafe-inline'";
   const csp = [
     "default-src 'self'",
     // wasm-unsafe-eval lets WebAssembly compile (pdf.js image decoders, OCR); it does not allow eval.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' ${scripts} 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}`,
     // pdf.js and OCR workers, served from /vendor on this site.
     "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
@@ -31,8 +46,10 @@ export function proxy(request: NextRequest) {
   ].join('; ');
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-  requestHeaders.set('Content-Security-Policy', csp);
+  if (nonce) {
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('Content-Security-Policy', csp);
+  }
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', csp);
   return response;

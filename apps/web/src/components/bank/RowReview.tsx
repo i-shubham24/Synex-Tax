@@ -40,7 +40,7 @@ export function RowReview(props: {
           const isBreak = breakRow === r;
           return (
             <tr key={r} className={`border-t border-pos-line ${isBreak ? 'bg-pos-red/5' : ''}`}>
-              <td className="px-2 py-1 align-top font-mono text-[11px] text-pos-ink/50 whitespace-nowrap">{r + 1}{pages?.[r] ? ` p${pages[r]}` : ''}</td>
+              <td className="px-2 py-1 align-top font-mono text-[12px] text-pos-ink/60 whitespace-nowrap">{r + 1}{pages?.[r] ? ` p${pages[r]}` : ''}</td>
               {Array.from({ length: width }, (_, c) => {
                 const raw = row[c] ?? '';
                 const cf = conf?.[r]?.[c] ?? null;
@@ -53,10 +53,10 @@ export function RowReview(props: {
                       <input autoFocus defaultValue={shown} aria-label={`Row ${r + 1}, ${header[c] || `column ${c + 1}`}`}
                         onBlur={(e) => { const v = e.target.value; if (v !== shown) props.onEdit(r, c, restoreMasked(raw, v)); setEditing(null); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditing(null); }}
-                        className="h-7 w-full min-w-[90px] rounded-[6px] border border-pos-accent bg-pos-surface px-1.5 font-mono text-[11px] text-pos-ink outline-none" />
+                        className="h-7 w-full min-w-[90px] rounded-[6px] border border-pos-accent bg-pos-surface px-1.5 font-mono text-[12px] text-pos-ink outline-none" />
                     ) : (
                       <button type="button" onClick={() => setEditing(key)} title={low ? `Read with ${cf}% confidence; click to correct` : 'Click to correct'}
-                        className={`block min-h-[28px] w-full min-w-[60px] max-w-[260px] rounded-[6px] px-1.5 py-1 text-left font-mono text-[11px] text-pos-ink hover:bg-pos-tint ${low ? 'bg-[#b45309]/10 ring-1 ring-[#b45309]/40' : ''}`}>
+                        className={`block min-h-[28px] w-full min-w-[60px] max-w-[260px] rounded-[6px] px-1.5 py-1 text-left font-mono text-[12px] text-pos-ink hover:bg-pos-tint ${low ? 'bg-[#b45309]/10 ring-1 ring-[#b45309]/40' : ''}`}>
                         {shown || <span className="text-pos-ink/25">empty</span>}
                       </button>
                     )}

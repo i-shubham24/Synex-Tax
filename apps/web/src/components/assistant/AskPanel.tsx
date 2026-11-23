@@ -92,7 +92,7 @@ export function AskPanel({ modelReady }: { modelReady: boolean }) {
               <button type="button" aria-label="Delete conversation" className="opacity-60 hover:opacity-100" onClick={() => void remove(t.id)}><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /></button>
             </li>
           ))}
-          {threads.length === 0 && <li className="px-2 text-[12px] text-pos-ink/50">Your saved questions appear here.</li>}
+          {threads.length === 0 && <li className="px-2 text-[12px] text-pos-ink/60">Your saved questions appear here.</li>}
         </ul>
       </aside>
       <section className="space-y-3">

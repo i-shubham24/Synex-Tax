@@ -114,7 +114,7 @@ export function FirmPanel() {
                   disabled={!firm?.canEdit}
                   onChange={(e) => setForm({ ...form, [f.key]: f.upper ? e.target.value.toUpperCase() : e.target.value })}
                 />
-                {f.hint && <span className="block text-[11px] text-pos-ink/50">{f.hint}</span>}
+                {f.hint && <span className="block text-[12px] text-pos-ink/60">{f.hint}</span>}
               </label>
             ))}
           </div>

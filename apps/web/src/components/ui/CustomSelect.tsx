@@ -146,14 +146,14 @@ export function CustomDropdown({
                 <div className="flex flex-col truncate">
                   <span className="truncate">{opt.label}</span>
                   {opt.description && (
-                    <span className="text-[10px] text-slate-400 font-mono truncate">
+                    <span className="text-[12px] text-slate-400 font-mono truncate">
                       {opt.description}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {opt.badge && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#17191C] text-[#52E888] border border-[#24272B] font-mono">
+                    <span className="text-[11px] px-1.5 py-0.2 rounded bg-[#17191C] text-[#52E888] border border-[#24272B] font-mono">
                       {opt.badge}
                     </span>
                   )}

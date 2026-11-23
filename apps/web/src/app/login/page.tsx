@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
@@ -25,6 +25,10 @@ function FiledCard() {
 }
 
 export default function LoginPage() {
+  // Wakes the API while the form is being filled in, so signing in does not wait for a cold start.
+  useEffect(() => {
+    fetch('/api/v1/auth/csrf', { credentials: 'include' }).catch(() => {});
+  }, []);
   const router = useRouter();
   const { login, loginDemo } = useAuth();
 

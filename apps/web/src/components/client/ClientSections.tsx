@@ -17,7 +17,7 @@ const ITEM: Record<ItemStatus, [string, string]> = {
   REJECTED: ['Please send again', 'bg-pos-red/10 text-pos-red'],
   RECEIVED: ['Received', 'bg-pos-accent/10 text-pos-accent-deep'],
   ACCEPTED: ['Accepted', 'bg-pos-green/15 text-[#147a3a]'],
-  NOT_NEEDED: ['Not needed', 'bg-pos-muted text-pos-ink/50'],
+  NOT_NEEDED: ['Not needed', 'bg-pos-muted text-pos-ink/60'],
 };
 
 const FILING: Record<string, string> = {
@@ -89,11 +89,11 @@ export function ChecklistsSection({ lists, multi, onChange }: { lists: Checklist
                   <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                     <div className="min-w-0">
                       <p className="text-[13.5px]">{i.label}</p>
-                      {i.files > 0 && <p className="text-[12px] text-pos-ink/50">{i.files} file{i.files === 1 ? '' : 's'} sent</p>}
+                      {i.files > 0 && <p className="text-[12px] text-pos-ink/60">{i.files} file{i.files === 1 ? '' : 's'} sent</p>}
                       {note[i.id] && <p role="status" className={`text-[12.5px] ${note[i.id].startsWith('Sent') ? 'text-[#147a3a]' : 'text-pos-red'}`}>{note[i.id]}</p>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-[11.5px] font-medium ${tone}`}>{label}</span>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[12.5px] font-medium ${tone}`}>{label}</span>
                       {i.status !== 'NOT_NEEDED' && (
                         <label className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-pos-line px-3 text-[12.5px] text-pos-ink/80 hover:bg-pos-muted ${busy ? 'pointer-events-none opacity-50' : ''}`}>
                           <Upload className="h-3.5 w-3.5" /> {busy === i.id ? 'Sending' : 'Send file'}
@@ -137,7 +137,7 @@ export function DocumentsSection({ docs, unavailable, multi }: { docs: SharedDoc
         {docs.map((d) => (
           <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="flex min-w-0 items-start gap-2.5">
-              {d.locked ? <Lock className="mt-0.5 h-4 w-4 shrink-0 text-pos-ink/50" /> : <FileText className="mt-0.5 h-4 w-4 shrink-0 text-pos-accent" />}
+              {d.locked ? <Lock className="mt-0.5 h-4 w-4 shrink-0 text-pos-ink/60" /> : <FileText className="mt-0.5 h-4 w-4 shrink-0 text-pos-accent" />}
               <div className="min-w-0">
                 <p className="text-[13.5px] font-medium">{d.title}</p>
                 <p className="text-[12px] text-pos-ink/55">
@@ -189,7 +189,7 @@ export function FilingsSection({ filings, multi }: { filings: Filings | null; mu
               <td className="px-4 py-2">{r.name}</td>
               <td className="px-4 py-2">{r.period}</td>
               <td className="px-4 py-2">
-                <span className={`rounded-full px-2.5 py-0.5 text-[11.5px] font-medium ${r.status === 'FILED' || r.status === 'CLOSED' ? 'bg-pos-green/15 text-[#147a3a]' : 'bg-pos-muted text-pos-ink/65'}`}>{FILING[r.status] ?? r.status}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-[12.5px] font-medium ${r.status === 'FILED' || r.status === 'CLOSED' ? 'bg-pos-green/15 text-[#147a3a]' : 'bg-pos-muted text-pos-ink/65'}`}>{FILING[r.status] ?? r.status}</span>
               </td>
             </tr>
           ))}

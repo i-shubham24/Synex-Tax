@@ -93,12 +93,12 @@ export function EvidencePanel() {
         <div className="space-y-1 rounded-xl border border-pos-line bg-pos-surface p-4">
           <div className="text-pos-ink/60">Change log chain</div>
           <div className={`text-sm font-semibold tabular-nums ${chain && chain !== 'error' && !chain.intact ? 'text-red-600' : 'text-pos-ink'}`}>{status}</div>
-          <div className="text-pos-ink/50">Recomputed by the server just now</div>
+          <div className="text-pos-ink/60">Recomputed by the server just now</div>
         </div>
         <div className="space-y-1 rounded-xl border border-pos-line bg-pos-surface p-4">
           <div className="text-pos-ink/60">Retention</div>
           <div className="text-sm font-semibold text-pos-ink">8 years</div>
-          <div className="text-pos-ink/50">Companies Act Section 128(5); audit rows cannot be edited or deleted</div>
+          <div className="text-pos-ink/60">Companies Act Section 128(5); audit rows cannot be edited or deleted</div>
         </div>
       </div>
     </div>

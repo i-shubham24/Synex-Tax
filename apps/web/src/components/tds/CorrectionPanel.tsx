@@ -250,7 +250,7 @@ export function CorrectionPanel() {
                   <div className="grid gap-2 border-b border-pos-line p-4 sm:grid-cols-4">
                     <p className="sm:col-span-4 text-[12px] text-pos-ink/55">Challan changes alone go in a challan details correction (C2). If rows under this challan change too, they go together in C3.</p>
                     {([['bsr', 'BSR code', ch.bsr], ['challanNo', 'Challan serial', ch.challanNo], ['date', 'Date', ch.date, 'date'], ['tax', 'Tax', ch.tax], ['interest', 'Interest', ch.interest], ['fee', 'Fee', ch.fee], ['others', 'Others', ch.others], ['minorHead', 'Minor head', ch.minorHead]] as const).map(([k, label, was, type]) => (
-                      <label key={k} className="text-[12px] text-pos-ink/60">{label} <span className="text-pos-ink/40">(now {was || 'blank'})</span>
+                      <label key={k} className="text-[12px] text-pos-ink/60">{label} <span className="text-pos-ink/60">(now {was || 'blank'})</span>
                         <input type={type ?? 'text'} value={ce[k] ?? ''} onChange={(e) => setCh(ch.recordNo, k, e.target.value)} className={input} />
                       </label>
                     ))}

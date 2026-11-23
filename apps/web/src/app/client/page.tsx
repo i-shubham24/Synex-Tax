@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { MessageThread } from '../../components/messages/MessageThread';
 import { ChecklistsSection, DocumentsSection, FilingsSection, type Checklist, type Filings, type SharedDoc } from '../../components/client/ClientSections';
+import { ClientApprovalAndDsc } from '../../components/client/ClientApprovalAndDsc';
 
 interface Me { firm: string; name: string; entities: Array<{ id: string; name: string; tradeName: string | null; pan: string; unread: number }>; messagesEnabled: boolean }
 
@@ -81,7 +82,7 @@ export default function ClientHomePage() {
             <span className="block text-[13.5px] font-medium">{e.name}</span>
             <span className="block text-[12px] text-pos-ink/55">
               PAN <span className="font-mono">{e.pan}</span>
-              {e.unread > 0 && <span className="ml-2 rounded-full bg-pos-accent px-1.5 py-0.5 text-[11px] font-medium text-white">{e.unread} new</span>}
+              {e.unread > 0 && <span className="ml-2 rounded-full bg-pos-accent px-1.5 py-0.5 text-[12px] font-medium text-white">{e.unread} new</span>}
             </span>
           </button>
         ))}
@@ -95,6 +96,10 @@ export default function ClientHomePage() {
       <section aria-labelledby="shared">
         <h2 id="shared" className="mb-2.5 text-[16px] font-semibold">Shared with you</h2>
         <DocumentsSection docs={only(docs)} unavailable={docsUnavailable} multi={false} />
+      </section>
+
+      <section aria-labelledby="approvals">
+        <ClientApprovalAndDsc clientName={me.name} />
       </section>
 
       <section aria-labelledby="returns">

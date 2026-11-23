@@ -54,7 +54,7 @@ export function TaskBoard({ tasks, onMove, busyId, focusId }: { tasks: PracticeT
         return (
           <section key={col.status} aria-label={`${col.label}, ${items.length} task${items.length === 1 ? '' : 's'}`} className="pos-card flex min-h-[160px] flex-col p-3">
             <h3 className="mb-2 flex items-center justify-between px-1 text-[13.5px] font-semibold text-pos-ink">
-              {col.label} <span className="font-normal tabular-nums text-pos-ink/50">{items.length}</span>
+              {col.label} <span className="font-normal tabular-nums text-pos-ink/60">{items.length}</span>
             </h3>
             <ul className="flex-1 space-y-2 overflow-y-auto pr-0.5 [max-height:65vh]">
               {items.map((t) => (
@@ -74,7 +74,7 @@ export function TaskBoard({ tasks, onMove, busyId, focusId }: { tasks: PracticeT
                   <p className="text-pos-ink/65">{t.client}</p>
                   <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px]">
                     <span className={t.overdue ? 'font-medium text-[#dc2626]' : 'text-pos-ink/60'}>Due {nice(t.due_date)}{t.overdue ? ', overdue' : ''}</span>
-                    {t.reference && <span className="font-mono text-[11.5px] text-pos-ink/50">{t.reference}</span>}
+                    {t.reference && <span className="font-mono text-[12.5px] text-pos-ink/60">{t.reference}</span>}
                   </p>
                   {t.assignee && <p className="text-[12px] text-pos-ink/55">{t.assignee}</p>}
                   <div className="mt-1.5 flex justify-between">
@@ -83,7 +83,7 @@ export function TaskBoard({ tasks, onMove, busyId, focusId }: { tasks: PracticeT
                   </div>
                 </li>
               ))}
-              {!items.length && <li className="px-1 text-[12px] text-pos-ink/45">Nothing here.</li>}
+              {!items.length && <li className="px-1 text-[12px] text-pos-ink/60">Nothing here.</li>}
             </ul>
           </section>
         );

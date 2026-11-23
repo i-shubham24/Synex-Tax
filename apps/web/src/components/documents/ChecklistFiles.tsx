@@ -56,21 +56,21 @@ export function ChecklistFiles({ checklistId, items, onChange }: { checklistId: 
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={makeLink} className="inline-flex items-center gap-1.5 rounded-full border border-pos-line px-3 py-1.5 text-pos-ink"><Link2 className="h-3.5 w-3.5" /> Upload link for the client</button>
         {active.length > 0 && <span className="text-pos-ink/55">{active.length} live link{active.length === 1 ? '' : 's'}{active[0].last_used_at ? `, last used ${when(active[0].last_used_at)}` : ''}</span>}
-        {active.map((l) => <button key={l.id} type="button" onClick={() => revoke(l.id)} className="text-pos-ink/50 hover:text-[#dc2626]">Withdraw link ending {when(l.expires_at)}</button>)}
+        {active.map((l) => <button key={l.id} type="button" onClick={() => revoke(l.id)} className="text-pos-ink/60 hover:text-[#dc2626]">Withdraw link ending {when(l.expires_at)}</button>)}
       </div>
       {fresh && (
         <div className="flex flex-wrap items-center gap-2 rounded-[10px] bg-pos-muted px-3 py-2">
-          <span className="font-mono text-[11.5px] text-pos-ink break-all">{fresh.url}</span>
+          <span className="font-mono text-[12.5px] text-pos-ink break-all">{fresh.url}</span>
           <button type="button" onClick={() => { navigator.clipboard?.writeText(fresh.url); setCopied(true); }} className="inline-flex items-center gap-1 text-pos-accent"><Copy className="h-3.5 w-3.5" /> {copied ? 'Copied' : 'Copy'}</button>
           {fresh.whatsapp && <a href={fresh.whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#15803d]"><MessageCircle className="h-3.5 w-3.5" /> Send on WhatsApp</a>}
-          <span className="w-full text-[11.5px] text-pos-ink/55">Shown once. It works for 30 days; anyone with it can upload to this checklist, so send it only to the client.</span>
+          <span className="w-full text-[12.5px] text-pos-ink/55">Shown once. It works for 30 days; anyone with it can upload to this checklist, so send it only to the client.</span>
         </div>
       )}
       {files.length > 0 && (
         <ul className="space-y-1">
           {files.map((f) => (
             <li key={f.id} className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-pos-ink">{items.find((i) => i.id === f.item_id)?.label ?? 'Item'}: {f.original_name} <span className="text-pos-ink/45">({size(f.size_bytes)}, {f.uploaded_via === 'PORTAL' ? 'from the client' : 'by staff'}, {when(f.uploaded_at)})</span></span>
+              <span className="text-pos-ink">{items.find((i) => i.id === f.item_id)?.label ?? 'Item'}: {f.original_name} <span className="text-pos-ink/60">({size(f.size_bytes)}, {f.uploaded_via === 'PORTAL' ? 'from the client' : 'by staff'}, {when(f.uploaded_at)})</span></span>
               <button type="button" onClick={() => { download(f); onChange(); }} className="inline-flex items-center gap-1 text-pos-accent"><Download className="h-3.5 w-3.5" /> Download</button>
             </li>
           ))}

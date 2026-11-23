@@ -91,7 +91,7 @@ export function KeyboardShortcuts() {
       <div role="dialog" aria-modal="true" aria-labelledby="kbd-title" className="pos-card max-h-[85vh] w-full max-w-md overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 id="kbd-title" className="text-[16px] font-semibold text-pos-ink">Keyboard shortcuts</h2>
-          <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="rounded-full p-1 text-pos-ink/50 hover:bg-pos-muted"><X className="h-4 w-4" /></button>
+          <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="rounded-full p-1 text-pos-ink/60 hover:bg-pos-muted"><X className="h-4 w-4" /></button>
         </div>
         <dl className="mt-4 space-y-2 text-[13.5px]">
           <div className="flex justify-between"><dt className="text-pos-ink/70">Search or run a command</dt><dd><kbd className="rounded border border-pos-line px-1.5 text-[12px]">Ctrl K</kbd></dd></div>

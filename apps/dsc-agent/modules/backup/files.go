@@ -35,7 +35,7 @@ var ErrFileProduct = errors.New("backup: this product writes its own backup file
 var ErrNoBackupFile = errors.New("backup: no backup file found for this product")
 
 type filePattern struct {
-	ext       string
+	exts      []string // accepted extensions, lower case with the dot
 	nameRE    *regexp.Regexp // nil: any name with the extension
 	recursive bool
 }
@@ -45,10 +45,25 @@ type fileFolder struct {
 	pattern filePattern
 }
 
-var zohoAny = filePattern{ext: ".zip"}
-var zohoNamed = filePattern{ext: ".zip", nameRE: regexp.MustCompile(`(?i)zoho`)}
-var vyaparFiles = filePattern{ext: ".vyb"}
-var vyaparDeep = filePattern{ext: ".vyb", recursive: true}
+// Zoho Books' data backup arrives as CSV or XLS files (often zipped when downloaded); documents and
+// the audit trail come as ZIP. Source: Zoho Books help, Settings, Data Management, Backup Data.
+var zohoExts = []string{".zip", ".csv", ".xls", ".xlsx"}
+var zohoAny = filePattern{exts: zohoExts}
+var zohoNamed = filePattern{exts: zohoExts, nameRE: regexp.MustCompile(`(?i)zoho`)}
+
+// Vyapar backups are .vyb files (Vyapar's restore guide), saved where the user picks, usually Downloads.
+var vyaparFiles = filePattern{exts: []string{".vyb"}}
+var vyaparDeep = filePattern{exts: []string{".vyb"}, recursive: true}
+
+func (f filePattern) accepts(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	for _, e := range f.exts {
+		if ext == e {
+			return true
+		}
+	}
+	return false
+}
 
 func init() {
 	DefaultFolders[Zoho] = folderPaths(defaultFileFolders(Zoho))
@@ -140,7 +155,7 @@ func (c Config) Newest(p Product, source string, now time.Time) (string, error) 
 				}
 				return nil
 			}
-			if !d.Type().IsRegular() || !strings.EqualFold(filepath.Ext(d.Name()), pat.ext) {
+			if !d.Type().IsRegular() || !pat.accepts(d.Name()) {
 				return nil
 			}
 			if pat.nameRE != nil && !pat.nameRE.MatchString(d.Name()) {

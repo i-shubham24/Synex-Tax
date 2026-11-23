@@ -47,4 +47,11 @@ export * from './itr/itr4Json.js';
 export * from './itr/itr2Json.js';
 export * from './itr/specialRateTax.js';
 export * from './tds/dualActRecon.js';
+export * from './gst/gstr9Engine.js';
+export * from './tds/remittance15CaCb.js';
 
+export * from './itr/itr3Json.js';
+export * from './taxAudit/applicability.js';
+export * from './taxAudit/form3cdWriter.js';
+export * from './taxAudit/codes.js';
+export * from './itr/advanceTaxForecaster.js';

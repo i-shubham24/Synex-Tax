@@ -220,7 +220,7 @@ export function DualActReconCockpit({
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="font-semibold">{correctionFeedback}</span>
             </div>
-            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
+            <span className="text-[12px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
               C1 / C2 / C3 Ready
             </span>
           </div>
@@ -244,15 +244,15 @@ export function DualActReconCockpit({
               <FileSpreadsheet className="w-4 h-4 text-[#3A6FE8]" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-pos-ink tabular-nums">
+              <span className="text-2xl font-semibold font-mono text-pos-ink tabular-nums">
                 ₹{Number(report.metrics.totalChallanDeposit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex items-center gap-1.5 pt-1">
-              <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-600">
+              <span className="text-[12px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-600">
                 ₹{Number(report.metrics.totalUnconsumedSurplus).toLocaleString('en-IN', { minimumFractionDigits: 2 })} Surplus
               </span>
-              <span className="text-[11px] text-pos-ink/50">across {report.metrics.totalChallans} challans</span>
+              <span className="text-[12px] text-pos-ink/60">across {report.metrics.totalChallans} challans</span>
             </div>
           </div>
 
@@ -263,15 +263,15 @@ export function DualActReconCockpit({
               <ShieldAlert className="w-4 h-4 text-rose-500" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-rose-600 tabular-nums">
+              <span className="text-2xl font-semibold font-mono text-rose-600 tabular-nums">
                 ₹{Number(report.metrics.totalShortDeduction).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex items-center gap-1.5 pt-1">
-              <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600">
+              <span className="text-[12px] font-mono font-semibold px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600">
                 {report.metrics.criticalRiskCount} Critical Risks
               </span>
-              <span className="text-[11px] text-pos-ink/50">Sec 206AA non-PAN 20%</span>
+              <span className="text-[12px] text-pos-ink/60">Sec 206AA non-PAN 20%</span>
             </div>
           </div>
 
@@ -282,11 +282,11 @@ export function DualActReconCockpit({
               <Clock className="w-4 h-4 text-amber-500" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-amber-600 tabular-nums">
+              <span className="text-2xl font-semibold font-mono text-amber-600 tabular-nums">
                 ₹{Number(report.metrics.totalSection201Interest).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 pt-1 text-[11px] text-pos-ink/60 font-mono">
+            <div className="flex items-center gap-1.5 pt-1 text-[12px] text-pos-ink/60 font-mono">
               <span>Ded: ₹{report.metrics.totalLateDeductionInterest} (1%)</span>
               <span>•</span>
               <span>Dep: ₹{report.metrics.totalLateDepositInterest} (1.5%)</span>
@@ -300,7 +300,7 @@ export function DualActReconCockpit({
               <TrendingDown className="w-4 h-4 text-rose-600" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-mono text-rose-700 tabular-nums">
+              <span className="text-2xl font-semibold font-mono text-rose-700 tabular-nums">
                 ₹{Number(report.metrics.netTracesDemandRisk).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -374,7 +374,7 @@ export function DualActReconCockpit({
             <h3 className="text-xs font-semibold text-pos-ink">
               Payee Statutory Shortfall & Section 201(1A) Delay Audit
             </h3>
-            <span className="text-[11px] text-pos-ink/60 font-mono">
+            <span className="text-[12px] text-pos-ink/60 font-mono">
               Rule 119A Statutory Month Counting Applied
             </span>
           </div>
@@ -397,11 +397,11 @@ export function DualActReconCockpit({
               <tbody className="divide-y divide-pos-line font-mono tabular-nums text-pos-ink">
                 {report.highRiskDeductees.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-pos-ink/50 font-sans">
+                    <td colSpan={9} className="py-8 text-center text-pos-ink/60 font-sans">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                         <span className="font-semibold text-xs text-pos-ink">100% Statutory Compliance</span>
-                        <span className="text-[11px] text-pos-ink/60">Zero short deductions and zero PAN discrepancies detected in this statement.</span>
+                        <span className="text-[12px] text-pos-ink/60">Zero short deductions and zero PAN discrepancies detected in this statement.</span>
                       </div>
                     </td>
                   </tr>
@@ -411,35 +411,35 @@ export function DualActReconCockpit({
                       <td className="py-2.5 px-3 font-semibold text-pos-ink/70">{d.recordNo}</td>
                       <td className="py-2.5 px-3 font-sans">
                         <div className="font-semibold text-pos-ink">{d.name}</div>
-                        <div className="flex items-center gap-1 font-mono text-[11px] text-pos-accent">
+                        <div className="flex items-center gap-1 font-mono text-[12px] text-pos-accent">
                           <span>{d.pan}</span>
                           {d.panStatus === 'LITERAL_MISSING' && (
-                            <span className="px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 font-semibold text-[10px]">
+                            <span className="px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-600 font-semibold text-[12px]">
                               NO PAN
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="py-2.5 px-3 font-sans">
-                        <div className="text-[11px] font-semibold text-pos-ink">
+                        <div className="text-[12px] font-semibold text-pos-ink">
                           {d.section1961} → {d.section2025}
                         </div>
-                        <div className="text-[10px] text-pos-ink/60 truncate max-w-[180px]">{d.nature}</div>
+                        <div className="text-[12px] text-pos-ink/60 truncate max-w-[180px]">{d.nature}</div>
                       </td>
                       <td className="py-2.5 px-3 text-right">₹{Number(d.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="py-2.5 px-3 text-right font-semibold">₹{Number(d.deducted).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="py-2.5 px-3 text-center">
                         <span className="text-pos-ink/60">{d.appliedRate}</span>
-                        <span className="text-pos-ink/40 mx-1">/</span>
+                        <span className="text-pos-ink/60 mx-1">/</span>
                         <span className="font-semibold text-rose-600">{d.statutoryRate}</span>
                       </td>
-                      <td className="py-2.5 px-3 text-right font-bold text-rose-600">
+                      <td className="py-2.5 px-3 text-right font-semibold text-rose-600">
                         ₹{Number(d.shortDeductionAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-2.5 px-3 text-right text-amber-600 font-semibold">
                         ₹{Number(d.totalInterest201).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2.5 px-3 font-sans text-[11px] text-pos-ink/80 max-w-[200px]">
+                      <td className="py-2.5 px-3 font-sans text-[12px] text-pos-ink/80 max-w-[200px]">
                         {d.suggestedAction}
                       </td>
                     </tr>
@@ -458,7 +458,7 @@ export function DualActReconCockpit({
             <h3 className="text-xs font-semibold text-pos-ink">
               Challan Utilization & Unconsumed Surplus Balance Ledger
             </h3>
-            <span className="text-[11px] text-emerald-600 font-semibold font-mono">
+            <span className="text-[12px] text-emerald-600 font-semibold font-mono">
               Total Surplus: ₹{report.metrics.totalUnconsumedSurplus}
             </span>
           </div>
@@ -485,7 +485,7 @@ export function DualActReconCockpit({
                     <td className="py-2.5 px-3 text-pos-accent">{c.bsr}</td>
                     <td className="py-2.5 px-3">{c.date}</td>
                     <td className="py-2.5 px-3">
-                      <span className="px-1.5 py-0.5 rounded bg-pos-muted text-[11px] font-semibold">
+                      <span className="px-1.5 py-0.5 rounded bg-pos-muted text-[12px] font-semibold">
                         {c.minorHead === '0020' ? '0020 (Company)' : '0021 (Non-Co)'}
                       </span>
                     </td>
@@ -498,22 +498,22 @@ export function DualActReconCockpit({
                     <td className="py-2.5 px-3 text-right text-pos-ink/70">
                       ₹{Number(c.totalAllocatedToDeductees).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-emerald-600">
+                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-600">
                       ₹{Number(c.unconsumedSurplus).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-2.5 px-3 text-center font-sans">
                       {c.status === 'SURPLUS_AVAILABLE' && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                           Surplus Available
                         </span>
                       )}
                       {c.status === 'FULLY_CONSUMED' && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-pos-muted text-pos-ink/70 border border-pos-line">
+                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-pos-muted text-pos-ink/70 border border-pos-line">
                           Fully Consumed
                         </span>
                       )}
                       {c.status === 'OVER_ALLOCATED' && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 border border-rose-500/20">
+                        <span className="px-2 py-0.5 rounded-full text-[12px] font-semibold bg-rose-500/10 text-rose-600 border border-rose-500/20">
                           Over Allocated
                         </span>
                       )}
@@ -533,7 +533,7 @@ export function DualActReconCockpit({
             <h3 className="text-xs font-semibold text-pos-ink">
               Direct Tax Code Dual-Act Section Mapping & Transition Analysis
             </h3>
-            <span className="text-[11px] text-pos-ink/60">
+            <span className="text-[12px] text-pos-ink/60">
               Form 26Q (1961 Act) to Form 140 (2025 Act) Equivalents
             </span>
           </div>
@@ -560,7 +560,7 @@ export function DualActReconCockpit({
                     <td className="py-2.5 px-3 text-center">{s.deducteeCount}</td>
                     <td className="py-2.5 px-3 text-right">₹{Number(s.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     <td className="py-2.5 px-3 text-right font-semibold">₹{Number(s.totalDeducted).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td className="py-2.5 px-3 text-right font-bold text-rose-600">
+                    <td className="py-2.5 px-3 text-right font-semibold text-rose-600">
                       ₹{Number(s.shortfall).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -578,8 +578,8 @@ export function DualActReconCockpit({
             {/* C1 Column */}
             <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between border-b border-pos-line pb-2">
-                <span className="text-xs font-bold text-pos-ink">C1: Deductor Details</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-muted text-pos-ink/70">
+                <span className="text-xs font-semibold text-pos-ink">C1: Deductor Details</span>
+                <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-muted text-pos-ink/70">
                   {report.recommendedCorrections.c1Deductor.length} Actions
                 </span>
               </div>
@@ -594,7 +594,7 @@ export function DualActReconCockpit({
                     <div key={i} className="p-2.5 rounded-lg bg-pos-muted/60 border border-pos-line space-y-1 text-xs">
                       <div className="font-semibold text-rose-600 font-mono">{c.field}</div>
                       <div className="text-pos-ink/70">{c.issue}</div>
-                      <div className="text-[11px] text-pos-accent font-semibold pt-1">{c.remedy}</div>
+                      <div className="text-[12px] text-pos-accent font-semibold pt-1">{c.remedy}</div>
                     </div>
                   ))}
                 </div>
@@ -604,8 +604,8 @@ export function DualActReconCockpit({
             {/* C2 Column */}
             <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between border-b border-pos-line pb-2">
-                <span className="text-xs font-bold text-pos-ink">C2: Challan Adjustments</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-muted text-pos-ink/70">
+                <span className="text-xs font-semibold text-pos-ink">C2: Challan Adjustments</span>
+                <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-muted text-pos-ink/70">
                   {report.recommendedCorrections.c2Challans.length} Actions
                 </span>
               </div>
@@ -620,7 +620,7 @@ export function DualActReconCockpit({
                     <div key={i} className="p-2.5 rounded-lg bg-pos-muted/60 border border-pos-line space-y-1 text-xs">
                       <div className="font-semibold text-emerald-600 font-mono">Challan #{c.challanNo} (BSR {c.bsr})</div>
                       <div className="text-pos-ink/70">{c.issue}</div>
-                      <div className="text-[11px] text-pos-accent font-semibold pt-1">{c.remedy}</div>
+                      <div className="text-[12px] text-pos-accent font-semibold pt-1">{c.remedy}</div>
                     </div>
                   ))}
                 </div>
@@ -630,8 +630,8 @@ export function DualActReconCockpit({
             {/* C3 Column */}
             <div className="bg-pos-surface border border-pos-line rounded-xl p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between border-b border-pos-line pb-2">
-                <span className="text-xs font-bold text-pos-ink">C3: Deductee & PAN Updates</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-pos-muted text-pos-ink/70">
+                <span className="text-xs font-semibold text-pos-ink">C3: Deductee & PAN Updates</span>
+                <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-pos-muted text-pos-ink/70">
                   {report.recommendedCorrections.c3Deductees.length} Actions
                 </span>
               </div>
@@ -646,7 +646,7 @@ export function DualActReconCockpit({
                     <div key={i} className="p-2.5 rounded-lg bg-pos-muted/60 border border-pos-line space-y-1 text-xs">
                       <div className="font-semibold text-rose-600 font-mono">Row #{c.recordNo} ({c.pan})</div>
                       <div className="text-pos-ink/70">{c.issue}</div>
-                      <div className="text-[11px] text-pos-accent font-semibold pt-1">{c.remedy}</div>
+                      <div className="text-[12px] text-pos-accent font-semibold pt-1">{c.remedy}</div>
                     </div>
                   ))}
                 </div>
@@ -664,7 +664,7 @@ export function DualActReconCockpit({
               <h3 className="font-semibold text-sm text-pos-ink">Ingest TRACES Consolidated (.conso) File</h3>
               <button
                 onClick={() => setShowFileModal(false)}
-                className="text-pos-ink/50 hover:text-pos-ink text-xs"
+                className="text-pos-ink/60 hover:text-pos-ink text-xs"
               >
                 Cancel
               </button>
@@ -678,7 +678,7 @@ export function DualActReconCockpit({
               <label className="border-2 border-dashed border-pos-line hover:border-pos-accent rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-pos-muted/30">
                 <UploadCloud className="w-6 h-6 text-pos-accent" />
                 <span className="text-xs font-semibold text-pos-ink">Click to browse or drop .conso / .txt file</span>
-                <span className="text-[11px] text-pos-ink/50">Protean FH/BH/CD/DD record format supported</span>
+                <span className="text-[12px] text-pos-ink/60">Protean FH/BH/CD/DD record format supported</span>
                 <input
                   type="file"
                   accept=".txt,.conso"
@@ -688,7 +688,7 @@ export function DualActReconCockpit({
               </label>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-pos-ink/60">Or paste raw statement text</label>
+                <label className="text-[12px] font-semibold text-pos-ink/60">Or paste raw statement text</label>
                 <textarea
                   rows={4}
                   value={fileText}

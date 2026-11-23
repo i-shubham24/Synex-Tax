@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { TeamPanel } from '../../../components/settings/TeamPanel';
 import { ConnectionsPanel } from '../../../components/settings/ConnectionsPanel';
+import { BackupsPanel } from '../../../components/settings/BackupsPanel';
 import { EvidencePanel } from '../../../components/settings/EvidencePanel';
 import { FirmPanel } from '../../../components/settings/FirmPanel';
 import { SecurityPanel } from '../../../components/settings/SecurityPanel';
@@ -12,6 +13,7 @@ import {
   Users,
   Usb,
   Key,
+  HardDrive,
   ShieldCheck,
   CreditCard,
   Lock,
@@ -44,6 +46,7 @@ const SETTINGS_TABS: SettingsTab[] = [
   { id: 'team', label: 'Team and access', icon: Users },
   { id: 'dsc', label: 'DSC Token Inventory', icon: Usb },
   { id: 'api', label: 'Connections', icon: Key },
+  { id: 'backups', label: 'Backups', icon: HardDrive },
   { id: 'dpdp', label: 'Audit evidence', icon: ShieldCheck },
   { id: 'billing', label: 'Subscription & Billing', icon: CreditCard },
   { id: 'security', label: 'Security & TOTP MFA', icon: Lock },
@@ -129,7 +132,7 @@ export default function SettingsPage() {
               <div className="text-xs text-pos-ink/70 mt-0.5">
                 {user?.firmName || 'Verma & Associates CA (Amritsar)'}
               </div>
-              <div className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-semibold border border-emerald-500/20">
+              <div className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[12px] font-semibold border border-emerald-500/20">
                 <span>CA Partner / Practice Admin</span>
               </div>
             </div>
@@ -156,7 +159,7 @@ export default function SettingsPage() {
                     <Icon className="w-4 h-4 stroke-[2]" />
                     <span>{tab.label}</span>
                   </div>
-                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-pos-ink/40'}`} />
+                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-pos-ink/60'}`} />
                 </button>
               );
             })}
@@ -205,7 +208,7 @@ export default function SettingsPage() {
                   <Usb className="w-4 h-4 text-[#3A6FE8]" />
                   <span>Tokens are read on each computer</span>
                 </div>
-                <p className="text-[11px] text-pos-ink/70 leading-relaxed">
+                <p className="text-[12px] text-pos-ink/70 leading-relaxed">
                   The desktop agent lists the DSC certificates Windows sees on the computer it runs on; the server never holds them. Sign returns under Audit, DSC signing.
                 </p>
               </div>
@@ -215,11 +218,11 @@ export default function SettingsPage() {
                   <Laptop className="w-4 h-4 text-pos-accent" />
                   <span>Local Desktop DSC Bridge Daemon Setup</span>
                 </div>
-                <p className="text-pos-ink/70 leading-relaxed text-[11px]">
+                <p className="text-pos-ink/70 leading-relaxed text-[12px]">
                   No Java applet or browser extension. The SynexTax agent (apps/dsc-agent) runs on the computer at 127.0.0.1:18531 and
                   signs through the token driver installed with the DSC; the token's own window asks for the PIN.
                 </p>
-                <div className="text-[11px] text-pos-accent pt-1">
+                <div className="text-[12px] text-pos-accent pt-1">
                   Works with tokens whose driver registers the certificate with Windows: ePass2003, mToken, WatchData ProxKey, TrustKey and others.
                 </div>
               </div>
@@ -227,6 +230,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'api' && <ConnectionsPanel />}
+          {activeTab === 'backups' && <BackupsPanel />}
 
           {/* TAB 5: DPDP & AUDIT PACK */}
           {activeTab === 'dpdp' && <EvidencePanel />}
@@ -259,7 +263,7 @@ export default function SettingsPage() {
                 }`}>
                   <div className="font-semibold text-sm text-pos-ink">SOLO CA</div>
                   <div className="text-lg font-semibold text-pos-ink">₹2,999 <span className="text-xs font-normal text-pos-ink/60">/mo</span></div>
-                  <ul className="space-y-1.5 text-[11px] text-pos-ink/70 font-sans">
+                  <ul className="space-y-1.5 text-[12px] text-pos-ink/70 font-sans">
                     <li>• Up to 10 Active Clients</li>
                     <li>• Sub-second GSTR-2B Recon</li>
                     <li>• Dual-Act TDS Form 140</li>
@@ -279,10 +283,10 @@ export default function SettingsPage() {
                 }`}>
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm text-pos-ink">GROWTH PRACTICE</span>
-                    <span className="text-[10px] bg-pos-accent text-white font-semibold px-2 py-0.5 rounded">POPULAR</span>
+                    <span className="text-[12px] bg-pos-accent text-white font-semibold px-2 py-0.5 rounded">POPULAR</span>
                   </div>
                   <div className="text-lg font-semibold text-pos-ink">₹7,999 <span className="text-xs font-normal text-pos-ink/60">/mo</span></div>
-                  <ul className="space-y-1.5 text-[11px] text-pos-ink/70 font-sans">
+                  <ul className="space-y-1.5 text-[12px] text-pos-ink/70 font-sans">
                     <li>• Up to 50 Active Clients</li>
                     <li>• Statutory Maker-Checker RBAC</li>
                     <li>• Automated IMS 48hr Deemed Scan</li>
@@ -302,7 +306,7 @@ export default function SettingsPage() {
                 }`}>
                   <div className="font-semibold text-sm text-pos-ink">ENTERPRISE SCALE</div>
                   <div className="text-lg font-semibold text-pos-ink">₹19,999 <span className="text-xs font-normal text-pos-ink/60">/mo</span></div>
-                  <ul className="space-y-1.5 text-[11px] text-pos-ink/70 font-sans">
+                  <ul className="space-y-1.5 text-[12px] text-pos-ink/70 font-sans">
                     <li>• Unlimited Active Clients</li>
                     <li>• Multi-branch ICAI FRN Hub</li>
                     <li>• Dedicated Protean FVU Farm</li>

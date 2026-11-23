@@ -141,7 +141,7 @@ export function MessageThread({ viewer, loadUrl, sendUrl, sendExtra, attachUrl, 
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-[14px] px-3.5 py-2.5 ${mine ? 'bg-pos-accent text-white' : 'border border-pos-line bg-pos-muted text-pos-ink'}`}>
-                {!mine && <p className="text-[11.5px] font-medium opacity-70">{m.senderName}</p>}
+                {!mine && <p className="text-[12.5px] font-medium opacity-70">{m.senderName}</p>}
                 {m.body === null ? (
                   <p className="text-[13.5px] italic opacity-75">This message cannot be read.</p>
                 ) : (
@@ -159,7 +159,7 @@ export function MessageThread({ viewer, loadUrl, sendUrl, sendExtra, attachUrl, 
                     <span className="shrink-0 opacity-70">{size(a.sizeBytes)}</span>
                   </button>
                 ))}
-                <p className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${mine ? 'text-white/75' : 'text-pos-ink/50'}`}>
+                <p className={`mt-1 flex items-center justify-end gap-1 text-[12px] ${mine ? 'text-white/75' : 'text-pos-ink/60'}`}>
                   {time(m.sentAt)}
                   {mine && (seen ? <span className="inline-flex items-center gap-0.5"><CheckCheck className="h-3.5 w-3.5" aria-hidden /> Read</span> : <Check className="h-3.5 w-3.5" aria-label="Sent" />)}
                 </p>

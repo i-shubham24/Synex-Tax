@@ -115,8 +115,8 @@ export function DocumentPanel(props: {
             {(detail?.versions ?? []).map((v) => (
               <li key={v.version} className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
                 <span className="text-pos-ink">
-                  <span className="font-mono">v{v.version}</span> {v.fileName} <span className="text-pos-ink/50">({fileSize(v.sizeBytes)}, {v.uploadedVia === 'CLIENT' ? 'the client' : v.uploadedBy ?? 'the firm'}, {when(v.createdAt)}{v.restoredFrom ? `, restored from v${v.restoredFrom}` : ''})</span>
-                  {v.version === detail?.currentVersion && <span className="ml-1.5 rounded-full bg-[#5fe88a]/20 px-2 py-0.5 text-[11px] text-[#147a3a]">Current</span>}
+                  <span className="font-mono">v{v.version}</span> {v.fileName} <span className="text-pos-ink/60">({fileSize(v.sizeBytes)}, {v.uploadedVia === 'CLIENT' ? 'the client' : v.uploadedBy ?? 'the firm'}, {when(v.createdAt)}{v.restoredFrom ? `, restored from v${v.restoredFrom}` : ''})</span>
+                  {v.version === detail?.currentVersion && <span className="ml-1.5 rounded-full bg-[#5fe88a]/20 px-2 py-0.5 text-[12px] text-[#147a3a]">Current</span>}
                 </span>
                 <span className="flex items-center gap-2">
                   {v.previewable && <button type="button" aria-label={`Preview version ${v.version}`} onClick={async () => onMessage(await openFile(authFetch, doc.id, v.version, v.fileName, true))} className="text-pos-accent"><Eye className="h-3.5 w-3.5" /></button>}
@@ -146,7 +146,7 @@ export function DocumentPanel(props: {
                 <option value="">Choose the fee invoice</option>
                 {invoices.map((i) => <option key={i.id} value={i.id}>{i.invoiceNo}, {money(i.total)}{i.paid ? ', paid' : ''}</option>)}
               </select>
-              {!invoices.length && <p className="text-[12px] text-pos-ink/50">No issued fee invoices for this client yet.</p>}
+              {!invoices.length && <p className="text-[12px] text-pos-ink/60">No issued fee invoices for this client yet.</p>}
             </div>
           ) : (
             doc.lockedUntilPaid && <p className="mt-2 text-[12.5px] text-pos-ink/60">Held back until invoice <span className="font-mono">{doc.invoice?.invoiceNo}</span> is paid. A partner or manager changes this.</p>
@@ -169,12 +169,12 @@ export function DocumentPanel(props: {
                 {opens.map((o, i) => (
                   <li key={i} className="flex justify-between gap-2 text-pos-ink">
                     <span>{o.by}{o.byClient ? ' (client)' : ''}, {o.kind === 'PREVIEW' ? 'previewed' : 'downloaded'} <span className="font-mono">v{o.version}</span></span>
-                    <span className="text-pos-ink/50">{when(o.openedAt)}</span>
+                    <span className="text-pos-ink/60">{when(o.openedAt)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 text-[12.5px] text-pos-ink/50">Nobody has opened it yet.</p>
+              <p className="mt-1 text-[12.5px] text-pos-ink/60">Nobody has opened it yet.</p>
             )}
           </div>
         )}

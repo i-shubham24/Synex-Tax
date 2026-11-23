@@ -19,7 +19,7 @@ const STATUS_CHIP: Record<Status, string> = {
   RECEIVED: 'bg-[#2f8ae0]/10 text-[#1f6fc4]',
   ACCEPTED: 'bg-[#5fe88a]/20 text-[#147a3a]',
   REJECTED: 'bg-[#f2b53a]/20 text-[#8a5a00]',
-  NOT_NEEDED: 'bg-pos-muted text-pos-ink/50',
+  NOT_NEEDED: 'bg-pos-muted text-pos-ink/60',
 };
 const nice = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
@@ -106,7 +106,7 @@ export default function DocumentsPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {columns.map(([key, title, tone]) => (
           <section key={key} className="pos-card p-4" aria-labelledby={`gap-${key}`}>
-            <h2 id={`gap-${key}`} className={`text-[14px] font-semibold ${tone}`}>{title} <span className="text-pos-ink/40">{gaps?.[key].length ?? 0}</span></h2>
+            <h2 id={`gap-${key}`} className={`text-[14px] font-semibold ${tone}`}>{title} <span className="text-pos-ink/60">{gaps?.[key].length ?? 0}</span></h2>
             <ul className="mt-3 space-y-3">
               {(gaps?.[key] ?? []).map((g) => (
                 <li key={g.id} className="rounded-[14px] border border-pos-line p-3">
@@ -115,13 +115,13 @@ export default function DocumentsPage() {
                       <p className="text-[13.5px] font-medium text-pos-ink">{g.clientName}</p>
                       <p className="text-[12px] text-pos-ink/55">{services.find((s) => s.id === g.service)?.label ?? g.service}, {g.periodLabel}, due {nice(g.dueDate)}</p>
                     </div>
-                    <span className="text-[12px] tabular-nums text-pos-ink/50">{g.done}/{g.total}</span>
+                    <span className="text-[12px] tabular-nums text-pos-ink/60">{g.done}/{g.total}</span>
                   </div>
                   <ul className="mt-2 list-disc pl-4 text-[12.5px] text-pos-ink/70">{g.outstanding.map((o) => <li key={o}>{o}</li>)}</ul>
                   <div className="mt-2.5 flex gap-2">
                     <button type="button" onClick={() => remind(g.id, 'WHATSAPP')} className="inline-flex items-center gap-1.5 rounded-full bg-[#22a356] px-3 py-1.5 text-[12px] font-medium text-white"><MessageCircle className="h-3.5 w-3.5" /> WhatsApp</button>
                     <button type="button" onClick={() => remind(g.id, 'EMAIL')} className="inline-flex items-center gap-1.5 rounded-full border border-pos-line px-3 py-1.5 text-[12px] text-pos-ink/70"><Mail className="h-3.5 w-3.5" /> Email</button>
-                    {g.lastReminder && <span className="self-center text-[11.5px] text-pos-ink/45">reminded {new Date(g.lastReminder).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
+                    {g.lastReminder && <span className="self-center text-[12.5px] text-pos-ink/60">reminded {new Date(g.lastReminder).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
                   </div>
                 </li>
               ))}
@@ -165,14 +165,14 @@ export default function DocumentsPage() {
           <details key={k.id} className="pos-card p-4" open={k.status === 'OPEN' && lists.length <= 3}>
             <summary className="cursor-pointer text-[13.5px] text-pos-ink">
               <span className="font-medium">{k.clientName}</span>, {services.find((s) => s.id === k.service)?.label ?? k.service}, {k.periodLabel}
-              <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${k.status === 'COMPLETE' ? 'bg-[#5fe88a]/20 text-[#147a3a]' : 'bg-pos-muted text-pos-ink/60'}`}>{k.status === 'COMPLETE' ? 'Complete' : `Due ${nice(k.dueDate)}`}</span>
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-[12px] ${k.status === 'COMPLETE' ? 'bg-[#5fe88a]/20 text-[#147a3a]' : 'bg-pos-muted text-pos-ink/60'}`}>{k.status === 'COMPLETE' ? 'Complete' : `Due ${nice(k.dueDate)}`}</span>
             </summary>
             <ul className="mt-3 divide-y divide-pos-line">
               {k.items.map((i) => (
                 <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[13px]">
                   <span className="text-pos-ink">{i.label}</span>
                   <span className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_CHIP[i.status]}`}>{STATUS_LABEL[i.status]}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${STATUS_CHIP[i.status]}`}>{STATUS_LABEL[i.status]}</span>
                     <select aria-label={`Status of ${i.label}`} value={i.status} onChange={(e) => setItem(i.id, e.target.value as Status)} className="rounded-full border border-pos-line bg-pos-surface px-2 py-1 text-[12px] text-pos-ink">
                       {(Object.keys(STATUS_LABEL) as Status[]).map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                     </select>

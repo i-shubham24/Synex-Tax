@@ -54,7 +54,7 @@ test('ITR-2 and ITR-4 over the API: checked without a software ID, written with 
 
     delete process.env.ITR_SOFTWARE_ID;
     const status = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/itr/status', headers: auth })).body);
-    assert.deepEqual(status, { softwareIdConfigured: false, forms: ['ITR-1', 'ITR-2', 'ITR-4'] });
+    assert.deepEqual(status, { softwareIdConfigured: false, forms: ['ITR-1', 'ITR-2', 'ITR-3', 'ITR-4'] });
     const noId = await app.inject({ method: 'POST', url: '/api/v1/itr/itr4', headers: auth, payload: itr4 });
     assert.equal(noId.statusCode, 422, noId.body);
     assert.match(JSON.parse(noId.body).issues[0].message, /software ID/);
@@ -76,7 +76,54 @@ test('ITR-2 and ITR-4 over the API: checked without a software ID, written with 
     assert.equal(bad.statusCode, 400);
     assert.match(JSON.parse(bad.body).message, /PAN/);
 
-    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: {} })).statusCode, 501);
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: {} })).statusCode, 400);
+  } finally {
+    if (prev) process.env.ITR_SOFTWARE_ID = prev; else delete process.env.ITR_SOFTWARE_ID;
+    await app.close();
+  }
+});
+
+// 44ADA professional: 50% of Rs 30,00,000 = Rs 15,00,000.
+const itr3 = {
+  person, status: 'I', filing: { section: 11, regime: 'NEW' }, bank,
+  business: {
+    natures: [{ code: '16019_1', tradeName: 'Singh Associates' }],
+    ada: { code: '16019_1', name: 'Singh Associates', digital: 3000000, cash: 0 },
+    noAccounts: { debtors: 200000, creditors: 0, stock: 0, cash: 20000 },
+  },
+};
+
+test('ITR-3 over the API: checks without a software ID, masked file name, audit and HUF refusals', async () => {
+  const app = buildApp();
+  await app.ready();
+  const auth = staffAuth(app);
+  const prev = process.env.ITR_SOFTWARE_ID;
+  try {
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: staffAuth(app, 'CLIENT'), payload: itr3 })).statusCode, 403);
+    delete process.env.ITR_SOFTWARE_ID;
+    const noId = await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: itr3 });
+    assert.equal(noId.statusCode, 422, noId.body);
+    assert.match(JSON.parse(noId.body).issues[0].message, /software ID/);
+    assert.equal(JSON.parse(noId.body).summary.businessIncome, 1500000);
+
+    process.env.ITR_SOFTWARE_ID = 'SW12345678';
+    const ok = await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: itr3 });
+    assert.equal(ok.statusCode, 200, ok.body);
+    const body = JSON.parse(ok.body);
+    assert.equal(body.fileName, 'ITR3_AY2026-27_XXXXX1234K.json');
+    assert.equal(body.json.ITR.ITR3.ITR3ScheduleBP.IncChrgUnHdProftGain, 1500000);
+
+    // Receipts of Rs 80 lakh under 44ADA need a tax audit (validation rule 137).
+    const audit = await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: { ...itr3, business: { ...itr3.business, ada: { ...itr3.business.ada, digital: 8000000 } } } });
+    assert.equal(audit.statusCode, 422);
+    assert.ok(JSON.parse(audit.body).issues.some((x: { message: string }) => /tax audit forms/.test(x.message)));
+    // A HUF cannot use 44ADA (rule 130).
+    const huf = await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: { ...itr3, status: 'H', person: { ...person, pan: 'AAAHS1234K' }, karta: { name: 'Harpreet Singh', pan: 'ABCPS1234K' } } });
+    assert.equal(huf.statusCode, 422);
+    assert.ok(JSON.parse(huf.body).issues.some((x: { message: string }) => /44ADA/.test(x.message)));
+    // Out of range amounts are refused by the body check.
+    const bad = await app.inject({ method: 'POST', url: '/api/v1/itr/itr3', headers: auth, payload: { ...itr3, business: { ...itr3.business, ada: { ...itr3.business.ada, digital: -5 } } } });
+    assert.equal(bad.statusCode, 400);
   } finally {
     if (prev) process.env.ITR_SOFTWARE_ID = prev; else delete process.env.ITR_SOFTWARE_ID;
     await app.close();

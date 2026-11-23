@@ -35,9 +35,9 @@ export function ConnectionsPanel() {
             <div className="space-y-1">
               <div className="text-sm font-semibold text-pos-ink">{r.title}</div>
               <div className="text-[12px] text-pos-ink/60">{s ? (on(r.key) ? r.on : r.off) : 'Checking…'}{r.key === 'uploads' && s?.uploads === 'DEV_DISK' ? ' (development disk)' : ''}</div>
-              {s && !on(r.key) && <div className="text-[11px] text-pos-ink/50">To set up: {r.how}</div>}
+              {s && !on(r.key) && <div className="text-[12px] text-pos-ink/60">To set up: {r.how}</div>}
             </div>
-            <span className={`rounded px-2.5 py-1 text-[11px] font-semibold ${s && on(r.key) ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-600' : 'border border-pos-line bg-pos-surface text-pos-ink/60'}`}>{s ? (on(r.key) ? 'Connected' : 'Not set up') : '…'}</span>
+            <span className={`rounded px-2.5 py-1 text-[12px] font-semibold ${s && on(r.key) ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-600' : 'border border-pos-line bg-pos-surface text-pos-ink/60'}`}>{s ? (on(r.key) ? 'Connected' : 'Not set up') : '…'}</span>
           </div>
         ))}
         {[
@@ -46,7 +46,7 @@ export function ConnectionsPanel() {
         ].map(([t, d]) => (
           <div key={t} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-pos-line bg-pos-muted p-4">
             <div className="space-y-1"><div className="text-sm font-semibold text-pos-ink">{t}</div><div className="text-[12px] text-pos-ink/60">{d}</div></div>
-            <span className="rounded border border-pos-line bg-pos-surface px-2.5 py-1 text-[11px] font-semibold text-pos-ink/60">Not connected</span>
+            <span className="rounded border border-pos-line bg-pos-surface px-2.5 py-1 text-[12px] font-semibold text-pos-ink/60">Not connected</span>
           </div>
         ))}
       </div>

@@ -93,9 +93,9 @@ export function SecurityPanel() {
             {sessions.map((s) => (
               <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="flex items-start gap-3">
-                  <Laptop className="mt-0.5 h-4 w-4 text-pos-ink/50" />
+                  <Laptop className="mt-0.5 h-4 w-4 text-pos-ink/60" />
                   <div>
-                    <p className="text-[13.5px] font-medium text-pos-ink">{s.device}{s.current && <span className="ml-2 rounded-full bg-[#22a356]/10 px-2 py-0.5 text-[11px] font-medium text-[#15803d]">This device</span>}</p>
+                    <p className="text-[13.5px] font-medium text-pos-ink">{s.device}{s.current && <span className="ml-2 rounded-full bg-[#22a356]/10 px-2 py-0.5 text-[12px] font-medium text-[#15803d]">This device</span>}</p>
                     <p className="text-[12px] text-pos-ink/55">
                       {s.ipMasked ? <>Network <span className="font-mono">{s.ipMasked}</span>, </> : null}last used {when(s.lastUsedAt)}
                     </p>

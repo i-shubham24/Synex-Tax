@@ -61,7 +61,7 @@ export function FeedPanel({ modelReady }: { modelReady: boolean }) {
       </div>
       <p className="text-[12px] text-pos-ink/55">Read once a day from incometax.gov.in (news, including CBDT notifications and circulars), cbic-gst.gov.in and gstcouncil.gov.in. Open the official link before acting on an item. CBIC&apos;s list gives no dates; those items show the day they were first seen.</p>
       {error && <p className="text-[13px] text-[#dc2626]">{error}</p>}
-      {loading ? <p className="text-[13px] text-pos-ink/50">Loading</p> : items.length === 0 ? <p className="text-[13px] text-pos-ink/50">Nothing yet. The feed fills after the daily refresh runs.</p> : (
+      {loading ? <p className="text-[13px] text-pos-ink/60">Loading</p> : items.length === 0 ? <p className="text-[13px] text-pos-ink/60">Nothing yet. The feed fills after the daily refresh runs.</p> : (
         <ul className="space-y-2">
           {items.map((it) => {
             const ex = explained[it.id];

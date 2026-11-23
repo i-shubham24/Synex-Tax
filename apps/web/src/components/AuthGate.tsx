@@ -48,7 +48,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 <span>
                   <span className="flex items-center gap-2">
                     <span className="text-[14px] font-medium">{d.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${d.tone}`}>{d.role}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${d.tone}`}>{d.role}</span>
                   </span>
                   <span className="mt-0.5 block text-[12px] text-pos-ink/55">{d.meta}</span>
                 </span>

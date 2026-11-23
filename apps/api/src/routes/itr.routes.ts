@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { ITR_TDS_SECTIONS, writeItr1, writeItr2, writeItr4 } from '@synextax/tax-engine';
+import { DEP_BLOCKS, ITR_TDS_SECTIONS, maskPan, writeItr1, writeItr2, writeItr3, writeItr4 } from '@synextax/tax-engine';
 
 const Amount = z.number().min(0).max(99_999_999_999);
 const Iso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -111,6 +111,65 @@ const Itr2Body = z.object({
   bank: Bank,
 });
 
+const Employer = z.object({ tan: Tan.optional(), name: z.string().trim().min(1).max(125), nature: z.enum(['CGOV', 'SGOV', 'PSU', 'PE', 'PESG', 'PEPS', 'PEO', 'OTH']), address: z.object({ line: z.string().trim().min(1).max(200), city: z.string().trim().min(1).max(50), stateCode: z.string().regex(/^\d{2}$/), pin: z.string().regex(/^\d{6}$/) }), gross: Amount, tds: Amount });
+const House = z.object({ letOut: z.boolean(), address: z.string().trim().min(1).max(200), city: z.string().trim().min(1).max(50), stateCode: z.string().regex(/^\d{2}$/), pin: z.string().regex(/^\d{6}$/), rent: Amount.optional(), municipalTax: Amount.optional(), loans: z.array(Loan).max(5).optional() });
+const CgRow = z.object({
+  kind: z.enum(['111A', '112A', 'STCG', 'LTCG']), date: Iso, saleValue: Amount, cost: Amount, improvement: Amount.optional(), expenses: Amount.optional(),
+  isin: z.string().trim().toUpperCase().regex(/^IN[0-9A-Z]{10}$/).optional(), name: z.string().trim().max(125).optional(), acquiredBefore1Feb2018: z.boolean().optional(), fmv31Jan2018: Amount.optional(),
+});
+const Opt = Amount.optional();
+const Books = z.object({
+  kind: z.enum(['BUSINESS', 'PROFESSION']),
+  trading: z.object({ salesGoods: Opt, salesServices: Opt, professionReceipts: Opt, openingStock: Opt, purchases: Opt, directExpenses: Opt, closingStock: Opt }),
+  otherIncome: Opt,
+  expenses: z.object({
+    freight: Opt, consumables: Opt, powerFuel: Opt, rent: Opt, repairsBuilding: Opt, repairsMachinery: Opt, salaries: Opt, bonus: Opt, providentFund: Opt, staffWelfare: Opt, insurance: Opt,
+    salesPromotion: Opt, advertisement: Opt, commission: Opt, professionalFees: Opt, hotel: Opt, travel: Opt, conveyance: Opt, telephone: Opt, ratesTaxes: Opt, auditFee: Opt, interest: Opt,
+    other: z.array(z.object({ nature: z.string().trim().min(1).max(125), amount: Amount })).max(20).optional(),
+  }).optional(),
+  bookDepreciation: Opt,
+  depreciation: z.array(z.object({ block: z.enum(Object.keys(DEP_BLOCKS) as [keyof typeof DEP_BLOCKS, ...Array<keyof typeof DEP_BLOCKS>]), wdvOpening: Amount, additionsFull: Opt, additionsHalf: Opt, realisation: Opt })).max(8).optional(),
+  balanceSheet: z.object({
+    // Proprietor's capital can be negative where drawings exceed it (the schema allows it).
+    capital: z.number().min(-99_999_999_999).max(99_999_999_999), reserves: Opt,
+    securedLoansBank: Opt, securedLoansOthers: Opt, unsecuredLoansBank: Opt, unsecuredLoansOthers: Opt, advances: Opt,
+    grossBlock: Opt, accumulatedDepreciation: Opt, capitalWip: Opt, investmentsLongTerm: Opt, investmentsTrade: Opt,
+    stock: Opt, debtors: Opt, cashInHand: Opt, bank: Opt, otherCurrentAssets: Opt, loansAdvances: Opt, deposits: Opt, creditors: Opt, provisions: Opt,
+  }),
+  cashReceiptsWithin5Pct: z.boolean().optional(),
+  cashPaymentsWithin5Pct: z.boolean().optional(),
+});
+
+const Itr3Body = z.object({
+  person: Person,
+  status: z.enum(['I', 'H']),
+  karta: z.object({ name: z.string().trim().min(1).max(125), pan: Pan }).optional(),
+  filing: Filing.extend({ form10IEA: z.object({ assessmentYear: z.enum(['2024-25', '2025-26', '2026-27']), ack: z.string().regex(/^\d{15}$/), date: Iso.optional() }).optional() }),
+  flags: z.object({
+    partnerInFirm: z.boolean().optional(), director: z.boolean().optional(), unlistedShares: z.boolean().optional(), foreignAssets: z.boolean().optional(), landOrBuildingSold: z.boolean().optional(),
+    lossesBroughtForward: z.boolean().optional(), speculativeOrFnO: z.boolean().optional(), disallowances: z.boolean().optional(), optedOut44AD: z.boolean().optional(),
+  }).optional(),
+  business: z.object({
+    natures: z.array(z.object({ code: z.string().regex(/^\d{5}(_\d)?$/), tradeName: z.string().trim().max(125).optional() })).max(10),
+    ad: Receipts.optional(),
+    ada: Receipts.optional(),
+    ae: z.object({ code: z.string().regex(/^\d{5}$/), name: z.string().trim().min(1).max(75), vehicles: z.array(z.object({ regNo: z.string().trim().min(1).max(11), ownership: z.enum(['OWN', 'LEASE', 'HIRED']), tonnage: z.number().min(0).max(100), months: z.number().int().min(1).max(12), declared: Amount.optional() })).max(20) }).optional(),
+    noAccounts: z.object({ debtors: Amount, creditors: Amount, stock: Amount, cash: Amount }).optional(),
+    books: Books.optional(),
+    liable44AA: z.boolean().optional(),
+  }),
+  salary: z.object({ professionalTax: Amount.optional(), employers: z.array(Employer).max(10) }).optional(),
+  houses: z.array(House).max(10).optional(),
+  capitalGains: z.array(CgRow).max(500).optional(),
+  otherSources: z.object({ savingsInterest: Amount.optional(), depositInterest: Amount.optional(), refundInterest: Amount.optional(), dividends: Amount.optional(), other: Amount.optional(), otherDescription: z.string().trim().max(50).optional() }).optional(),
+  deductions: Deductions.optional(),
+  tdsOther: z.array(TdsOther).max(50).optional(),
+  tcs: z.array(Tcs).max(50).optional(),
+  taxPayments: z.array(Payment).max(20).optional(),
+  interest234C: Amount.optional(),
+  bank: Bank,
+});
+
 function invalid(error: z.ZodError) {
   const fields = [...new Set(error.issues.map((i) => FIELD_LABEL[String(i.path[i.path.length - 1])] ?? String(i.path[i.path.length - 1])))];
   return { error: 'Invalid', message: `Missing or not valid: ${fields.slice(0, 8).join(', ')}.` };
@@ -119,7 +178,7 @@ function invalid(error: z.ZodError) {
 const istToday = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 
 /**
- * ITR-1, ITR-2 and ITR-4 JSON for Assessment Year 2026-27. Nothing is stored. ITR_SOFTWARE_ID is the software ID the
+ * ITR-1, ITR-2, ITR-3 and ITR-4 JSON for Assessment Year 2026-27. Nothing is stored. ITR_SOFTWARE_ID is the software ID the
  * Income Tax Department issues to a registered e-return intermediary; without it the JSON is not
  * written, and the reply says so.
  */
@@ -146,7 +205,7 @@ export async function itrRoutes(fastify: FastifyInstance) {
     return reply.send({ fileName: `ITR1_AY2026-27_${b.data.person.pan}.json`, json: out.json, summary: out.summary });
   });
 
-  fastify.get('/status', async (_request, reply) => reply.send({ softwareIdConfigured: /^SW\d{8}$/.test(process.env.ITR_SOFTWARE_ID ?? ''), forms: ['ITR-1', 'ITR-2', 'ITR-4'] }));
+  fastify.get('/status', async (_request, reply) => reply.send({ softwareIdConfigured: /^SW\d{8}$/.test(process.env.ITR_SOFTWARE_ID ?? ''), forms: ['ITR-1', 'ITR-2', 'ITR-3', 'ITR-4'] }));
 
   fastify.post('/itr4', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (request, reply) => {
     const b = Itr4Body.safeParse(request.body);
@@ -164,6 +223,12 @@ export async function itrRoutes(fastify: FastifyInstance) {
     return reply.send({ fileName: `ITR2_AY2026-27_${b.data.person.pan}.json`, json: out.json, summary: out.summary });
   });
 
-  // ITR-3: the Department's schema (ITR-3_2026_Main_V1.1) is published and kept in the tax engine, but the writer is not built yet.
-  fastify.post('/itr3', async (_request, reply) => reply.status(501).send({ error: 'Not available', message: 'The ITR-3 file is not prepared here yet. Use the Department utility for returns with business accounts.' }));
+  // ITR-3 for business or profession income without a tax audit. The PAN in the file name is masked; the return JSON carries it in full, as the Department needs.
+  fastify.post('/itr3', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } }, bodyLimit: 2 * 1024 * 1024 }, async (request, reply) => {
+    const b = Itr3Body.safeParse(request.body);
+    if (!b.success) return reply.status(400).send(invalid(b.error));
+    const out = writeItr3({ ...b.data, softwareId: process.env.ITR_SOFTWARE_ID ?? '', createdOn: istToday(), intermediaryCity: process.env.ITR_INTERMEDIARY_CITY ?? b.data.person.address.city });
+    if (!out.json) return reply.status(422).send({ error: 'Not ready', issues: out.issues, summary: out.summary });
+    return reply.send({ fileName: `ITR3_AY2026-27_${maskPan(b.data.person.pan)}.json`, json: out.json, summary: out.summary });
+  });
 }

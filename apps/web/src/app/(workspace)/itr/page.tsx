@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { Calculator, TrendingUp } from 'lucide-react';
 import { itrComputation, type ItrInput, type ItrRegimeResult } from '@synextax/tax-engine';
 import { ItrFormPicker } from '../../../components/itr/ItrFormPicker';
+import { AdvanceTaxForecasterPanel } from '../../../components/itr/AdvanceTaxForecasterPanel';
 
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const input = 'h-9 w-full rounded-[10px] border border-pos-line bg-pos-surface px-3 text-right text-[13px] tabular-nums text-pos-ink outline-none focus:border-pos-accent';
@@ -39,7 +41,7 @@ function Column({ r, best }: { r: ItrRegimeResult; best: boolean }) {
   const payable = Number(r.payable);
   return (
     <div className={`pos-card p-4 ${best ? 'ring-2 ring-pos-accent' : ''}`}>
-      <h3 className="mb-2 text-[15px] font-semibold text-pos-ink">{r.regime === 'NEW' ? 'New regime' : 'Old regime'}{best ? <span className="ml-2 rounded-full bg-pos-accent px-2 py-0.5 text-[11px] text-white">Lower tax</span> : null}</h3>
+      <h3 className="mb-2 text-[15px] font-semibold text-pos-ink">{r.regime === 'NEW' ? 'New regime' : 'Old regime'}{best ? <span className="ml-2 rounded-full bg-pos-accent px-2 py-0.5 text-[12px] text-white">Lower tax</span> : null}</h3>
       {row('Salary', r.heads.salary)}
       {row('House property', r.heads.houseProperty)}
       {row('Business or profession', r.heads.business)}
@@ -64,8 +66,9 @@ function Column({ r, best }: { r: ItrRegimeResult; best: boolean }) {
   );
 }
 
-/** Income tax computation for a resident individual, both regimes side by side. Nothing is saved. */
+/** Income tax computation and advance tax forecaster. */
 export default function ItrPage() {
+  const [tab, setTab] = useState<'computation' | 'advance-tax'>('computation');
   const [values, setValues] = useState<Record<string, string>>({});
   const [age, setAge] = useState<ItrInput['ageBand']>('BELOW_60');
   const [metro, setMetro] = useState(false);
@@ -73,42 +76,71 @@ export default function ItrPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">Income tax computation</h1>
-        <p className="mt-1 max-w-3xl text-[14px] text-pos-ink/60">A resident individual&apos;s tax for Tax Year 2026-27 under both regimes. Check it against the Income-tax Department&apos;s utility before filing. The Department has not yet published return schemas for Tax Year 2026-27; the return files below are for Assessment Year 2026-27 (income of 2025-26), whose slabs, rebate and standard deduction are the same.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">Income tax & Advance tax</h1>
+          <p className="mt-1 max-w-3xl text-[14px] text-pos-ink/60">Dual-regime computation, official JSON generation, and live Section 234B/234C advance tax forecasting for Tax Year 2026-27.</p>
+        </div>
+        <div className="flex gap-2" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'computation'}
+            onClick={() => setTab('computation')}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === 'computation' ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}
+          >
+            <Calculator className="h-4 w-4" /> Computation & Forms
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'advance-tax'}
+            onClick={() => setTab('advance-tax')}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === 'advance-tax' ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}
+          >
+            <TrendingUp className="h-4 w-4" /> Advance Tax & 234B/C
+          </button>
+        </div>
       </div>
-      <div className="grid gap-5 xl:grid-cols-[1fr_minmax(0,720px)]">
-        <div className="space-y-3">
-          <div className="pos-card flex flex-wrap gap-4 p-4 text-[13px] text-pos-ink/70">
-            <label className="flex items-center gap-2">Age
-              <select value={age} onChange={(e) => setAge(e.target.value as ItrInput['ageBand'])} className="h-9 rounded-[10px] border border-pos-line bg-pos-surface px-2 text-pos-ink">
-                <option value="BELOW_60">Below 60</option><option value="SENIOR">60 to 79</option><option value="SUPER_SENIOR">80 or more</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={metro} onChange={(e) => setMetro(e.target.checked)} /> Lives in Delhi, Mumbai, Kolkata or Chennai</label>
-          </div>
-          {GROUPS.map(([title, fields]) => (
-            <fieldset key={title} className="pos-card p-4">
-              <legend className="px-1 text-[13px] font-semibold text-pos-ink">{title}</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {fields.map(([key, label]) => (
-                  <label key={key} className="text-[12px] text-pos-ink/60">{label}
-                    <input inputMode="decimal" className={input} value={values[key] ?? ''} onChange={(e) => setValues({ ...values, [key]: e.target.value.replace(/[^0-9.]/g, '') })} />
-                  </label>
-                ))}
+
+      {tab === 'advance-tax' ? (
+        <AdvanceTaxForecasterPanel />
+      ) : (
+        <>
+          <div className="grid gap-5 xl:grid-cols-[1fr_minmax(0,720px)]">
+            <div className="space-y-3">
+              <div className="pos-card flex flex-wrap gap-4 p-4 text-[13px] text-pos-ink/70">
+                <label className="flex items-center gap-2">Age
+                  <select value={age} onChange={(e) => setAge(e.target.value as ItrInput['ageBand'])} className="h-9 rounded-[10px] border border-pos-line bg-pos-surface px-2 text-pos-ink">
+                    <option value="BELOW_60">Below 60</option><option value="SENIOR">60 to 79</option><option value="SUPER_SENIOR">80 or more</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={metro} onChange={(e) => setMetro(e.target.checked)} /> Lives in Delhi, Mumbai, Kolkata or Chennai</label>
               </div>
-            </fieldset>
-          ))}
-        </div>
-        <div className="space-y-3 xl:sticky xl:top-4 xl:self-start">
-          <div className="grid gap-3 md:grid-cols-2">
-            <Column r={result.NEW} best={result.lower === 'NEW'} />
-            <Column r={result.OLD} best={result.lower === 'OLD'} />
+              {GROUPS.map(([title, fields]) => (
+                <fieldset key={title} className="pos-card p-4">
+                  <legend className="px-1 text-[13px] font-semibold text-pos-ink">{title}</legend>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {fields.map(([key, label]) => (
+                      <label key={key} className="text-[12px] font-medium text-pos-ink/75">{label}
+                        <input inputMode="decimal" className={input} value={values[key] ?? ''} onChange={(e) => setValues({ ...values, [key]: e.target.value.replace(/[^0-9.]/g, '') })} />
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+            </div>
+            <div className="space-y-3 xl:sticky xl:top-4 xl:self-start">
+              <div className="grid gap-3 md:grid-cols-2">
+                <Column r={result.NEW} best={result.lower === 'NEW'} />
+                <Column r={result.OLD} best={result.lower === 'OLD'} />
+              </div>
+              <p className="text-[13px] text-pos-ink/65">{Number(result.saving) > 0 ? `The ${result.lower === 'NEW' ? 'new' : 'old'} regime saves ${inr(result.saving)}.` : 'Both regimes come to the same tax.'} A taxpayer with business income can leave the new regime only once.</p>
+            </div>
           </div>
-          <p className="text-[13px] text-pos-ink/65">{Number(result.saving) > 0 ? `The ${result.lower === 'NEW' ? 'new' : 'old'} regime saves ${inr(result.saving)}.` : 'Both regimes come to the same tax.'} A taxpayer with business income can leave the new regime only once.</p>
-        </div>
-      </div>
-      <ItrFormPicker values={values} age={age ?? 'BELOW_60'} />
+          <ItrFormPicker values={values} age={age ?? 'BELOW_60'} />
+        </>
+      )}
     </div>
   );
 }

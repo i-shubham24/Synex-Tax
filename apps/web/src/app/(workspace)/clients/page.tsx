@@ -206,7 +206,7 @@ export default function ClientsMasterPage() {
               
               {/* Solid Obsidian Header */}
               <thead>
-                <tr className="bg-[#141619] text-white text-[11px] tracking-wider">
+                <tr className="bg-[#141619] text-white text-[12px] tracking-wider">
                   <th className="py-3 px-4 rounded-tl-xl">Entity Name & Group</th>
                   <th className="py-3 px-3">PAN & Constitution</th>
                   <th className="py-3 px-3">Primary Contact</th>
@@ -236,24 +236,24 @@ export default function ClientsMasterPage() {
                         <div className="font-semibold text-xs text-[#0E0F10] dark:text-white leading-tight">
                           {cl.entityName}
                         </div>
-                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA] mt-0.5">
+                        <div className="text-[12px] text-[#646A73] dark:text-[#9BA1AA] mt-0.5">
                           {cl.groupName}
                         </div>
                       </td>
 
                       <td className="py-3 px-3">
                         <div className=" font-semibold text-[#0E0F10] dark:text-white">{maskPan(cl.pan)}</div>
-                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{cl.constitution}</div>
+                        <div className="text-[12px] text-[#646A73] dark:text-[#9BA1AA]">{cl.constitution}</div>
                       </td>
 
                       <td className="py-3 px-3">
                         <div className="text-[#0E0F10] dark:text-white font-medium">{cl.primaryContact}</div>
-                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">
+                        <div className="text-[12px] text-[#646A73] dark:text-[#9BA1AA]">
                           {cl.contactMobile}
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 font-mono text-[11px]">
+                      <td className="py-3 px-3 font-mono text-[12px]">
                         {cl.gstin && (
                           <div className="text-[#2F8AE0] font-semibold">GSTIN: {cl.gstin}</div>
                         )}
@@ -263,7 +263,7 @@ export default function ClientsMasterPage() {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold ${statusPill}`}>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[12px] font-mono font-semibold ${statusPill}`}>
                           {cl.statusLabel}
                         </span>
                       </td>
@@ -287,7 +287,7 @@ export default function ClientsMasterPage() {
           {/* Header Bar */}
           <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-semibold text-white/80 block">Selected client</span>
+              <span className="text-[12px] font-semibold text-white/80 block">Selected client</span>
               <span className="text-sm font-semibold text-white">{selectedClient.entityName}</span>
             </div>
             <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white">

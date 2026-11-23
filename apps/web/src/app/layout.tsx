@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { connection } from 'next/server';
 import { Inter_Tight, Poppins, Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
@@ -8,7 +7,7 @@ import { PublicLayoutWrapper } from '../components/PublicLayoutWrapper';
 // Hero display face: tight neo-grotesk, matches the Legite hero reference.
 const interTight = Inter_Tight({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600'],
   variable: '--font-display',
   display: 'swap',
 });
@@ -24,7 +23,7 @@ const poppins = Poppins({
 // Dashboard face: rounded geometric, matches the ARB POS dashboard reference.
 const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600'],
   variable: '--font-outfit',
   display: 'swap',
 });
@@ -32,7 +31,7 @@ const outfit = Outfit({
 // Statutory identifiers (GSTIN, PAN, TAN, token numbers) only.
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500'],
   variable: '--font-jetbrains-mono',
   display: 'swap',
 });
@@ -43,9 +42,7 @@ export const metadata: Metadata = {
     'Cloud GST and dual-Act TDS filing for Chartered Accountants: IMS, 2B reconciliation, Forms 138 to 144, FVU validation and local DSC signing.',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Every page renders per request so it carries the CSP nonce set in src/proxy.ts.
-  await connection();
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"

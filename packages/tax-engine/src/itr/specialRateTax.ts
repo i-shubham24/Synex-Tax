@@ -19,6 +19,8 @@ export interface SpecialRateInput {
   st111A: number;
   lt112A: number; // gain after set-off, before the Rs 1.25 lakh exemption
   lt112: number;
+  /** Section 87A gives the rebate to a resident individual only; true for a HUF. Leaving it out keeps the rebate. */
+  noRebate?: boolean;
 }
 
 export function specialRateTax(i: SpecialRateInput) {
@@ -43,7 +45,8 @@ export function specialRateTax(i: SpecialRateInput) {
   const ltOTax = Math.round(ltO * 0.125);
   const taxSpecial = stTax + ltATax + ltOTax;
   let rebate = 0;
-  if (i.regime === 'NEW') {
+  if (i.noRebate) rebate = 0;
+  else if (i.regime === 'NEW') {
     if (i.totalIncome <= 1200000) rebate = Math.min(taxNormal, 60000);
     else if (special === 0 && taxNormal > i.totalIncome - 1200000) rebate = taxNormal - (i.totalIncome - 1200000);
   } else if (i.totalIncome <= 500000) rebate = Math.min(taxNormal + stTax, 12500);

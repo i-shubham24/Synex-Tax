@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BadgeCheck, Building2, Mail, UserRound } from 'lucide-react';
@@ -23,6 +23,10 @@ function PilotCard() {
 }
 
 export default function SignupPage() {
+  // Wakes the API while the form is being filled in, so signing in does not wait for a cold start.
+  useEffect(() => {
+    fetch('/api/v1/auth/csrf', { credentials: 'include' }).catch(() => {});
+  }, []);
   const router = useRouter();
   const { signup } = useAuth();
 

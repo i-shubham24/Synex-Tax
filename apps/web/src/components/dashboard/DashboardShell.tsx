@@ -21,6 +21,9 @@ import {
   CalendarCheck,
   Landmark,
   Calculator,
+  MessageSquare,
+  MessageSquareText,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkspace } from '../../workspace/WorkspaceContext';
@@ -52,9 +55,12 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'gst-returns', label: 'GST returns', href: '/gst/returns', icon: FileStack, module: 'GST' },
   { id: 'tds', label: 'Dual-Act TDS', href: '/tds', icon: Percent, module: 'TDS' },
   { id: 'itr', label: 'Income tax', href: '/itr', icon: Calculator },
+  { id: 'tax-audit', label: 'Tax audit', href: '/tax-audit', icon: ClipboardCheck, roles: ['PARTNER', 'MANAGER'] },
   { id: 'practice', label: 'Practice', href: '/practice', icon: CalendarCheck, module: 'PRACTICE' },
   { id: 'documents', label: 'Client documents', href: '/documents', icon: FolderCheck, module: 'DOCUMENTS' },
   { id: 'bank', label: 'Bank to books', href: '/bank', icon: Landmark, module: 'PRACTICE' },
+  { id: 'messages', label: 'Messages', href: '/messages', icon: MessageSquare },
+  { id: 'assistant', label: 'Assistant', href: '/assistant', icon: MessageSquareText },
   { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'], module: 'AUDIT' },
 ];
 
@@ -187,11 +193,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={openCommandPalette}
-              className="flex h-10 w-full items-center gap-2.5 rounded-full border border-pos-line bg-pos-surface pl-4 pr-2 text-left text-[13px] text-pos-ink/45 transition-colors hover:border-pos-accent/60"
+              className="flex h-10 w-full items-center gap-2.5 rounded-full border border-pos-line bg-pos-surface pl-4 pr-2 text-left text-[13px] text-pos-ink/60 transition-colors hover:border-pos-accent/60"
             >
               <Search className="h-4 w-4 shrink-0" />
               <span className="flex-1 truncate">Search or type a command</span>
-              <kbd className="shrink-0 rounded-full border border-pos-line px-2 py-0.5 text-[11px] text-pos-ink/50">Ctrl K</kbd>
+              <kbd className="shrink-0 rounded-full border border-pos-line px-2 py-0.5 text-[12px] text-pos-ink/60">Ctrl K</kbd>
             </button>
           </div>
 

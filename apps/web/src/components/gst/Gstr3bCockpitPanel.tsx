@@ -170,7 +170,7 @@ export function Gstr3bCockpitPanel() {
               className="h-9 rounded-[10px] border border-pos-line bg-pos-surface px-3 font-mono text-[13px] text-pos-ink outline-none focus:border-pos-accent"
             />
           </label>
-          <span className="text-[12px] text-pos-ink/50">
+          <span className="text-[12px] text-pos-ink/60">
             Statutory Due Date: <strong className="font-semibold text-pos-ink/80">{dueStatutoryDate(period)}</strong>
           </span>
           <button
@@ -220,34 +220,34 @@ export function Gstr3bCockpitPanel() {
       {cockpit && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Active GSTINs</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Active GSTINs</div>
             <div className="mt-1 font-mono text-[20px] font-semibold text-pos-ink">{cockpit.summary.totalGstins}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">{cockpit.summary.statusCounts.VALIDATED} Validated</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">{cockpit.summary.statusCounts.VALIDATED} Validated</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Table 3.1 Turnover</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Table 3.1 Turnover</div>
             <div className="mt-1 font-mono text-[20px] font-semibold text-pos-ink">{inr(cockpit.summary.totalTaxableTurnover)}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">From sales registers</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">From sales registers</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Gross Tax Liability</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Gross Tax Liability</div>
             <div className="mt-1 font-mono text-[20px] font-semibold text-pos-ink">{inr(cockpit.summary.totalGrossLiability)}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">IGST + CGST + SGST</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">IGST + CGST + SGST</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Table 4 ITC (2B)</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Table 4 ITC (2B)</div>
             <div className="mt-1 font-mono text-[20px] font-semibold text-[#15803d]">{inr(cockpit.summary.totalEligibleItc)}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">Eligible input credit</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">Eligible input credit</div>
           </div>
           <div className="pos-card p-3.5 border-l-4 border-l-[#dc2626]">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Net Cash Shortfall</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Net Cash Shortfall</div>
             <div className="mt-1 font-mono text-[20px] font-semibold text-[#dc2626]">{inr(cockpit.summary.totalCashPayable)}</div>
-            <div className="mt-0.5 text-[11px] text-[#dc2626]/80 font-medium">PMT-06 challans needed</div>
+            <div className="mt-0.5 text-[12px] text-[#dc2626]/80 font-medium">PMT-06 challans needed</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Closing ITC C/F</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Closing ITC C/F</div>
             <div className="mt-1 font-mono text-[20px] font-semibold text-pos-ink">{inr(cockpit.summary.totalItcClosing)}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">Carried to next month</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">Carried to next month</div>
           </div>
         </div>
       )}
@@ -302,14 +302,14 @@ export function Gstr3bCockpitPanel() {
             <tbody>
               {loading && !cockpit && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-[13px] text-pos-ink/50">
+                  <td colSpan={9} className="py-8 text-center text-[13px] text-pos-ink/60">
                     Loading practice GST position...
                   </td>
                 </tr>
               )}
               {cockpit && cockpit.registrations.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-[13px] text-pos-ink/50">
+                  <td colSpan={9} className="py-8 text-center text-[13px] text-pos-ink/60">
                     No active GST registrations found for this practice.
                   </td>
                 </tr>
@@ -337,7 +337,7 @@ export function Gstr3bCockpitPanel() {
                     </td>
                     <td className={td}>
                       <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[12px] font-medium ${
                           row.status === 'FILED'
                             ? 'border-[#059669]/30 bg-[#059669]/10 text-[#059669]'
                             : row.status === 'VALIDATED'
@@ -359,27 +359,27 @@ export function Gstr3bCockpitPanel() {
                     <td className={tdNum}>{inr(row.outwardTaxable)}</td>
                     <td className={tdNum}>{inr(row.grossLiability)}</td>
                     <td className={`${tdNum} text-[#15803d]`}>{inr(row.eligibleItc)}</td>
-                    <td className={`${tdNum} ${hasCash ? 'font-semibold text-[#dc2626]' : 'text-pos-ink/40'}`}>
+                    <td className={`${tdNum} ${hasCash ? 'font-semibold text-[#dc2626]' : 'text-pos-ink/60'}`}>
                       {inr(row.cashPayable)}
                     </td>
                     <td className={td}>
                       {hasCash ? (
-                        <div className="text-[11px] font-mono text-pos-ink/70">
+                        <div className="text-[12px] font-mono text-pos-ink/70">
                           {Number(row.cashBreakdown.igst) > 0 && <span>I: {inr(row.cashBreakdown.igst)} </span>}
                           {Number(row.cashBreakdown.cgst) > 0 && <span>C: {inr(row.cashBreakdown.cgst)} </span>}
                           {Number(row.cashBreakdown.sgst) > 0 && <span>S: {inr(row.cashBreakdown.sgst)}</span>}
                         </div>
                       ) : (
-                        <span className="text-[12px] text-pos-ink/40">Settled via ITC</span>
+                        <span className="text-[12px] text-pos-ink/60">Settled via ITC</span>
                       )}
                     </td>
                     <td className={td}>
                       {row.rule86bApplied ? (
-                        <span className="inline-flex rounded bg-[#b45309]/10 px-1.5 py-0.5 text-[11px] font-medium text-[#b45309]">
+                        <span className="inline-flex rounded bg-[#b45309]/10 px-1.5 py-0.5 text-[12px] font-medium text-[#b45309]">
                           1% Guard
                         </span>
                       ) : (
-                        <span className="text-[11px] text-pos-ink/40">Exempt</span>
+                        <span className="text-[12px] text-pos-ink/60">Exempt</span>
                       )}
                     </td>
                   </tr>

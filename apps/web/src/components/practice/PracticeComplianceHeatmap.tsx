@@ -251,38 +251,38 @@ export function PracticeComplianceHeatmap() {
       {radar && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="pos-card p-3.5 border-l-4 border-l-pos-accent">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Practice Health</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Practice Health</div>
             <div className="mt-1 font-mono text-[22px] font-semibold text-pos-ink">
               {radar.summary.complianceScore}%
             </div>
-            <div className="mt-0.5 text-[11px] text-[#15803d] font-medium">Statutory On-Track</div>
+            <div className="mt-0.5 text-[12px] text-[#15803d] font-medium">Statutory On-Track</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Active Entities</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Active Entities</div>
             <div className="mt-1 font-mono text-[22px] font-semibold text-pos-ink">{radar.summary.totalClients}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">{radar.summary.totalGstins} GSTINs, {radar.summary.totalTans} TANs</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">{radar.summary.totalGstins} GSTINs, {radar.summary.totalTans} TANs</div>
           </div>
           <div className="pos-card p-3.5 border-l-4 border-l-[#dc2626]">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Critical / High Risk</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Critical / High Risk</div>
             <div className="mt-1 font-mono text-[22px] font-semibold text-[#dc2626]">{radar.summary.highRiskCount}</div>
-            <div className="mt-0.5 text-[11px] text-[#dc2626]/80 font-medium">Cutoff action needed</div>
+            <div className="mt-0.5 text-[12px] text-[#dc2626]/80 font-medium">Cutoff action needed</div>
           </div>
           <div className="pos-card p-3.5 border-l-4 border-l-[#f59e0b]">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Moderate Watch</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Moderate Watch</div>
             <div className="mt-1 font-mono text-[22px] font-semibold text-[#b45309]">{radar.summary.mediumRiskCount}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">PMT-06 cash deposit</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">PMT-06 cash deposit</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">Clear / Filed</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">Clear / Filed</div>
             <div className="mt-1 font-mono text-[22px] font-semibold text-[#15803d]">{radar.summary.clearCount}</div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">Zero pending risks</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">Zero pending risks</div>
           </div>
           <div className="pos-card p-3.5">
-            <div className="text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">IMS 14th Freeze</div>
+            <div className="text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">IMS 14th Freeze</div>
             <div className="mt-1 font-mono text-[22px] font-semibold text-[#dc2626]">
               {radar.deadlines.find((d) => d.day === 14)?.pending || 0}
             </div>
-            <div className="mt-0.5 text-[11px] text-pos-ink/50">Unactioned clients</div>
+            <div className="mt-0.5 text-[12px] text-pos-ink/60">Unactioned clients</div>
           </div>
         </div>
       )}
@@ -298,7 +298,7 @@ export function PracticeComplianceHeatmap() {
                 Click any milestone day to view affected clients and dispatch targeted chasers.
               </p>
             </div>
-            <div className="flex items-center gap-3 text-[11px]">
+            <div className="flex items-center gap-3 text-[12px]">
               <span className="flex items-center gap-1.5 text-[#dc2626]">
                 <span className="h-2 w-2 rounded-full bg-[#dc2626]" /> 14th IMS Cutoff
               </span>
@@ -312,7 +312,7 @@ export function PracticeComplianceHeatmap() {
           </div>
 
           {/* Weekday Labels */}
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center font-mono text-[11px] font-semibold text-pos-ink/40">
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center font-mono text-[12px] font-semibold text-pos-ink/60">
             {WEEKDAYS.map((w) => (
               <div key={w} className="py-1">
                 {w}
@@ -356,7 +356,7 @@ export function PracticeComplianceHeatmap() {
                       {d.day}
                     </span>
                     {d.isToday && (
-                      <span className="rounded bg-pos-accent px-1 text-[9px] font-semibold text-white uppercase">
+                      <span className="rounded bg-pos-accent px-1 text-[11px] font-semibold text-white uppercase">
                         Today
                       </span>
                     )}
@@ -365,7 +365,7 @@ export function PracticeComplianceHeatmap() {
                   {deadline && (
                     <div className="mt-0.5 space-y-0.5">
                       <div
-                        className={`truncate rounded px-1 py-0.5 text-[10px] font-semibold leading-tight ${
+                        className={`truncate rounded px-1 py-0.5 text-[12px] font-semibold leading-tight ${
                           deadline.status === 'COMPLETED'
                             ? 'bg-[#22a356]/15 text-[#15803d]'
                             : deadline.status === 'CRITICAL_ACTION_REQUIRED'
@@ -383,7 +383,7 @@ export function PracticeComplianceHeatmap() {
                           ? '11th GSTR-1'
                           : '7th TDS Deposit'}
                       </div>
-                      <div className="font-mono text-[9.5px] text-pos-ink/60">
+                      <div className="font-mono text-[11px] text-pos-ink/60">
                         {deadline.completed}/{deadline.totalDue} Done
                       </div>
                     </div>
@@ -400,7 +400,7 @@ export function PracticeComplianceHeatmap() {
         <div className="pos-card flex flex-col justify-between p-4">
           <div>
             <div className="border-b border-pos-line pb-3">
-              <span className="font-mono text-[11px] font-medium tracking-wide text-pos-ink/50 uppercase">
+              <span className="font-mono text-[12px] font-medium tracking-wide text-pos-ink/60 uppercase">
                 Milestone Inspector
               </span>
               <h3 className="mt-0.5 text-[16px] font-semibold text-pos-ink">
@@ -418,7 +418,7 @@ export function PracticeComplianceHeatmap() {
                 <div className="flex items-center justify-between rounded-[8px] bg-pos-tint/40 p-2.5 text-[12px]">
                   <span className="text-pos-ink/70">Filing Status:</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                    className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${
                       selectedDeadline.status === 'COMPLETED'
                         ? 'bg-[#22a356]/15 text-[#15803d]'
                         : selectedDeadline.status === 'CRITICAL_ACTION_REQUIRED'
@@ -431,7 +431,7 @@ export function PracticeComplianceHeatmap() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-[11px] font-semibold tracking-wide text-pos-ink/50 uppercase">
+                  <div className="text-[12px] font-semibold tracking-wide text-pos-ink/60 uppercase">
                     Affected Clients ({selectedDeadline.clients.length})
                   </div>
                   <div className="max-h-[260px] space-y-2 overflow-y-auto pr-1">
@@ -439,12 +439,12 @@ export function PracticeComplianceHeatmap() {
                       <div key={c.entityId} className="rounded-[8px] border border-pos-line p-2 text-[12px]">
                         <div className="flex items-center justify-between font-medium text-pos-ink">
                           <span>{c.entityName}</span>
-                          <span className="font-mono text-[11px] text-pos-ink/60">{c.reference}</span>
+                          <span className="font-mono text-[12px] text-pos-ink/60">{c.reference}</span>
                         </div>
                         {c.note && (
-                          <div className="mt-1 text-[11px] text-[#b45309]">{c.note}</div>
+                          <div className="mt-1 text-[12px] text-[#b45309]">{c.note}</div>
                         )}
-                        <div className="mt-1 flex items-center justify-between text-[11px]">
+                        <div className="mt-1 flex items-center justify-between text-[12px]">
                           <span
                             className={`font-semibold ${
                               ['FILED', 'VALIDATED', 'COMPLETED'].includes(c.status)
@@ -464,7 +464,7 @@ export function PracticeComplianceHeatmap() {
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-[13px] text-pos-ink/50">
+              <div className="py-12 text-center text-[13px] text-pos-ink/60">
                 No statutory deadline falls on this calendar day. Select the 7th, 11th, 14th, or 20th to inspect obligations.
               </div>
             )}
@@ -522,7 +522,7 @@ export function PracticeComplianceHeatmap() {
                     </td>
                     <td className="px-3 py-2.5 text-[12px]">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-semibold ${
                           ent.riskLevel === 'HIGH'
                             ? 'bg-[#dc2626]/10 text-[#dc2626] border border-[#dc2626]/20'
                             : ent.riskLevel === 'MEDIUM'
@@ -546,7 +546,7 @@ export function PracticeComplianceHeatmap() {
                     <td className="px-3 py-2.5 text-[12px]">
                       <div className="flex flex-wrap gap-1">
                         {ent.pendingObligations.map((o) => (
-                          <span key={o} className="rounded bg-pos-ink/5 px-1.5 py-0.5 font-mono text-[11px] text-pos-ink/70">
+                          <span key={o} className="rounded bg-pos-ink/5 px-1.5 py-0.5 font-mono text-[12px] text-pos-ink/70">
                             {o}
                           </span>
                         ))}
@@ -560,12 +560,12 @@ export function PracticeComplianceHeatmap() {
                           )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded-full border border-pos-line bg-pos-surface px-2.5 py-1 text-[11.5px] font-medium text-pos-ink hover:bg-pos-tint"
+                          className="inline-flex items-center gap-1 rounded-full border border-pos-line bg-pos-surface px-2.5 py-1 text-[12.5px] font-medium text-pos-ink hover:bg-pos-tint"
                         >
                           <MessageSquare className="h-3 w-3 text-[#15803d]" /> WhatsApp Notice
                         </a>
                       ) : (
-                        <span className="text-[11px] text-pos-ink/40">No Phone</span>
+                        <span className="text-[12px] text-pos-ink/60">No Phone</span>
                       )}
                     </td>
                   </tr>
@@ -600,7 +600,7 @@ export function PracticeComplianceHeatmap() {
               <div key={n.entityId} className="flex flex-wrap items-center justify-between gap-2 rounded-[8px] border border-pos-line p-2.5 text-[12px]">
                 <div>
                   <strong className="text-pos-ink">{n.clientName}</strong> ({n.obligation})
-                  <div className="text-[11px] text-pos-ink/60 truncate max-w-xl">{n.noticeText}</div>
+                  <div className="text-[12px] text-pos-ink/60 truncate max-w-xl">{n.noticeText}</div>
                 </div>
                 {n.whatsappUrl ? (
                   <a
@@ -612,7 +612,7 @@ export function PracticeComplianceHeatmap() {
                     Open WhatsApp <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
-                  <span className="text-[11px] text-pos-ink/40">Missing Phone</span>
+                  <span className="text-[12px] text-pos-ink/60">Missing Phone</span>
                 )}
               </div>
             ))}

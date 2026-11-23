@@ -140,7 +140,7 @@ export function CommandPalette() {
             className="w-full max-w-[620px] overflow-hidden rounded-[22px] bg-pos-surface text-pos-ink shadow-[0_0_0_1px_rgb(var(--pos-line)),0_40px_80px_-30px_rgba(10,20,40,0.5)]"
           >
             <div className="flex items-center gap-3 border-b border-pos-line px-5">
-              <Search className="h-[18px] w-[18px] text-pos-ink/45" />
+              <Search className="h-[18px] w-[18px] text-pos-ink/60" />
               <input
                 autoFocus
                 value={q}
@@ -151,7 +151,7 @@ export function CommandPalette() {
                 aria-activedescendant={filtered[cursor] ? `cmd-${filtered[cursor].id}` : undefined}
                 className="h-14 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-pos-ink/40"
               />
-              <kbd className="rounded-md border border-pos-line px-1.5 py-0.5 text-[11px] text-pos-ink/50">Esc</kbd>
+              <kbd className="rounded-md border border-pos-line px-1.5 py-0.5 text-[12px] text-pos-ink/60">Esc</kbd>
             </div>
             <ul ref={listRef} role="listbox" className="max-h-[400px] overflow-y-auto p-2">
               {filtered.map((item, i) => {
@@ -160,7 +160,7 @@ export function CommandPalette() {
                 const Icon = item.icon;
                 return (
                   <li key={item.id}>
-                    {header && <p className="px-3 pb-1 pt-2.5 text-[11.5px] font-medium text-pos-ink/45">{header}</p>}
+                    {header && <p className="px-3 pb-1 pt-2.5 text-[12.5px] font-medium text-pos-ink/60">{header}</p>}
                     <button
                       id={`cmd-${item.id}`}
                       type="button"
@@ -175,8 +175,8 @@ export function CommandPalette() {
                         <Icon className="h-4 w-4" />
                       </span>
                       <span className="flex-1 truncate">{item.label}</span>
-                      {item.hint && <span className="ident font-mono text-[11.5px] text-pos-ink/45">{item.hint}</span>}
-                      {i === cursor && <CornerDownLeft className="h-3.5 w-3.5 text-pos-ink/40" />}
+                      {item.hint && <span className="ident font-mono text-[12.5px] text-pos-ink/60">{item.hint}</span>}
+                      {i === cursor && <CornerDownLeft className="h-3.5 w-3.5 text-pos-ink/60" />}
                     </button>
                   </li>
                 );

@@ -369,7 +369,7 @@ export default function ClientImportPage() {
               <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-pos-line px-6 py-10 text-center text-[14px] text-pos-ink/60 hover:border-pos-accent">
                 <Layers className="h-7 w-7 text-pos-accent" />
                 <span className="font-medium text-pos-ink">Drop SmartBiz or past return files here, or click to browse</span>
-                <span className="text-[12.5px] text-pos-ink/50">Supports multiple .txt, .conso, or .tds files at once (up to 5 MB per file)</span>
+                <span className="text-[12.5px] text-pos-ink/60">Supports multiple .txt, .conso, or .tds files at once (up to 5 MB per file)</span>
                 <input
                   type="file"
                   multiple
@@ -485,8 +485,8 @@ export default function ClientImportPage() {
                   const errFields = new Set(r.issues.filter((i) => i.level === 'error').map((i) => i.field));
                   return (
                     <tr key={r.index} className="border-b border-pos-line align-top">
-                      <td className="px-3 py-2 tabular-nums text-pos-ink/50">{r.sourceLine}</td>
-                      <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${chip[r.status]}`}>{chipLabel[r.status]}</span></td>
+                      <td className="px-3 py-2 tabular-nums text-pos-ink/60">{r.sourceLine}</td>
+                      <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${chip[r.status]}`}>{chipLabel[r.status]}</span></td>
                       {EDITABLE.map((f) => (
                         <td key={f} className="px-1.5 py-1">
                           <input
@@ -503,10 +503,10 @@ export default function ClientImportPage() {
                         {r.issues.map((i, k) => (
                           <div key={k} className={i.level === 'error' ? 'text-[#b91c1c]' : ''}>{i.message}</div>
                         ))}
-                        {r.record.pan && !r.issues.length && <span className="text-pos-ink/40">PAN {maskPan(r.record.pan)}</span>}
+                        {r.record.pan && !r.issues.length && <span className="text-pos-ink/60">PAN {maskPan(r.record.pan)}</span>}
                       </td>
                       <td className="px-2 py-2">
-                        <button type="button" aria-label={`Remove line ${r.sourceLine}`} onClick={() => setRows((p) => p.filter((_, i) => i !== r.index))} className="rounded p-1 text-pos-ink/40 hover:text-[#dc2626]">
+                        <button type="button" aria-label={`Remove line ${r.sourceLine}`} onClick={() => setRows((p) => p.filter((_, i) => i !== r.index))} className="rounded p-1 text-pos-ink/60 hover:text-[#dc2626]">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </td>

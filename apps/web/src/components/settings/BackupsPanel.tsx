@@ -125,7 +125,7 @@ export function BackupsPanel() {
           <ul className="divide-y divide-pos-line rounded-lg border border-pos-line text-sm">
             {devices.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                <span className="flex items-center gap-2 text-pos-ink"><HardDrive className="h-4 w-4 text-pos-ink/50" /> {d.name} <span className="font-mono text-[11px] text-pos-ink/50">…{d.tokenHint}</span></span>
+                <span className="flex items-center gap-2 text-pos-ink"><HardDrive className="h-4 w-4 text-pos-ink/60" /> {d.name} <span className="font-mono text-[12px] text-pos-ink/60">…{d.tokenHint}</span></span>
                 <span className="text-xs text-pos-ink/60">
                   {d.revokedAt ? `Withdrawn ${when(d.revokedAt)}` : `Last seen ${when(d.lastSeenAt)}${d.agentVersion ? `, agent ${d.agentVersion}` : ''}`}
                   {!d.revokedAt && <button type="button" onClick={() => revoke(d)} className="ml-3 text-red-600">Withdraw</button>}
@@ -220,7 +220,7 @@ export function BackupsPanel() {
                   <span><span className="font-mono text-[12px] text-pos-ink">{v.fileName}</span> <span className="text-xs text-pos-ink/55">{size(v.sizeBytes)}, {when(v.completedAt)}</span></span>
                   {v.status === 'COMPLETE'
                     ? <button type="button" onClick={() => download(v)} className="inline-flex items-center gap-1 text-xs text-pos-accent"><Download className="h-3.5 w-3.5" /> Download</button>
-                    : <span className="text-xs text-pos-ink/50">Deleted {when(v.deletedAt)}</span>}
+                    : <span className="text-xs text-pos-ink/60">Deleted {when(v.deletedAt)}</span>}
                 </li>
               ))}
             </ul>

@@ -2,16 +2,17 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BarChart3, Calculator, CalendarRange, ClipboardPaste, FileStack, Layers, PackageCheck } from 'lucide-react';
+import { ArrowLeft, BarChart3, Calculator, CalendarRange, ClipboardPaste, FileCheck2, FileStack, Layers, PackageCheck } from 'lucide-react';
 import { COMPOSITION_RATE, cmp08, gstr4Annual, type CompositionKind, type Gstr1SummaryLine, type SalesRowResult } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
 import { Itc04Panel } from '../../../../components/gst/Itc04Panel';
 import { Gstr3bYearPanel } from '../../../../components/gst/Gstr3bYearPanel';
 import { Gstr3bCockpitPanel } from '../../../../components/gst/Gstr3bCockpitPanel';
+import { Gstr9AnnualPanel } from '../../../../components/gst/Gstr9AnnualPanel';
 import { MisPanel } from '../../../../components/gst/MisPanel';
 import { TemplateLink } from '../../../../components/TemplateLink';
 
-type Tab = 'cockpit' | 'register' | 'gstr1' | 'gstr3b' | 'mis' | 'composition' | 'itc04';
+type Tab = 'cockpit' | 'register' | 'gstr1' | 'gstr3b' | 'gstr9' | 'mis' | 'composition' | 'itc04';
 interface Registration { gstin: string; category: string; name: string }
 interface Summary { lines: Gstr1SummaryLine[]; totals: { taxableValue: string; igst: string; cgst: string; sgst: string; cess: string; tax: string } }
 
@@ -136,7 +137,7 @@ export default function GstReturnsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="tablist">
-          {([['cockpit', '3B Cockpit', Layers], ['register', 'Sales register', ClipboardPaste], ['gstr1', 'GSTR-1 summary', FileStack], ['gstr3b', '3B for the year', CalendarRange], ['mis', 'MIS and parties', BarChart3], ['composition', 'CMP-08 and GSTR-4', Calculator], ['itc04', 'ITC-04 job work', PackageCheck]] as const).map(([id, label, Icon]) => (
+          {([['cockpit', '3B Cockpit', Layers], ['register', 'Sales register', ClipboardPaste], ['gstr1', 'GSTR-1 summary', FileStack], ['gstr3b', '3B for the year', CalendarRange], ['gstr9', 'GSTR-9 & 9C', FileCheck2], ['mis', 'MIS and parties', BarChart3], ['composition', 'CMP-08 and GSTR-4', Calculator], ['itc04', 'ITC-04 job work', PackageCheck]] as const).map(([id, label, Icon]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}><Icon className="h-4 w-4" /> {label}</button>
           ))}
@@ -191,6 +192,7 @@ export default function GstReturnsPage() {
 
       {tab === 'itc04' && <Itc04Panel />}
       {tab === 'gstr3b' && <Gstr3bYearPanel gstin={gstin} />}
+      {tab === 'gstr9' && <Gstr9AnnualPanel />}
       {tab === 'mis' && <MisPanel gstin={gstin} />}
 
       {tab === 'composition' && (
@@ -217,8 +219,8 @@ export default function GstReturnsPage() {
                   const set = (k: keyof typeof q) => (e: React.ChangeEvent<HTMLInputElement>) => setQuarters((qs) => qs.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)));
                   return (
                     <tr key={i} className="border-t border-pos-line">
-                      <td className={td}>Q{i + 1}<div className="text-[11px] text-pos-ink/45">due {r?.dueDate ?? ''}</div></td>
-                      <td className={td}><div className="flex gap-1"><input aria-label={`Q${i + 1} taxable turnover`} inputMode="decimal" className={`${input} w-32`} value={q.taxable} onChange={set('taxable')} /><button type="button" onClick={() => fillFromSales(i + 1)} disabled={!gstin} className="text-[11px] text-pos-accent disabled:opacity-40">from sales</button></div></td>
+                      <td className={td}>Q{i + 1}<div className="text-[12px] text-pos-ink/60">due {r?.dueDate ?? ''}</div></td>
+                      <td className={td}><div className="flex gap-1"><input aria-label={`Q${i + 1} taxable turnover`} inputMode="decimal" className={`${input} w-32`} value={q.taxable} onChange={set('taxable')} /><button type="button" onClick={() => fillFromSales(i + 1)} disabled={!gstin} className="text-[12px] text-pos-accent disabled:opacity-40">from sales</button></div></td>
                       <td className={td}><input aria-label={`Q${i + 1} exempt turnover`} inputMode="decimal" className={`${input} w-28`} value={q.exempt} onChange={set('exempt')} /></td>
                       <td className={td}><input aria-label={`Q${i + 1} reverse charge CGST`} inputMode="decimal" className={`${input} w-24`} value={q.rcmCgst} onChange={set('rcmCgst')} /></td>
                       <td className={td}><input aria-label={`Q${i + 1} reverse charge SGST`} inputMode="decimal" className={`${input} w-24`} value={q.rcmSgst} onChange={set('rcmSgst')} /></td>

@@ -110,7 +110,7 @@ export function SupportWidget() {
                 />
                 <div className="rounded-[14px] bg-pos-muted p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11.5px] font-medium text-pos-ink/55">Attached automatically</p>
+                    <p className="text-[12.5px] font-medium text-pos-ink/55">Attached automatically</p>
                     <button
                       type="button"
                       onClick={async () => {
@@ -122,12 +122,12 @@ export function SupportWidget() {
                           /* clipboard unavailable */
                         }
                       }}
-                      className="flex items-center gap-1 text-[11.5px] font-medium text-pos-accent"
+                      className="flex items-center gap-1 text-[12.5px] font-medium text-pos-accent"
                     >
                       <Copy className="h-3 w-3" /> {copied ? 'Copied' : 'Copy'}
                     </button>
                   </div>
-                  <pre className="ident mt-1.5 whitespace-pre-wrap break-all font-mono text-[11px] leading-[1.5] text-pos-ink/70">{summary}</pre>
+                  <pre className="ident mt-1.5 whitespace-pre-wrap break-all font-mono text-[12px] leading-[1.5] text-pos-ink/70">{summary}</pre>
                 </div>
                 <button type="submit" disabled={!message.trim()} className="h-10 w-full rounded-full bg-pos-head text-[13px] font-medium text-white disabled:opacity-40">
                   Create ticket

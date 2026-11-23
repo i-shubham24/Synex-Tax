@@ -121,7 +121,7 @@ function Invitations({ clients, onChange }: { clients: Array<{ id: string; name:
                 </button>
               );
             })}
-            {!clients.length && <span className="text-[12px] text-pos-ink/50">No clients yet.</span>}
+            {!clients.length && <span className="text-[12px] text-pos-ink/60">No clients yet.</span>}
           </div>
         </fieldset>
         <button type="submit" disabled={busy} className="inline-flex items-center gap-1.5 rounded-full bg-pos-accent px-4 py-2 text-[13px] font-medium text-white disabled:opacity-60">
@@ -157,7 +157,7 @@ function Invitations({ clients, onChange }: { clients: Array<{ id: string; name:
           ))}
         </ul>
       )}
-      {closed.length > 0 && <p className="text-[12px] text-pos-ink/50">Last 30 days: {closed.map((i) => `${i.name} (${STATUS_LABEL[i.status]})`).join(', ')}.</p>}
+      {closed.length > 0 && <p className="text-[12px] text-pos-ink/60">Last 30 days: {closed.map((i) => `${i.name} (${STATUS_LABEL[i.status]})`).join(', ')}.</p>}
     </section>
   );
 }
@@ -212,10 +212,10 @@ export function TeamPanel() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="text-[14px] font-semibold text-pos-ink">{m.name}</span>
-              <span className="ml-2 rounded-full bg-pos-tint px-2 py-0.5 text-[11px] text-pos-ink/70">{m.role.charAt(0) + m.role.slice(1).toLowerCase()}</span>
+              <span className="ml-2 rounded-full bg-pos-tint px-2 py-0.5 text-[12px] text-pos-ink/70">{m.role.charAt(0) + m.role.slice(1).toLowerCase()}</span>
               {m.designation && <span className="ml-2 text-[12px] text-pos-ink/55">{m.designation}</span>}
             </div>
-            {m.role !== 'PARTNER' && !m.custom && <span className="text-[11px] text-pos-ink/45">Default screens for the role</span>}
+            {m.role !== 'PARTNER' && !m.custom && <span className="text-[12px] text-pos-ink/60">Default screens for the role</span>}
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5" aria-label={`Screens for ${m.name}`}>
             {team.modules.map((mod) => {
@@ -235,8 +235,8 @@ export function TeamPanel() {
                   {m.clients.length === 0 && <span className="text-pos-ink/55">No clients assigned yet; they see none.</span>}
                   {m.clients.map((c) => (
                     <span key={c.assignmentId} className="inline-flex items-center gap-1 rounded-full border border-pos-line px-2.5 py-1 text-[12px] text-pos-ink">
-                      {c.name} <span className="text-pos-ink/45">({LEVEL_LABEL[c.accessLevel]})</span>
-                      <button type="button" aria-label={`Remove ${c.name} from ${m.name}`} onClick={() => revoke(m.id, c.assignmentId)} className="text-pos-ink/45 hover:text-[#dc2626]"><X className="h-3 w-3" /></button>
+                      {c.name} <span className="text-pos-ink/60">({LEVEL_LABEL[c.accessLevel]})</span>
+                      <button type="button" aria-label={`Remove ${c.name} from ${m.name}`} onClick={() => revoke(m.id, c.assignmentId)} className="text-pos-ink/60 hover:text-[#dc2626]"><X className="h-3 w-3" /></button>
                     </span>
                   ))}
                 </div>
@@ -263,10 +263,10 @@ export function TeamPanel() {
                 {c.clients.map((x) => (
                   <span key={x.assignmentId} className="inline-flex items-center gap-1 rounded-full border border-pos-line px-2.5 py-0.5 text-[12px] text-pos-ink">
                     {x.name}
-                    <button type="button" aria-label={`Remove ${x.name} from ${c.name}`} onClick={() => revoke(c.id, x.assignmentId)} className="text-pos-ink/45 hover:text-[#dc2626]"><X className="h-3 w-3" /></button>
+                    <button type="button" aria-label={`Remove ${x.name} from ${c.name}`} onClick={() => revoke(c.id, x.assignmentId)} className="text-pos-ink/60 hover:text-[#dc2626]"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
-                {c.status !== 'ACTIVE' && <span className="text-[12px] text-pos-ink/50">Inactive</span>}
+                {c.status !== 'ACTIVE' && <span className="text-[12px] text-pos-ink/60">Inactive</span>}
               </li>
             ))}
           </ul>

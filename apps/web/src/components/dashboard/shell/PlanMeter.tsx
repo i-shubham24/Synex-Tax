@@ -59,7 +59,7 @@ export function PlanMeter() {
                 <li key={p.id} className="flex items-center justify-between rounded-[14px] border border-pos-line px-3 py-2.5">
                   <span>
                     <span className="block text-[13.5px] font-medium">{p.name}</span>
-                    <span className="block text-[11.5px] text-pos-ink/50">{p.quota}</span>
+                    <span className="block text-[12.5px] text-pos-ink/60">{p.quota}</span>
                   </span>
                   <span className="text-[13px] font-semibold tabular-nums">&#8377;{p.price}/yr</span>
                 </li>
@@ -72,7 +72,7 @@ export function PlanMeter() {
             >
               Activate a plan
             </Link>
-            <p className="mt-2 text-center text-[11.5px] text-pos-ink/45">Prices exclude 18% GST.</p>
+            <p className="mt-2 text-center text-[12.5px] text-pos-ink/60">Prices exclude 18% GST.</p>
           </motion.div>
         )}
       </AnimatePresence>

@@ -266,24 +266,24 @@ export default function MasterInvoicesPage() {
               
               {/* Solid Obsidian Header Bar (#141619) with Crisp White Bold Text */}
               <thead>
-                <tr className="bg-[#141619] text-white text-[11px] tracking-wider">
+                <tr className="bg-[#141619] text-white text-[12px] tracking-wider">
                   <th className="py-3 px-4 rounded-tl-xl">
                     <div className="flex items-center gap-1 cursor-pointer">
                       <span>Doc Ref</span>
-                      <span className="text-slate-400 text-[10px]">↕</span>
+                      <span className="text-slate-400 text-[12px]">↕</span>
                     </div>
                   </th>
                   <th className="py-3 px-4">
                     <div className="flex items-center gap-1 cursor-pointer">
                       <span>Customer & GSTIN</span>
-                      <span className="text-slate-400 text-[10px]">↕</span>
+                      <span className="text-slate-400 text-[12px]">↕</span>
                     </div>
                   </th>
                   <th className="py-3 px-3">POS</th>
                   <th className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1 cursor-pointer">
                       <span>Taxable (₹)</span>
-                      <span className="text-slate-400 text-[10px]">↕</span>
+                      <span className="text-slate-400 text-[12px]">↕</span>
                     </div>
                   </th>
                   <th className="py-3 px-3 text-center">Rate</th>
@@ -314,15 +314,15 @@ export default function MasterInvoicesPage() {
                     >
                       <td className="py-3 px-4 font-mono font-semibold text-[#0E0F10] dark:text-white">
                         <div>{row.docNum}</div>
-                        <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA] font-normal">{row.docDate}</div>
+                        <div className="text-[12px] text-[#646A73] dark:text-[#9BA1AA] font-normal">{row.docDate}</div>
                       </td>
 
                       <td className="py-3 px-4">
                         <div className="font-semibold text-[#0E0F10] dark:text-white text-xs">{row.counterparty}</div>
-                        <div className=" text-[10px] text-[#646A73] dark:text-[#9BA1AA]">{row.gstin}</div>
+                        <div className=" text-[12px] text-[#646A73] dark:text-[#9BA1AA]">{row.gstin}</div>
                       </td>
 
-                      <td className="py-3 px-3 font-mono text-[11px] text-[#646A73] dark:text-[#9BA1AA]">
+                      <td className="py-3 px-3 font-mono text-[12px] text-[#646A73] dark:text-[#9BA1AA]">
                         {row.pos}
                       </td>
 
@@ -330,7 +330,7 @@ export default function MasterInvoicesPage() {
                         ₹ {row.taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </td>
 
-                      <td className="py-3 px-3 text-center font-mono text-[11px]">
+                      <td className="py-3 px-3 text-center font-mono text-[12px]">
                         <span className="px-1.5 py-0.5 rounded bg-[#F1F5F9] dark:bg-slate-800 text-[#0E0F10] dark:text-white">
                           {row.rate}
                         </span>
@@ -341,7 +341,7 @@ export default function MasterInvoicesPage() {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold ${statusPill}`}>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[12px] font-mono font-semibold ${statusPill}`}>
                           {row.statusLabel}
                         </span>
                       </td>
@@ -380,7 +380,7 @@ export default function MasterInvoicesPage() {
           {/* Solid Sky Cobalt Header Bar with Doc Ref & Expand Arrow */}
           <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-semibold text-white/80 block">Selected invoice</span>
+              <span className="text-[12px] font-semibold text-white/80 block">Selected invoice</span>
               <span className="text-sm font-semibold text-white">{selectedRow.docNum}</span>
             </div>
             <button
@@ -396,16 +396,16 @@ export default function MasterInvoicesPage() {
             
             {/* Metadata Pill Row */}
             <div className="p-3 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-1">
-              <div className="text-[10px] text-[#646A73] dark:text-[#9BA1AA]">
+              <div className="text-[12px] text-[#646A73] dark:text-[#9BA1AA]">
                 Customer / Vendor Context
               </div>
               <div className="font-semibold text-xs text-[#0E0F10] dark:text-white">{selectedRow.counterparty}</div>
-              <div className="text-[11px] text-[#2F8AE0] font-semibold">{selectedRow.gstin}</div>
+              <div className="text-[12px] text-[#2F8AE0] font-semibold">{selectedRow.gstin}</div>
             </div>
 
             {/* Mini Solid Obsidian Breakdown Table */}
             <div className="rounded-xl overflow-hidden border border-[#24272B] text-xs">
-              <div className="bg-[#141619] text-white p-2.5 flex justify-between font-semibold text-[11px]">
+              <div className="bg-[#141619] text-white p-2.5 flex justify-between font-semibold text-[12px]">
                 <span>Tax Head</span>
                 <span>Rate</span>
                 <span>Amount (₹)</span>

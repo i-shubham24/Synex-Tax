@@ -100,7 +100,7 @@ export default function BankPage() {
     setShowRows(!!next?.ocrPages.length);
   };
 
-  // ------------------------------------------------------------------ reading files
+  /* Reading files */
 
   const openPdf = async (name: string, buf: ArrayBuffer, pw?: string) => {
     const { readPdfStatement, PdfPasswordError } = await import('@/components/bank/readPdf');
@@ -166,7 +166,7 @@ export default function BankPage() {
     begin(value.trim() ? { name: 'Pasted statement', kind: 'paste', rows: parseDelimited(value), preamble: '', ocrPages: [], ocrConfidence: null } : null);
   };
 
-  // ------------------------------------------------------------------ layout and lines
+  /* Layout and lines */
 
   const rows = useMemo(() => {
     if (!source) return [];
@@ -247,7 +247,7 @@ export default function BankPage() {
               <input type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} className={`${input} w-64`} />
             </label>
             <button type="submit" disabled={!password || !!busy} className="h-9 rounded-full border border-pos-line px-4 text-[12px] text-pos-ink disabled:opacity-40">Open</button>
-            <span className="pb-2 text-pos-ink/45">The password is used only to open the file here, and is not kept.</span>
+            <span className="pb-2 text-pos-ink/60">The password is used only to open the file here, and is not kept.</span>
           </form>
         )}
         {error && <p className="flex items-center gap-1.5 text-[13px] text-pos-red"><AlertTriangle className="h-4 w-4" /> {error}</p>}

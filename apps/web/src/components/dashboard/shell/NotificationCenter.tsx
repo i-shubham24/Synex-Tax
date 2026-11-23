@@ -55,7 +55,7 @@ export function NotificationCenter() {
       >
         <Bell className="h-[18px] w-[18px]" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pos-red px-1 text-[10px] font-semibold text-white ring-2 ring-[#eef4fd] dark:ring-[#1d2430]">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pos-red px-1 text-[12px] font-semibold text-white ring-2 ring-[#eef4fd] dark:ring-[#1d2430]">
             {unread}
           </span>
         )}
@@ -95,7 +95,7 @@ export function NotificationCenter() {
                   }`}
                 >
                   {c.label}
-                  {c.phase2 && <span className="ml-1 text-[10px] opacity-60">P2</span>}
+                  {c.phase2 && <span className="ml-1 text-[12px] opacity-60">P2</span>}
                 </button>
               ))}
             </div>
@@ -125,7 +125,7 @@ export function NotificationCenter() {
                           {isUnread && <span className="h-2 w-2 rounded-full bg-pos-accent" aria-label="Unread" />}
                         </span>
                         <span className="mt-0.5 block text-[12.5px] leading-[1.45] text-pos-ink/60">{n.body}</span>
-                        <span className="mt-1 block text-[11.5px] text-pos-ink/40">{ago(n.at)}</span>
+                        <span className="mt-1 block text-[12.5px] text-pos-ink/60">{ago(n.at)}</span>
                       </span>
                     </button>
                   </li>

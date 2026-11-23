@@ -26,7 +26,7 @@ export const COST_INFLATION_INDEX: Record<string, number> = {
   '2007-08': 129, '2008-09': 137, '2009-10': 148, '2010-11': 167, '2011-12': 184, '2012-13': 200,
   '2013-14': 220, '2014-15': 240, '2015-16': 254, '2016-17': 264, '2017-18': 272, '2018-19': 280,
   '2019-20': 289, '2020-21': 301, '2021-22': 317, '2022-23': 331, '2023-24': 348, '2024-25': 363,
-  '2025-26': 376,
+  '2025-26': 376, // CBDT Notification 70/2025 (1 Jul 2025); incometaxindia.gov.in Cost Inflation Index table
 };
 
 export type AssetKind = 'LISTED_EQUITY_STT' | 'LAND_OR_BUILDING' | 'UNLISTED_SHARES' | 'OTHER_LISTED_SECURITY' | 'OTHER' | 'SPECIFIED_DEBT_FUND';

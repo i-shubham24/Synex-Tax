@@ -78,15 +78,15 @@ export function ProfileMenu({ dark, onToggleTheme }: { dark: boolean; onToggleTh
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#141416] text-[14px] font-semibold text-white">{initials}</span>
                 <div className="min-w-0">
                   <p className="truncate text-[14.5px] font-semibold text-pos-ink">{name}</p>
-                  <p className="truncate text-[12px] text-pos-ink/45">{user?.email}</p>
+                  <p className="truncate text-[12px] text-pos-ink/60">{user?.email}</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <span className="rounded-full bg-pos-accent/15 px-2 py-0.5 text-[11px] font-medium text-pos-accent">{ROLE_LABEL[user?.role ?? ''] ?? 'Member'}</span>
+                    <span className="rounded-full bg-pos-accent/15 px-2 py-0.5 text-[12px] font-medium text-pos-accent">{ROLE_LABEL[user?.role ?? ''] ?? 'Member'}</span>
                     {user?.mfaVerified ? (
-                      <span className="flex items-center gap-1 rounded-full bg-pos-green/15 px-2 py-0.5 text-[11px] font-medium text-pos-green">
+                      <span className="flex items-center gap-1 rounded-full bg-pos-green/15 px-2 py-0.5 text-[12px] font-medium text-pos-green">
                         <ShieldCheck className="h-3 w-3" /> TOTP on
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 rounded-full bg-pos-red/15 px-2 py-0.5 text-[11px] font-medium text-pos-red">
+                      <span className="flex items-center gap-1 rounded-full bg-pos-red/15 px-2 py-0.5 text-[12px] font-medium text-pos-red">
                         <ShieldAlert className="h-3 w-3" /> Set up MFA
                       </span>
                     )}
@@ -107,7 +107,7 @@ export function ProfileMenu({ dark, onToggleTheme }: { dark: boolean; onToggleTh
                       Upgrade
                     </Link>
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-pos-ink/50">
+                  <div className="mt-1 flex items-center justify-between text-[12px] text-pos-ink/60">
                     <span>{user.activeClientsCount ?? 0} of {user.maxTrialClients ?? 3} client slots</span>
                   </div>
                   <div className="mt-2 h-1 overflow-hidden rounded-full bg-pos-muted">

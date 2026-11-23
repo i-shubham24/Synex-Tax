@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Itr1Export } from './Itr1Export';
 import { Itr2Export } from './Itr2Export';
+import { Itr3Export } from './Itr3Export';
 import { Itr4Export } from './Itr4Export';
 
 type Form = 'ITR-1' | 'ITR-2' | 'ITR-3' | 'ITR-4';
@@ -13,7 +14,10 @@ export function suggestForm(values: Record<string, string>): Form {
   if (has('business.actualProfit')) return 'ITR-3';
   const presumptive = has('business.digitalTurnover') || has('business.otherTurnover') || has('business.professionalReceipts');
   const gains = has('capitalGains.equityShortTerm') || has('capitalGains.otherLongTerm') || has('capitalGains.otherShortTerm') || Number(values['capitalGains.equityLongTerm'] || 0) > 125000;
-  if (presumptive) return gains ? 'ITR-3' : 'ITR-4';
+  // ITR-4 takes presumptive income only within section 44AD (turnover up to Rs 3 crore) and 44ADA (receipts up to Rs 75 lakh); above these, business income goes in ITR-3.
+  const turnover = Number(values['business.digitalTurnover'] || 0) + Number(values['business.otherTurnover'] || 0);
+  const overLimits = turnover > 30000000 || Number(values['business.professionalReceipts'] || 0) > 7500000;
+  if (presumptive) return gains || overLimits ? 'ITR-3' : 'ITR-4';
   if (gains || has('salary.hraReceived')) return 'ITR-2';
   return 'ITR-1';
 }
@@ -38,12 +42,7 @@ export function ItrFormPicker({ values, age }: { values: Record<string, string>;
       {form === 'ITR-1' && <Itr1Export values={values} age={age} />}
       {form === 'ITR-2' && <Itr2Export values={values} />}
       {form === 'ITR-4' && <Itr4Export values={values} />}
-      {form === 'ITR-3' && (
-        <section className="pos-card p-4 text-[13px] text-pos-ink/70">
-          <h2 className="text-[15px] font-semibold text-pos-ink">ITR-3, Assessment Year 2026-27</h2>
-          <p className="mt-1">The Department has published the ITR-3 schema (version 1.1), but this file is not prepared here yet. File business income from accounts, or presumptive income with capital gains beyond the ITR-4 limit, through the Department&apos;s utility.</p>
-        </section>
-      )}
+      {form === 'ITR-3' && <Itr3Export values={values} />}
     </div>
   );
 }

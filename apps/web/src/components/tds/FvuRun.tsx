@@ -66,7 +66,7 @@ export function FvuRun({ fileName, text }: { fileName: string; text: string }) {
         {folder && <button type="button" onClick={check} className="rounded-full border border-pos-line bg-pos-surface px-3 py-1.5 text-pos-ink">Check the FVU result</button>}
       </div>
       {state && <p role="status" className={state.tone === 'ok' ? 'text-[#15803d]' : state.tone === 'bad' ? 'text-[#dc2626]' : 'text-pos-ink/70'}>{state.text}</p>}
-      {errors && <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] bg-pos-surface p-2 font-mono text-[11.5px] text-pos-ink">{errors}</pre>}
+      {errors && <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] bg-pos-surface p-2 font-mono text-[12.5px] text-pos-ink">{errors}</pre>}
       {errors && <button type="button" onClick={explain} className="rounded-full border border-pos-line bg-pos-surface px-3 py-1.5 text-pos-ink">Explain these errors</button>}
       {explained && <p className="whitespace-pre-wrap text-pos-ink/80">{explained}</p>}
     </div>

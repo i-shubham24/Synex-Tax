@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, FileText, FileUp, HeartPulse, Users, Wallet, BadgeCheck, FilePenLine } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BookOpen, CheckCircle2, FileText, FileUp, HeartPulse, Users, Wallet, BadgeCheck, FilePenLine, Globe } from 'lucide-react';
 import type { TdsHealthReport } from '@synextax/tax-engine';
 import { useAuth } from '../../../../context/AuthContext';
 import { StatementPanel } from '../../../../components/tds/StatementPanel';
@@ -11,8 +11,9 @@ import { QuarterSheetPanel } from '../../../../components/tds/QuarterSheetPanel'
 import { SalaryPanel } from '../../../../components/tds/SalaryPanel';
 import { CorrectionPanel } from '../../../../components/tds/CorrectionPanel';
 import { CertificateCheck } from '../../../../components/tds/CertificateCheck';
+import { Remittance15CaCbPanel } from '../../../../components/tds/Remittance15CaCbPanel';
 
-type Tab = 'health' | 'statement' | 'corrections' | 'registers' | 'salary' | 'certificates' | 'import' | 'payees';
+type Tab = 'health' | 'statement' | 'corrections' | 'remittance' | 'registers' | 'salary' | 'certificates' | 'import' | 'payees';
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const nice = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
@@ -166,14 +167,14 @@ export default function TdsHealthPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2" role="tablist">
-          {([['health', 'Health', HeartPulse], ['statement', 'Prepare statement', FileText], ['corrections', 'Corrections', FilePenLine], ['registers', 'Registers', BookOpen], ['salary', 'Salary', Wallet], ['certificates', 'Certificates', BadgeCheck], ['import', 'Import past statements', FileUp], ['payees', 'Payee master', Users]] as const).map(([id, label, Icon]) => (
+          {([['health', 'Health', HeartPulse], ['statement', 'Prepare statement', FileText], ['corrections', 'Corrections', FilePenLine], ['remittance', '15CA & 15CB', Globe], ['registers', 'Registers', BookOpen], ['salary', 'Salary', Wallet], ['certificates', 'Certificates', BadgeCheck], ['import', 'Import past statements', FileUp], ['payees', 'Payee master', Users]] as const).map(([id, label, Icon]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] ${tab === id ? 'bg-pos-accent text-white' : 'border border-pos-line text-pos-ink/70 hover:bg-pos-tint'}`}>
               <Icon className="h-4 w-4" /> {label}
             </button>
           ))}
         </div>
-        {tab !== 'import' && tab !== 'certificates' && tab !== 'corrections' && (
+        {tab !== 'import' && tab !== 'certificates' && tab !== 'corrections' && tab !== 'remittance' && (
           <label className="flex items-center gap-2 text-[13px] text-pos-ink/60">
             TAN
             <select value={tan} onChange={(e) => setTan(e.target.value)} className="rounded-full border border-pos-line bg-pos-surface px-3 py-1.5 font-mono text-pos-ink">
@@ -217,7 +218,7 @@ export default function TdsHealthPage() {
 
           <Section title="PAN problems" count={report.panIssues.length} empty="Every payee has a valid, operative PAN.">
             <ul>{report.panIssues.map((p) => (
-              <li key={p.deducteeId} className="flex flex-wrap justify-between gap-2 border-t border-pos-line px-4 py-2.5 text-[13px] first:border-t-0"><span className="text-pos-ink">{p.name} <span className="font-mono text-pos-ink/50">{p.pan}</span></span><span className="text-[#b45309]">{p.reason}</span></li>
+              <li key={p.deducteeId} className="flex flex-wrap justify-between gap-2 border-t border-pos-line px-4 py-2.5 text-[13px] first:border-t-0"><span className="text-pos-ink">{p.name} <span className="font-mono text-pos-ink/60">{p.pan}</span></span><span className="text-[#b45309]">{p.reason}</span></li>
             ))}</ul>
           </Section>
 
@@ -234,6 +235,7 @@ export default function TdsHealthPage() {
       {tab === 'salary' && <SalaryPanel tan={tan} />}
       {tab === 'certificates' && <CertificateCheck />}
       {tab === 'corrections' && <CorrectionPanel />}
+      {tab === 'remittance' && <Remittance15CaCbPanel />}
 
       {tab === 'import' && (
         <div className="pos-card space-y-4 p-5">
@@ -262,7 +264,7 @@ export default function TdsHealthPage() {
                   ['Deposited', inr(preview.totalDeposited)],
                   ['Sections', preview.sections.map((s) => s.code).join(', ')],
                 ].map(([k, v]) => (
-                  <div key={k} className="rounded-[12px] bg-pos-muted px-3 py-2"><dt className="text-pos-ink/50">{k}</dt><dd className="mt-0.5 font-medium text-pos-ink">{v}</dd></div>
+                  <div key={k} className="rounded-[12px] bg-pos-muted px-3 py-2"><dt className="text-pos-ink/60">{k}</dt><dd className="mt-0.5 font-medium text-pos-ink">{v}</dd></div>
                 ))}
               </dl>
               {preview.issues.length > 0 && (
