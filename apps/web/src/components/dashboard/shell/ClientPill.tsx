@@ -31,9 +31,9 @@ export function ClientPill() {
   const id = activeClient?.gstin ?? activeClient?.tan ?? activeEntity?.pan;
 
   return (
-    <div ref={pop.ref} className="relative min-w-0 max-w-[360px]">
+    <div ref={pop.ref} className="relative min-w-0 max-w-[200px] sm:max-w-[280px] md:max-w-[360px]">
       <div
-        className={`flex h-10 min-w-0 items-center gap-2 rounded-full border pl-3 pr-1.5 text-[13px] transition-colors ${
+        className={`flex h-10 min-w-0 items-center gap-1.5 rounded-full border pl-3 pr-1.5 text-[13px] transition-colors ${
           activeEntity ? 'border-pos-accent/40 bg-pos-tint text-pos-ink' : 'border-dashed border-pos-line text-pos-ink/60'
         }`}
       >
@@ -42,16 +42,16 @@ export function ClientPill() {
           onClick={() => pop.setOpen((o) => !o)}
           aria-haspopup="dialog"
           aria-expanded={pop.open}
-          className="flex min-w-0 items-center gap-2 whitespace-nowrap"
+          className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-left"
         >
           <Building2 className={`h-4 w-4 shrink-0 ${activeEntity ? 'text-pos-accent' : ''}`} />
           {activeEntity ? (
             <span className="min-w-0 truncate">
               <span className="font-medium">{activeEntity.legalName}</span>
-              <span className="ident ml-1.5 font-mono text-[12.5px] text-pos-ink/55">{id}</span>
+              <span className="ident ml-1.5 hidden font-mono text-[12.5px] text-pos-ink/55 sm:inline">{id}</span>
             </span>
           ) : (
-            <span>Select a client</span>
+            <span className="truncate">Select a client</span>
           )}
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
         </button>

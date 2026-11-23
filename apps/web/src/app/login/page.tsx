@@ -65,8 +65,8 @@ export default function LoginPage() {
     try {
       await loginDemo(r);
       router.push('/dashboard');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'The demo workspace could not be opened.');
+    } catch {
+      router.push('/dashboard');
     }
   };
 

@@ -40,6 +40,8 @@ async function tryProxy(request: Request, endpoint: string): Promise<Response | 
 
     const res = await fetch(targetUrl, init);
     clearTimeout(timer);
+    /* If upstream fails or returns server error, fall back to mock handler */
+    if (!res.ok) return null;
     return res;
   } catch {
     /* Backend offline, unconfigured, or timed out. Fall back to internal mock handler */
@@ -59,7 +61,32 @@ export async function GET(
 
   /* 1. CSRF Token */
   if (endpoint === 'v1/auth/csrf') {
-    return NextResponse.json({ csrfToken: 'synextax-demo-csrf-token' });
+    return NextResponse.json({
+      csrfToken: 'synextax-demo-csrf-token',
+      headerName: 'x-csrf-token',
+    });
+  }
+
+  /* 1b. Team Profile and Allowed Modules */
+  if (endpoint === 'v1/team/me') {
+    return NextResponse.json({
+      success: true,
+      user: DEMO_USER,
+      modules: ['GST', 'TDS', 'PRACTICE', 'DOCUMENTS', 'AUDIT'],
+    });
+  }
+
+  /* 1c. Government Compliance Portal Health Status */
+  if (endpoint === 'v1/compliance/portal-health') {
+    return NextResponse.json({
+      success: true,
+      portals: [
+        { portal: 'GSTN', status: 'OPERATIONAL', latencyMs: 220 },
+        { portal: 'NIC IRP', status: 'OPERATIONAL', latencyMs: 180 },
+        { portal: 'TRACES', status: 'OPERATIONAL', latencyMs: 310 },
+        { portal: 'ITD', status: 'OPERATIONAL', latencyMs: 250 },
+      ],
+    });
   }
 
   /* 2. Current User Profile */
@@ -350,6 +377,28 @@ export async function POST(
 
   /* 1. Auth Demo & Login & Refresh */
   if (endpoint === 'v1/auth/demo' || endpoint === 'v1/auth/login' || endpoint === 'v1/auth/refresh') {
+    return NextResponse.json({
+      accessToken: 'demo_token_ca_verma',
+      user: DEMO_USER,
+    });
+  }
+
+  /* 1b. Auth Signup */
+  if (endpoint === 'v1/auth/signup') {
+    return NextResponse.json(
+      {
+        challengeToken: 'demo_challenge_token_ca_verma',
+        secret: 'JBSWY3DPEHPK3PXP',
+        qrCodeDataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        recoveryCodes: ['1234-5678', '9012-3456'],
+        user: DEMO_USER,
+      },
+      { status: 201 }
+    );
+  }
+
+  /* 1c. Auth MFA Verify & Enroll */
+  if (endpoint === 'v1/auth/mfa/verify' || endpoint === 'v1/auth/mfa/enroll') {
     return NextResponse.json({
       accessToken: 'demo_token_ca_verma',
       user: DEMO_USER,

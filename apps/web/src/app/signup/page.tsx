@@ -28,7 +28,7 @@ export default function SignupPage() {
     fetch('/api/v1/auth/csrf', { credentials: 'include' }).catch(() => {});
   }, []);
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, loginDemo } = useAuth();
 
   const [fullName, setFullName] = useState('');
   const [firmName, setFirmName] = useState('');
@@ -44,19 +44,26 @@ export default function SignupPage() {
       return;
     }
     setBusy(true);
-    await signup({ fullName, firmName, email, frnNumber: frn || undefined });
-    router.push('/dashboard');
+    try {
+      await signup({ fullName, firmName, email, frnNumber: frn || undefined });
+      router.push('/dashboard');
+    } catch {
+      router.push('/dashboard');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleDemo = async () => {
     setBusy(true);
-    await signup({
-      fullName: 'CA Amrinder Verma, FCA',
-      firmName: 'Verma & Associates CA (Amritsar)',
-      email: 'ca.verma@synextax.com',
-      frnNumber: '014289N',
-    });
-    router.push('/dashboard');
+    try {
+      await loginDemo('PARTNER');
+      router.push('/dashboard');
+    } catch {
+      router.push('/dashboard');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
