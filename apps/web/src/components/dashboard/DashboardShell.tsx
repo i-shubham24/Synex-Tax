@@ -115,9 +115,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(() => readPref('synextax_dashboard_theme', false));
   const [expanded, setExpanded] = useState(() => readPref('synextax_rail_expanded', false));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hoveredTip, setHoveredTip] = useState<{ label: string; top: number } | null>(null);
 
   useEffect(() => {
     setMobileOpen(false);
+    setHoveredTip(null);
   }, [pathname]);
 
   const toggleTheme = () => {
@@ -128,6 +130,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const toggleRail = () => {
+    setHoveredTip(null);
     setExpanded((x) => {
       writePref('synextax_rail_expanded', x ? '0' : '1');
       return !x;
@@ -140,6 +143,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const railW = expanded ? 'w-[240px] md:w-[220px]' : 'w-[240px] md:w-[72px]';
   const mainMl = expanded ? 'ml-0 md:ml-[220px]' : 'ml-0 md:ml-[72px]';
 
+  const handleMouseEnter = (label: string, e: React.MouseEvent<HTMLElement>) => {
+    if (!expanded) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setHoveredTip({
+        label,
+        top: rect.top + rect.height / 2,
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredTip(null);
+  };
+
   const navLink = (item: NavItem) => {
     const Icon = item.icon;
     const active = isActive(item.href);
@@ -149,21 +166,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         href={item.href}
         aria-label={item.label}
         aria-current={active ? 'page' : undefined}
-        onClick={() => setMobileOpen(false)}
-        className={`group relative flex h-12 items-center gap-3 rounded-[14px] transition-colors ${
-          expanded ? 'w-full px-3' : 'w-full px-3 md:w-12 md:justify-center'
+        title={!expanded ? item.label : undefined}
+        onClick={() => {
+          setMobileOpen(false);
+          setHoveredTip(null);
+        }}
+        onMouseEnter={(e) => handleMouseEnter(item.label, e)}
+        onMouseLeave={handleMouseLeave}
+        className={`group relative flex h-12 items-center gap-3 rounded-[14px] transition-colors shrink-0 ${
+          expanded ? 'w-full px-3' : 'w-12 justify-center'
         } ${
           active ? 'bg-pos-tint text-pos-accent' : 'text-pos-ink/70 hover:bg-pos-tint/70 hover:text-pos-accent'
         }`}
       >
-        <Icon className="h-[24px] w-[24px] shrink-0" strokeWidth={1.5} />
-        <span className={`truncate text-[13.5px] font-medium ${expanded ? 'block' : 'block md:hidden'}`}>{item.label}</span>
+        <Icon className="h-[22px] w-[22px] shrink-0" strokeWidth={1.5} />
+        <span className={`truncate text-[13.5px] font-medium ${expanded ? 'block' : 'hidden'}`}>{item.label}</span>
         {active && <span className="absolute -left-[12px] h-7 w-[4px] rounded-r-full bg-pos-accent" />}
-        {!expanded && (
-          <span className="pointer-events-none absolute left-[60px] z-50 hidden whitespace-nowrap rounded-full bg-[#141416] px-3 py-1 text-[12px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 md:block">
-            {item.label}
-          </span>
-        )}
       </Link>
     );
   };
@@ -181,15 +199,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       {/* Rail: 72px icons / 220px on desktop, slide-out 240px drawer on mobile */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-pos-line bg-pos-surface px-3 transition-transform duration-300 ease-out-expo md:transition-[width] ${railW} ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-pos-line bg-pos-surface px-3 overflow-x-hidden transition-transform duration-300 ease-out-expo md:transition-[width] ${railW} ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
         aria-label="Workspace"
       >
-        <div className="flex h-16 items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="SynexTax Control Tower">
+        <div className="flex h-16 shrink-0 items-center justify-between">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2.5 rounded-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pos-accent"
+            aria-label="SynexTax Control Tower"
+            title={expanded ? 'SynexTax' : 'SynexTax Control Tower'}
+          >
             <AppMark />
-            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'block md:hidden'}`}>SynexTax</span>
+            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'hidden'}`}>SynexTax</span>
           </Link>
           <button
             type="button"
@@ -201,16 +224,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className={`mt-3 flex flex-1 flex-col gap-1.5 overflow-y-auto scrollbar-none ${expanded ? '' : 'items-start md:items-center'}`}>
+        {/* Scrollable features list: strictly vertical scroll without horizontal overflow */}
+        <nav
+          className={`mt-2 flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto py-1 ${
+            expanded ? 'w-full px-0' : 'w-full items-center'
+          } [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.2)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-pos-ink/15 hover:[&::-webkit-scrollbar-thumb]:bg-pos-ink/30`}
+          onScroll={() => setHoveredTip(null)}
+        >
           {items.map(navLink)}
         </nav>
 
-        <div className={`mb-4 flex flex-col gap-1.5 ${expanded ? '' : 'items-start md:items-center'}`}>
+        <div className={`mb-3 mt-1 flex flex-col gap-1 shrink-0 ${expanded ? 'w-full' : 'w-full items-center'}`}>
           {navLink({ id: 'settings', label: 'Settings', href: '/settings', icon: Settings })}
           <button
             type="button"
             onClick={toggleRail}
             aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
+            title={!expanded ? 'Expand navigation' : undefined}
+            onMouseEnter={(e) => handleMouseEnter(expanded ? 'Collapse navigation' : 'Expand navigation', e)}
+            onMouseLeave={handleMouseLeave}
             className={`hidden h-10 items-center gap-3 rounded-[12px] text-pos-ink/55 hover:bg-pos-muted hover:text-pos-ink md:flex ${
               expanded ? 'w-full px-3' : 'w-12 justify-center'
             }`}
@@ -220,6 +252,19 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
+
+      {/* Floating suggestion tooltip when hovering collapsed rail icons */}
+      {hoveredTip && !expanded && (
+        <div
+          role="tooltip"
+          aria-hidden="true"
+          className="pointer-events-none fixed z-[9999] -translate-y-1/2 whitespace-nowrap rounded-[8px] bg-[#141416] px-3 py-1.5 text-[12px] font-medium tracking-tight text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-white/10 transition-opacity duration-150 animate-in fade-in"
+          style={{ left: '76px', top: `${hoveredTip.top}px` }}
+        >
+          {hoveredTip.label}
+          <span className="absolute -left-1 top-1/2 -translate-y-1/2 border-y-4 border-r-4 border-y-transparent border-r-[#141416]" />
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className={`flex min-h-screen flex-col transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
