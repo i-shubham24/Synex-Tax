@@ -221,3 +221,70 @@ test('blockDepreciation: half rate on additions used under 180 days', () => {
   // 1,00,000 x 15% = 15,000; 40,000 x 7.5% = 3,000; closing 1,40,000 - 18,000.
   assert.deepEqual([d.atFull, d.atHalf, d.wdvClosing], [15000, 3000, 122000]);
 });
+
+test('ITR-3, partner and manufacturer: Schedule IF, speculation, additional depreciation, losses and depreciation brought forward', () => {
+  const books = trader.business.books!;
+  const out = writeItr3({
+    ...trader, status: 'I', person, karta: undefined, createdOn: '2026-10-20', bank,
+    filing: { section: 11, regime: 'OLD', form10IEA: { assessmentYear: '2026-27', ack: '123456789012345', date: '2026-07-01' } },
+    business: {
+      ...trader.business,
+      books: {
+        ...books, manufacturing: true,
+        depreciation: [
+          { block: 'FURN10', wdvOpening: 200000 },
+          { block: 'PM15', wdvOpening: 400000, additionsFull: 100000, additionsHalf: 80000, additional: { full: 100000, half: 80000, previousYearHalf: 50000 } },
+          { block: 'PM40', wdvOpening: 50000 },
+        ],
+      },
+    },
+    firms: [{ name: 'Rao and Sons', pan: 'AAAFR1234K', liableToAudit: true, workingPartner: true, sharePercent: 25, shareOfProfit: 300000, interest: 60000, remuneration: 640000, capitalOn31Mar: 1500000 }],
+    speculation: { turnover: 500000, grossProfit: 40000, expenses: 5000 },
+    lossesBroughtForward: [
+      { ay: '2021-22', filedOn: '2021-12-31', filedInTime: true, business: 300000 },
+      { ay: '2022-23', filedOn: '2022-07-31', filedInTime: true, speculation: 10000 },
+    ],
+    unabsorbedDepreciation: [{ ay: '2015-16', amount: 100000 }],
+    deductions: { section80C: [{ amount: 150000, id: 'PPF-77' }] },
+    taxPayments: [
+      { bsr: '0510308', date: '2025-06-12', serial: 1, amount: 15000, kind: 'ADVANCE' },
+      { bsr: '0510308', date: '2025-09-12', serial: 2, amount: 30000, kind: 'ADVANCE' },
+      { bsr: '0510308', date: '2025-12-12', serial: 3, amount: 30000, kind: 'ADVANCE' },
+      { bsr: '0510308', date: '2026-03-12', serial: 4, amount: 19744, kind: 'ADVANCE' },
+    ],
+  });
+  assert.deepEqual(out.issues, []);
+  check(out.json);
+  const r = (out.json as any).ITR.ITR3;
+  // Working partner of an audited firm: due date 31 Oct 2026 (section 139(1) Explanation 2).
+  assert.equal(r.PartA_GEN1.FilingStatus.ItrFilingDueDate, '2026-10-31');
+  assert.equal(r.ScheduleIF.TotalProfitShareAmt, 300000);
+  assert.equal(r.ScheduleEI.TotalExemptInc, 300000);
+  // Depreciation: 1,21,000 normal + additional 20,000 + 8,000 + 5,000 = 1,54,000.
+  assert.equal(r.ScheduleDEP.SummaryFromDeprSch.TotalDepreciation, 154000);
+  assert.equal(r.ScheduleDPM.PlantMachinery.Rate15.DepreciationDetail.AddlnDeprOnGT180DayAdditions, 20000);
+  // P&L PBT 7,30,000 + firm interest and remuneration 7,00,000 = 14,30,000; BP item 1 adds speculation 35,000.
+  assert.equal(r.PARTA_PL.DebitsToPL.PBT, 1430000);
+  assert.equal(r.ITR3ScheduleBP.BusinessIncOthThanSpec.ProfBfrTaxPL, 1465000);
+  // Business other than speculation: 14,30,000 + 1,00,000 - 1,54,000 = 13,76,000; speculation 35,000.
+  assert.equal(r.ITR3ScheduleBP.BusinessIncOthThanSpec.AdjustPLAfterDeprOthSpecInc, 1376000);
+  assert.equal(r.ITR3ScheduleBP.SpecBusinessInc.AdjustedPLFrmSpecuBus, 35000);
+  // B/f business loss 3,00,000 and unabsorbed depreciation 1,00,000 against business; speculation loss 10,000 against speculation.
+  assert.equal(r.ScheduleBFLA.BusProfExclSpecProf.IncBFLA.IncOfCurYrAfterSetOffBFLosses, 976000);
+  assert.equal(r.ScheduleBFLA.SpeculativeInc.IncBFLA.IncOfCurYrAfterSetOffBFLosses, 25000);
+  assert.equal(r.ITR3ScheduleUD.TotCurYrdepritSetoffInc, 100000);
+  assert.equal(r['PartB-TI'].BroughtFwdLossesSetoff, 410000);
+  // GTI 9,76,000 + 25,000 + 52,000 = 10,53,000; VI-A 1,50,000 + 10,000; total income 8,93,000.
+  assert.equal(r['PartB-TI'].GrossTotalIncome, 1053000);
+  assert.equal(r['PartB-TI'].TotalIncome, 893000);
+  // Tax 12,500 + 3,93,000 x 20% = 91,100 + cess 3,644 = 94,744; advance tax met every instalment.
+  const t = r.PartB_TTI.ComputationOfTaxLiability;
+  assert.equal(t.NetTaxLiability, 94744);
+  assert.equal(t.IntrstPay.TotalIntrstPay, 0);
+});
+
+test('ITR-3: additional depreciation is refused in the new regime', () => {
+  const books = trader.business.books!;
+  const out = writeItr3({ ...trader, business: { ...trader.business, books: { ...books, manufacturing: true, depreciation: [{ block: 'PM15', wdvOpening: 400000, additionsFull: 100000, additional: { full: 100000 } }] } } });
+  assert.ok(out.issues.some((x) => /validation rule 309/.test(x.message)));
+});

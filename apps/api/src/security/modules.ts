@@ -28,6 +28,7 @@ const ROUTE_MODULES: Array<[string, Module]> = [
   ['/api/v1/practice/tasks', 'PRACTICE'],
   ['/api/v1/practice', 'DOCUMENTS'],
   ['/api/v1/gst', 'GST'],
+  ['/api/v1/billing', 'GST'],
   ['/api/v1/recon', 'GST'],
   ['/api/v1/tds', 'TDS'],
   ['/api/v1/audit', 'AUDIT'],

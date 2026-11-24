@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FileJson } from 'lucide-react';
 import { ExportResult, Fields, PERSON_FIELDS, RegimeAndSection, num, personBody, useItrExport, useSoftwareId, type Details } from './itrShared';
+import { FilledFrom, fillsOf, useDraftDetails, useDraftRegime } from './itrDraftStore';
 
 const BUSINESS_FIELDS: Array<[string, string, string?]> = [
   ['adCode', 'Business code under 44AD (5 digits)'], ['adName', 'Name of the business'], ['adOtherMode', 'Turnover in other modes (not cash, not banking)'],
@@ -12,6 +13,7 @@ const BUSINESS_FIELDS: Array<[string, string, string?]> = [
   ['employerTan', 'Employer TAN'], ['employerName', 'Employer name'], ['salaryTds', 'TDS on salary'],
   ['form10IEAAck', 'Form 10-IEA acknowledgement (old regime)'], ['form10IEADate', 'Form 10-IEA date', 'date'],
 ];
+const DRAFT_FIELDS = [...PERSON_FIELDS, ...BUSINESS_FIELDS];
 
 /**
  * ITR-4 (Sugam) JSON for Assessment Year 2026-27: presumptive income under 44AD and 44ADA from the
@@ -25,6 +27,7 @@ export function Itr4Export({ values }: { values: Record<string, string> }) {
   const [regime, setRegime] = useState<'NEW' | 'OLD'>('NEW');
   const [section, setSection] = useState<11 | 12 | 17>(12);
   const v = (k: string) => values[k] || undefined;
+  const filled = fillsOf(useDraftDetails(d, setD, DRAFT_FIELDS), useDraftRegime(regime, setRegime));
 
   const make = () => {
     const gross = num(v('salary.gross'));
@@ -56,6 +59,7 @@ export function Itr4Export({ values }: { values: Record<string, string> }) {
       <h2 className="flex items-center gap-2 text-[15px] font-semibold text-pos-ink"><FileJson className="h-4 w-4 text-pos-accent" /> ITR-4 return file, Assessment Year 2026-27</h2>
       <p className="text-[13px] text-pos-ink/65">For presumptive income of 2025-26 under 44AD (turnover up to ₹2 crore, or ₹3 crore with cash up to 5%) and 44ADA (receipts up to ₹50 lakh, or ₹75 lakh), with total income up to ₹50 lakh. Written to the Department&apos;s ITR-4 schema, version 1.1 of 30 Jun 2026. The due date is 31 Aug 2026. Goods carriages under 44AE are accepted by the API but not entered here.</p>
       <div className="flex flex-wrap gap-4 text-[13px] text-pos-ink/70"><RegimeAndSection regime={regime} setRegime={setRegime} section={section} setSection={setSection} /></div>
+      <FilledFrom fills={filled} />
       <Fields fields={PERSON_FIELDS} d={d} setD={setD} />
       <Fields fields={BUSINESS_FIELDS} d={d} setD={setD} />
       <button type="button" onClick={make} disabled={exp.busy} className="rounded-full bg-pos-accent px-4 py-2 text-[13.5px] text-white disabled:opacity-50">{configured ? 'Download ITR-4 JSON' : 'Check ITR-4'}</button>

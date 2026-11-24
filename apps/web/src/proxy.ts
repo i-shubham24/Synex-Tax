@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /** First path segments of the pages that render per request (app/(workspace) and app/client). */
 const SIGNED_IN = new Set([
   'dashboard', 'clients', 'gst', 'tds', 'itr', 'tax-audit', 'practice', 'documents', 'bank', 'audit',
-  'settings', 'messages', 'assistant', 'client',
+  'settings', 'messages', 'assistant', 'client', 'billing',
 ]);
 
 export function proxy(request: NextRequest) {

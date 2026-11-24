@@ -129,3 +129,72 @@ test('ITR-3 over the API: checks without a software ID, masked file name, audit 
     await app.close();
   }
 });
+
+const partnerAddr = { line: 'Ferozepur Road', city: 'Ludhiana', stateCode: '26', pin: '141001' };
+const entityBase = {
+  entity: { name: 'Singh Traders', pan: 'AAKFS1234L', formedOn: '2015-04-01', address: { residenceNo: 'Shop 4', locality: 'Ghumar Mandi', city: 'Ludhiana', stateCode: '26', pin: '141001' }, mobile: '9876543210', email: 'accounts@example.com' },
+  filing: { section: 11 }, bank: { ...bank, type: 'CA' },
+  natures: [{ code: '09028', tradeName: 'Singh Traders' }],
+  books: { trading: { salesGoods: 8000000, openingStock: 500000, purchases: 6000000, closingStock: 700000 }, expenses: { salaries: 600000 } },
+};
+const itr5 = {
+  ...entityBase, kind: 'FIRM',
+  signatory: { name: 'Harpreet Singh', fatherName: 'Gurdev Singh', pan: 'ABCPS1234K', capacity: 'MP', place: 'Ludhiana' },
+  partners: [
+    { name: 'Harpreet Singh', pan: 'ABCPS1234K', address: partnerAddr, share: 60, working: true, remuneration: 300000 },
+    { name: 'Simran Kaur', pan: 'ABCPK5678M', address: partnerAddr, share: 40, working: true, remuneration: 300000 },
+  ],
+  // Profit 15,00,000; the balance sheet: capital 15,00,000 against stock 7,00,000 and bank 8,00,000.
+  balanceSheet: { partnersCapital: 1500000, stock: 700000, bank: 800000 },
+};
+const itr6 = {
+  ...entityBase, entity: { ...entityBase.entity, name: 'Singh Agro Private Limited', pan: 'AAJCS1234K' },
+  companyType: 'PRIVATE', unlisted: true,
+  regime: { option: '115BAA', form10IC: { assessmentYear: '2021-22', ack: '987654321012345', date: '2021-11-20' } },
+  signatory: { name: 'Harpreet Singh', fatherName: 'Gurdev Singh', pan: 'ABCPS1234K', capacity: 'DR', place: 'Ludhiana' },
+  keyPersons: [{ name: 'Harpreet Singh', designation: 'DIR', pan: 'ABCPS1234K', address: partnerAddr }],
+  books: { ...entityBase.books, expenses: { salaries: 1200000 } },
+  balanceSheet: { shareCapital: 100000, reserves: 1400000, inventories: 700000, bankBalances: 800000 },
+};
+
+test('ITR-5, ITR-6 and ITR-U over the API: masked file names, refusals and the 140B working', async () => {
+  const app = buildApp();
+  await app.ready();
+  const auth = staffAuth(app);
+  const prev = process.env.ITR_SOFTWARE_ID;
+  try {
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/itr/itr5', headers: staffAuth(app, 'CLIENT'), payload: itr5 })).statusCode, 403);
+    process.env.ITR_SOFTWARE_ID = 'SW12345678';
+    const r5 = await app.inject({ method: 'POST', url: '/api/v1/itr/itr5', headers: auth, payload: itr5 });
+    assert.equal(r5.statusCode, 200, r5.body);
+    const b5 = JSON.parse(r5.body);
+    assert.equal(b5.fileName.includes('AAKFS1234L'), false);
+    assert.equal(b5.json.ITR.ITR5.PartA_GEN1.OrgFirmInfo.PAN, 'AAKFS1234L');
+    // Gross profit 22,00,000 less salaries 6,00,000 and partners' remuneration 6,00,000 (within the 40(b) limit of 11,40,000).
+    assert.equal(b5.summary.businessIncome, 1000000);
+
+    const one = await app.inject({ method: 'POST', url: '/api/v1/itr/itr5', headers: auth, payload: { ...itr5, partners: [itr5.partners[0]] } });
+    assert.equal(one.statusCode, 422);
+    assert.ok(JSON.parse(one.body).issues.some((x: { message: string }) => /two partners/.test(x.message)));
+
+    const r6 = await app.inject({ method: 'POST', url: '/api/v1/itr/itr6', headers: auth, payload: itr6 });
+    assert.equal(r6.statusCode, 200, r6.body);
+    const b6 = JSON.parse(r6.body);
+    assert.equal(b6.fileName.includes('AAJCS1234K'), false);
+    assert.equal(b6.json.ITR.ITR6.PartA_GEN1.FilingStatus.Section115BA, '115BAA');
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/itr/itr6', headers: auth, payload: { ...itr6, regime: { option: 'X' } } })).statusCode, 400);
+
+    const ru = await app.inject({
+      method: 'POST', url: '/api/v1/itr/itru', headers: auth,
+      payload: { base: { form: 'ITR2', input: itr2 }, filedOn: '2027-06-01', eligible: true, reasons: ['1'] },
+    });
+    assert.equal(ru.statusCode, 422, ru.body);
+    const bu = JSON.parse(ru.body);
+    assert.ok(bu.issues.some((x: { field: string }) => x.field === 'schema'));
+    assert.equal(bu.parts.PartA_139_8A.UpdatedReturnDuringPeriod, '1');
+    assert.equal(bu.summary.additionalTaxRate, 25);
+  } finally {
+    if (prev) process.env.ITR_SOFTWARE_ID = prev; else delete process.env.ITR_SOFTWARE_ID;
+    await app.close();
+  }
+});

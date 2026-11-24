@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { FileJson, Plus, Trash2 } from 'lucide-react';
 import { ExportResult, Fields, PERSON_FIELDS, RegimeAndSection, inputCls, num, personBody, selectCls, useItrExport, useSoftwareId, type Details } from './itrShared';
+import { OTHER_SCHEDULE_FIELDS, PROPERTY_FIELDS, otherSchedules } from './Itr2Export';
+import { FilledFrom, fillsOf, useDraftDetails, useDraftRegime, useDraftSales } from './itrDraftStore';
 
 type Mode = 'PRESUMPTIVE' | 'BOOKS';
 type Sale = { kind: '111A' | '112A' | 'STCG' | 'LTCG'; date: string; saleValue: string; cost: string; isin: string; name: string };
@@ -14,6 +16,7 @@ const COMMON_FIELDS: Array<[string, string, string?]> = [
   ['employerTan', 'Employer TAN'], ['employerName', 'Employer name'], ['salaryTds', 'TDS on salary'],
   ['form10IEAAck', 'Form 10-IEA acknowledgement (old regime)'], ['form10IEADate', 'Form 10-IEA date', 'date'],
 ];
+const DRAFT_FIELDS = [...PERSON_FIELDS, ...COMMON_FIELDS];
 const PRESUMPTIVE_FIELDS: Array<[string, string, string?]> = [
   ['adCode', 'Business code under 44AD'], ['adaCode', 'Profession code under 44ADA'], ['adaCash', 'Professional receipts in cash'],
   ['naDebtors', 'Sundry debtors'], ['naCreditors', 'Sundry creditors'], ['naStock', 'Stock in trade'], ['naCash', 'Cash balance'],
@@ -29,6 +32,12 @@ const DEP_FIELDS: Array<[string, string, string?]> = [
   ['pm15Wdv', 'Plant and machinery 15%, WDV on 1 Apr 2025'], ['pm15Add', 'Additions used 180 days or more'], ['pm15Half', 'Additions used under 180 days'], ['pm15Sold', 'Sale value of assets sold'],
   ['pm40Wdv', 'Computers 40%, WDV on 1 Apr 2025'], ['pm40Add', 'Additions used 180 days or more'], ['pm40Half', 'Additions used under 180 days'], ['pm40Sold', 'Sale value of assets sold'],
   ['furnWdv', 'Furniture 10%, WDV on 1 Apr 2025'], ['furnAdd', 'Additions used 180 days or more'], ['furnHalf', 'Additions used under 180 days'], ['furnSold', 'Sale value of assets sold'],
+];
+const PARTNER_FIELDS: Array<[string, string, string?]> = [
+  ['firmName', 'Firm name'], ['firmPan', 'Firm PAN'], ['firmSharePct', 'Profit share (%)'], ['firmShare', 'Share of profit (exempt)'],
+  ['firmInterest', 'Interest from the firm'], ['firmRemuneration', 'Remuneration from the firm'], ['firmCapital', 'Capital in the firm on 31 Mar 2026'],
+  ['specTurnover', 'Speculation turnover (e.g. intraday)'], ['specProfit', 'Speculation gross profit'], ['specExpenses', 'Speculation expenses'],
+  ['bfBusiness', 'Business loss brought forward'], ['bfSpeculation', 'Speculation loss brought forward'], ['udAy', 'Year of unabsorbed depreciation'], ['udAmount', 'Unabsorbed depreciation brought forward'],
 ];
 const BS_FIELDS: Array<[string, string, string?]> = [
   ['capital', "Proprietor's capital"], ['reserves', 'Reserves and surplus'], ['securedLoansBank', 'Secured loans from banks'], ['unsecuredLoansOthers', 'Unsecured loans'],
@@ -52,10 +61,16 @@ export function Itr3Export({ values }: { values: Record<string, string> }) {
   const [mode, setMode] = useState<Mode>(Number(values['business.actualProfit'] || 0) > 0 ? 'BOOKS' : 'PRESUMPTIVE');
   const [kind, setKind] = useState<'BUSINESS' | 'PROFESSION'>('BUSINESS');
   const [cashWithin5, setCashWithin5] = useState(false);
+  const [firmAudited, setFirmAudited] = useState(false);
   const [sales, setSales] = useState<Sale[]>([]);
   const v = (k: string) => values[k] || undefined;
   const n = (k: string) => num(d[k]);
   const setSale = (k: number, patch: Partial<Sale>) => setSales(sales.map((s, i) => (i === k ? { ...s, ...patch } : s)));
+  const filled = fillsOf(
+    useDraftDetails(d, setD, DRAFT_FIELDS),
+    useDraftRegime(regime, setRegime),
+    useDraftSales(sales, setSales, (s): Sale => ({ kind: s.kind, date: s.date, saleValue: String(Math.round(s.saleValue)), cost: String(Math.round(s.cost)), isin: s.isin ?? '', name: s.name ?? '' }), (s) => !s.saleValue),
+  );
 
   const make = () => {
     const gross = num(v('salary.gross'));
@@ -95,13 +110,17 @@ export function Itr3Export({ values }: { values: Record<string, string> }) {
       capitalGains: sales.filter((s) => s.saleValue).map((s) => ({ kind: s.kind, date: s.date, saleValue: Number(s.saleValue), cost: Number(s.cost || 0), ...(s.kind === '112A' ? { isin: s.isin.toUpperCase(), name: s.name || undefined } : {}) })),
       otherSources: { savingsInterest: num(v('otherSources.savingsInterest')), depositInterest: num(v('otherSources.depositInterest')), dividends: num(v('otherSources.dividends')), other: num(v('otherSources.other')) },
       deductions: regime === 'OLD' && v('deductions.section80C') ? { section80C: [{ amount: Number(v('deductions.section80C')), id: 'As per proofs' }] } : undefined,
+      ...otherSchedules(d),
+      firms: d.firmName ? [{ name: d.firmName, pan: (d.firmPan ?? '').toUpperCase(), liableToAudit: firmAudited, workingPartner: firmAudited, sharePercent: Number(d.firmSharePct || 0), shareOfProfit: Number(d.firmShare || 0), interest: n('firmInterest'), remuneration: n('firmRemuneration'), capitalOn31Mar: Number(d.firmCapital || 0) }] : undefined,
+      speculation: n('specTurnover') ? { turnover: n('specTurnover')!, grossProfit: Number(d.specProfit || 0), expenses: n('specExpenses') } : undefined,
+      unabsorbedDepreciation: n('udAmount') && d.udAy ? [{ ay: d.udAy, amount: n('udAmount')! }] : undefined,
     });
   };
 
   return (
     <section className="pos-card space-y-3 p-4">
       <h2 className="flex items-center gap-2 text-[15px] font-semibold text-pos-ink"><FileJson className="h-4 w-4 text-pos-accent" /> ITR-3 return file, Assessment Year 2026-27</h2>
-      <p className="text-[13px] text-pos-ink/65">For business or profession income of 2025-26 where no tax audit is needed, with total income up to ₹50 lakh. Written to the Department&apos;s ITR-3 schema, version 1.1 of 30 Jun 2026. The due date without audit is 31 Aug 2026. Audit cases, partners&apos; share from firms, business losses and disallowances under sections 36 to 43B are not written here; an audit case starts with the tax audit forms.</p>
+      <p className="text-[13px] text-pos-ink/65">For business or profession income of 2025-26 where no tax audit is needed. Written to the Department&apos;s ITR-3 schema, version 1.1 of 30 Jun 2026. The due date without audit is 31 Aug 2026, or 31 Oct 2026 for a working partner of an audited firm. A partner&apos;s share of profit is exempt; interest and remuneration from the firm are business income. Audit cases, a business loss of this year and disallowances under sections 36 to 43B are not written here; an audit case starts with the tax audit forms.</p>
       <div className="flex flex-wrap gap-4 text-[13px] text-pos-ink/70">
         <RegimeAndSection regime={regime} setRegime={setRegime} section={section} setSection={setSection} />
         <label className="flex items-center gap-2">Status
@@ -111,6 +130,7 @@ export function Itr3Export({ values }: { values: Record<string, string> }) {
           <select value={mode} onChange={(e) => setMode(e.target.value as Mode)} className={selectCls}><option value="PRESUMPTIVE">Presumptive, 44AD or 44ADA</option><option value="BOOKS">Regular books of account</option></select>
         </label>
       </div>
+      <FilledFrom fills={filled} />
       <Fields fields={status === 'H' ? [...PERSON_FIELDS.map(([k, l, t]): [string, string, string?] => (k === 'surname' ? [k, 'Name of the HUF', t] : k === 'dob' ? [k, 'Date of formation', t] : [k, l, t])), ['kartaName', 'Karta name'], ['kartaPan', 'Karta PAN']] : PERSON_FIELDS} d={d} setD={setD} />
       <Fields fields={COMMON_FIELDS} d={d} setD={setD} />
       {mode === 'PRESUMPTIVE' ? (
@@ -150,6 +170,13 @@ export function Itr3Export({ values }: { values: Record<string, string> }) {
         ))}
         <button type="button" onClick={() => setSales([...sales, blankSale()])} className="flex items-center gap-1 text-[13px] text-pos-accent"><Plus className="h-4 w-4" /> Add a sale</button>
       </div>
+      <h3 className="text-[13px] font-semibold text-pos-ink">Sale of land or building</h3>
+      <Fields fields={PROPERTY_FIELDS} d={d} setD={setD} />
+      <h3 className="text-[13px] font-semibold text-pos-ink">Virtual digital assets, earlier losses and agricultural income</h3>
+      <Fields fields={OTHER_SCHEDULE_FIELDS} d={d} setD={setD} />
+      <h3 className="text-[13px] font-semibold text-pos-ink">Partner in a firm, speculation and earlier business losses</h3>
+      <label className="flex items-center gap-2 text-[13px] text-pos-ink/70"><input type="checkbox" checked={firmAudited} onChange={(e) => setFirmAudited(e.target.checked)} /> Working partner of a firm whose accounts are audited</label>
+      <Fields fields={PARTNER_FIELDS} d={d} setD={setD} />
       <button type="button" onClick={make} disabled={exp.busy} className="rounded-full bg-pos-accent px-4 py-2 text-[13.5px] text-white disabled:opacity-50">{configured ? 'Download ITR-3 JSON' : 'Check ITR-3'}</button>
       <ExportResult state={exp} configured={configured} />
     </section>

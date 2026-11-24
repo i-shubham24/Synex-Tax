@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { FileJson } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { FilledFrom, fillsOf, useDraftDetails, useDraftRegime } from './itrDraftStore';
 
 const input = 'h-9 w-full rounded-[10px] border border-pos-line bg-pos-surface px-3 text-[13px] text-pos-ink outline-none focus:border-pos-accent';
 const num = (v: string | undefined) => (v ? Number(v) : undefined);
@@ -29,6 +30,7 @@ export function Itr1Export({ values, age }: { values: Record<string, string>; ag
   const [issues, setIssues] = useState<{ field: string; message: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
+  const filled = fillsOf(useDraftDetails(d, setD, DETAILS), useDraftRegime(regime, setRegime));
 
   useEffect(() => {
     authFetch('/api/v1/itr/itr1/status').then(async (r) => setConfigured(r.ok ? (await r.json()).softwareIdConfigured : false));
@@ -87,6 +89,7 @@ export function Itr1Export({ values, age }: { values: Record<string, string>; ag
           </select>
         </label>
       </div>
+      <FilledFrom fills={filled} />
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {DETAILS.map(([k, label, type]) => (
           <label key={k} className="text-[12px] text-pos-ink/60">{label}

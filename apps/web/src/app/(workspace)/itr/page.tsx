@@ -2,10 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { Calculator, TrendingUp } from 'lucide-react';
-import { itrComputation, type ItrInput, type ItrRegimeResult } from '@synextax/tax-engine';
-import { ItrFormPicker } from '../../../components/itr/ItrFormPicker';
+import { itrComputation, itrInputFromValues, type ItrInput, type ItrRegimeResult } from '@synextax/tax-engine';
+import { ItrFormPicker, formFor, type Form, type Taxpayer } from '../../../components/itr/ItrFormPicker';
 import { AdvanceTaxForecasterPanel } from '../../../components/itr/AdvanceTaxForecasterPanel';
 import { ItrImportPanel } from '../../../components/itr/import/ItrImportPanel';
+import { ItrStatementsImportPanel } from '../../../components/itrStatements/ItrStatementsImportPanel';
+import { FilledFrom, ItrDraftProvider, useDraftPageValues, useItrDraft } from '../../../components/itr/itrDraftStore';
+import { ItrReturnBar } from '../../../components/itr/returns/ItrReturnBar';
 
 const inr = (v: string | number) => `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 const input = 'h-9 w-full rounded-[10px] border border-pos-line bg-pos-surface px-3 text-right text-[13px] tabular-nums text-pos-ink outline-none focus:border-pos-accent';
@@ -21,19 +24,8 @@ const GROUPS: Array<[string, Field[]]> = [
   ['Taxes paid', [['taxesPaid.tds', 'TDS'], ['taxesPaid.tcs', 'TCS'], ['taxesPaid.advanceTax', 'Advance tax'], ['taxesPaid.selfAssessment', 'Self-assessment tax']]],
 ];
 
-function toInput(v: Record<string, string>, age: ItrInput['ageBand'], metro: boolean): ItrInput {
-  const g = (k: string) => v[k] || undefined;
-  return {
-    ageBand: age,
-    salary: g('salary.gross') ? { gross: v['salary.gross'], basicPlusDa: g('salary.basicPlusDa'), hraReceived: g('salary.hraReceived'), rentPaid: g('salary.rentPaid'), metroCity: metro, professionalTax: g('salary.professionalTax'), employerNps: g('salary.employerNps') } : undefined,
-    house: { selfOccupiedInterest: g('house.selfOccupiedInterest'), letOut: g('house.rent') ? [{ rent: v['house.rent'], municipalTax: g('house.municipalTax'), interest: g('house.interest') }] : [] },
-    business: { digitalTurnover: g('business.digitalTurnover'), otherTurnover: g('business.otherTurnover'), professionalReceipts: g('business.professionalReceipts'), actualProfit: g('business.actualProfit') },
-    capitalGains: { equityShortTerm: g('capitalGains.equityShortTerm'), equityLongTerm: g('capitalGains.equityLongTerm'), otherLongTerm: g('capitalGains.otherLongTerm'), otherShortTerm: g('capitalGains.otherShortTerm') },
-    otherSources: { savingsInterest: g('otherSources.savingsInterest'), depositInterest: g('otherSources.depositInterest'), dividends: g('otherSources.dividends'), other: g('otherSources.other') },
-    deductions: { section80C: g('deductions.section80C'), npsSelf: g('deductions.npsSelf'), healthInsurance: g('deductions.healthInsurance'), other: g('deductions.other') },
-    taxesPaid: { tds: g('taxesPaid.tds'), tcs: g('taxesPaid.tcs'), advanceTax: g('taxesPaid.advanceTax'), selfAssessment: g('taxesPaid.selfAssessment') },
-  };
-}
+const PAGE_FIELDS = GROUPS.flatMap(([, fields]) => fields);
+const toInput = (v: Record<string, string>, age: ItrInput['ageBand'], metro: boolean): ItrInput => itrInputFromValues(v, age ?? 'BELOW_60', metro);
 
 function Column({ r, best }: { r: ItrRegimeResult; best: boolean }) {
   const row = (label: string, v: string, strong = false) => (
@@ -67,13 +59,21 @@ function Column({ r, best }: { r: ItrRegimeResult; best: boolean }) {
   );
 }
 
-/** Income tax computation and advance tax forecaster. */
+/** Income tax computation and advance tax forecaster, with the imports shared by every return form. */
 export default function ItrPage() {
+  return <ItrDraftProvider><ItrWorkspace /></ItrDraftProvider>;
+}
+
+function ItrWorkspace() {
   const [tab, setTab] = useState<'computation' | 'advance-tax'>('computation');
   const [values, setValues] = useState<Record<string, string>>({});
   const [age, setAge] = useState<ItrInput['ageBand']>('BELOW_60');
   const [metro, setMetro] = useState(false);
+  const [taxpayer, setTaxpayer] = useState<Taxpayer>('INDIVIDUAL');
+  const [chosen, setChosen] = useState<Form | null>(null);
   const result = useMemo(() => itrComputation(toInput(values, age, metro)), [values, age, metro]);
+  const { applyStatements } = useItrDraft();
+  const pageFills = useDraftPageValues(values, setValues, PAGE_FIELDS);
 
   return (
     <div className="space-y-5">
@@ -108,8 +108,13 @@ export default function ItrPage() {
         <AdvanceTaxForecasterPanel />
       ) : (
         <>
+          <ItrReturnBar
+            values={values} setValues={setValues} age={age ?? 'BELOW_60'} setAge={setAge} metro={metro} setMetro={setMetro}
+            taxpayer={taxpayer} setTaxpayer={setTaxpayer} form={formFor(taxpayer, values, chosen)} setChosen={setChosen} suggestedRegime={result.lower}
+          />
           <div className="grid gap-5 xl:grid-cols-[1fr_minmax(0,720px)]">
             <div className="space-y-3">
+              <FilledFrom fills={pageFills} />
               <div className="pos-card flex flex-wrap gap-4 p-4 text-[13px] text-pos-ink/70">
                 <label className="flex items-center gap-2">Age
                   <select value={age} onChange={(e) => setAge(e.target.value as ItrInput['ageBand'])} className="h-9 rounded-[10px] border border-pos-line bg-pos-surface px-2 text-pos-ink">
@@ -139,8 +144,11 @@ export default function ItrPage() {
               <p className="text-[13px] text-pos-ink/65">{Number(result.saving) > 0 ? `The ${result.lower === 'NEW' ? 'new' : 'old'} regime saves ${inr(result.saving)}.` : 'Both regimes come to the same tax.'} A taxpayer with business income can leave the new regime only once.</p>
             </div>
           </div>
-          <ItrImportPanel values={values} onApply={(patch) => setValues((v) => ({ ...v, ...patch }))} />
-          <ItrFormPicker values={values} age={age ?? 'BELOW_60'} />
+          <div className="grid gap-5 2xl:grid-cols-2">
+            <ItrImportPanel values={values} onApply={(patch) => setValues((v) => ({ ...v, ...patch }))} />
+            <ItrStatementsImportPanel onApply={applyStatements} />
+          </div>
+          <ItrFormPicker values={values} age={age ?? 'BELOW_60'} taxpayer={taxpayer} setTaxpayer={setTaxpayer} chosen={chosen} setChosen={setChosen} />
         </>
       )}
     </div>

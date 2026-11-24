@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ChevronsLeft,
-  ChevronsRight,
   FileSpreadsheet,
   LayoutDashboard,
   Moon,
@@ -24,6 +23,7 @@ import {
   MessageSquare,
   MessageSquareText,
   ClipboardCheck,
+  ReceiptIndianRupee,
   Menu,
   X,
 } from 'lucide-react';
@@ -55,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'gst', label: 'GST and IMS', href: '/gst', icon: ReceiptText, module: 'GST' },
   { id: 'recon', label: '2B reconciliation', href: '/gst/recon-2b', icon: FileSpreadsheet, module: 'GST' },
   { id: 'gst-returns', label: 'GST returns', href: '/gst/returns', icon: FileStack, module: 'GST' },
+  { id: 'billing', label: 'Billing', href: '/billing', icon: ReceiptIndianRupee, module: 'GST' },
   { id: 'tds', label: 'Dual-Act TDS', href: '/tds', icon: Percent, module: 'TDS' },
   { id: 'itr', label: 'Income tax', href: '/itr', icon: Calculator },
   { id: 'tax-audit', label: 'Tax audit', href: '/tax-audit', icon: ClipboardCheck, roles: ['PARTNER', 'MANAGER'] },
@@ -205,15 +206,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         aria-label="Workspace"
       >
         <div className="flex h-16 shrink-0 items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 rounded-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pos-accent"
-            aria-label="SynexTax Control Tower"
-            title={expanded ? 'SynexTax' : 'SynexTax Control Tower'}
+          <button
+            type="button"
+            onClick={toggleRail}
+            className="flex items-center gap-2.5 rounded-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pos-accent text-left"
+            aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
+            title={expanded ? 'Click to collapse navigation' : 'Click to expand navigation'}
           >
             <AppMark />
             <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'hidden'}`}>SynexTax</span>
-          </Link>
+          </button>
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
@@ -236,20 +238,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <div className={`mb-3 mt-1 flex flex-col gap-1 shrink-0 ${expanded ? 'w-full' : 'w-full items-center'}`}>
           {navLink({ id: 'settings', label: 'Settings', href: '/settings', icon: Settings })}
-          <button
-            type="button"
-            onClick={toggleRail}
-            aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
-            title={!expanded ? 'Expand navigation' : undefined}
-            onMouseEnter={(e) => handleMouseEnter(expanded ? 'Collapse navigation' : 'Expand navigation', e)}
-            onMouseLeave={handleMouseLeave}
-            className={`hidden h-10 items-center gap-3 rounded-[12px] text-pos-ink/55 hover:bg-pos-muted hover:text-pos-ink md:flex ${
-              expanded ? 'w-full px-3' : 'w-12 justify-center'
-            }`}
-          >
-            {expanded ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-            {expanded && <span className="text-[12.5px]">Collapse</span>}
-          </button>
+          {expanded && (
+            <button
+              type="button"
+              onClick={toggleRail}
+              aria-label="Collapse navigation"
+              className="hidden h-10 w-full items-center gap-3 rounded-[12px] px-3 text-pos-ink/55 hover:bg-pos-muted hover:text-pos-ink md:flex"
+            >
+              <ChevronsLeft className="h-4 w-4 shrink-0" />
+              <span className="text-[12.5px]">Collapse</span>
+            </button>
+          )}
         </div>
       </aside>
 

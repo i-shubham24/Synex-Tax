@@ -8,7 +8,7 @@ import { clean, n0, sum, type ItrIssue } from '../itrCommon.js';
 const DATE_FY = /^2025-(0[4-9]|1[0-2])-\d{2}$|^2026-0[1-3]-\d{2}$/;
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
-// Schedule VDA ----------------------------------------------------------------------------------
+// Schedule VDA
 
 export interface VdaTransfer { acquiredOn: string; transferredOn: string; cost: number; consideration: number }
 
@@ -31,7 +31,7 @@ export function scheduleVda(rows: VdaTransfer[]) {
   return { issues, total, rows: out };
 }
 
-// Schedule EI, agricultural income and other exempt income -------------------------------------
+// Schedule EI, agricultural income and other exempt income
 
 export interface ExemptIncomeInput {
   interest?: number;
@@ -73,7 +73,7 @@ export function scheduleEI(i: ExemptIncomeInput | undefined, extraOthers: { subC
   return { issues, netAgri, total, schedule };
 }
 
-// Schedule SPI ----------------------------------------------------------------------------------
+// Schedule SPI
 
 export interface ClubbedIncome { name: string; pan?: string; aadhaar?: string; relationship: string; amount: number; head: 'SA' | 'HP' | 'CG' | 'OS' | 'EI' | 'BP' }
 
@@ -94,7 +94,7 @@ export function scheduleSpi(rows: ClubbedIncome[], heads: Partial<Record<Clubbed
   return { issues, schedule };
 }
 
-// Schedule AL -----------------------------------------------------------------------------------
+// Schedule AL
 
 export interface AssetsLiabilities {
   immovable?: { description: string; address: { residenceNo: string; locality: string; city: string; stateCode: string; pin: string }; amount: number }[];
@@ -115,7 +115,7 @@ export function scheduleAL(a: AssetsLiabilities, form: 'ITR-2' | 'ITR-3') {
   };
 }
 
-// Schedule FA -----------------------------------------------------------------------------------
+// Schedule FA
 
 type Country = { countryName: string; countryCode: string; zip: string };
 export interface ForeignAssets {
@@ -149,7 +149,7 @@ export function scheduleFA(f: ForeignAssets) {
   return { issues, any: all.length > 0, schedule };
 }
 
-// Schedule AMT and AMTC -------------------------------------------------------------------------
+// Schedule AMT and AMTC
 
 export interface AmtCreditYear { ay: string; gross: number; setOffEarlier: number }
 

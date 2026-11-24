@@ -412,6 +412,62 @@ export async function GET(
     });
   }
 
+  /* 12. Billing Fallbacks */
+  if (endpoint === 'v1/billing/registrations') {
+    return NextResponse.json({
+      registrations: [
+        { gstin: '03AABCA1234F1Z8', name: 'Amritsar Silk Mills', einvoiceApplicable: true, sellerReady: true },
+        { gstin: '07AAACZ9876M1Z2', name: 'Zenith Logistics Delhi', einvoiceApplicable: false, sellerReady: true },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/items')) {
+    return NextResponse.json({
+      items: [
+        { id: 'itm-1', gstin: '03AABCA1234F1Z8', name: 'Raw Silk Yarn Grade A', hsn: '500200', unit: 'KGS', gstRate: 5, cessRate: 0, sellingPrice: '1200.00', trackStock: true, stockOnHand: '450.00' },
+        { id: 'itm-2', gstin: '03AABCA1234F1Z8', name: 'Jacquard Weaving Fabric', hsn: '500720', unit: 'MTR', gstRate: 5, cessRate: 0, sellingPrice: '450.00', trackStock: true, stockOnHand: '1200.00' },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/customers')) {
+    return NextResponse.json({
+      customers: [
+        { id: 'cust-1', gstin: '07AAACD1122B1Z3', tradeName: 'Delhi Textiles Hub LLP', stateCode: '07', address: 'Plot 44, Okhla Phase III', city: 'New Delhi', pin: '110020' },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/series')) {
+    return NextResponse.json({
+      series: [
+        { id: 'ser-1', gstin: '03AABCA1234F1Z8', prefix: 'INV/26-27/', nextNumber: 42, documentType: 'INV' },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/documents')) {
+    return NextResponse.json({
+      documents: [
+        { id: 'doc-1', documentType: 'INV', number: 'INV/26-27/041', date: '2026-11-20', customerName: 'Delhi Textiles Hub LLP', total: '157500.00', taxTotal: '7500.00', irn: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b', ewayBillNo: '231098451234' },
+      ],
+    });
+  }
+
+  /* 13. ITR Saved Returns Fallback */
+  if (endpoint === 'v1/itr-returns/clients') {
+    return NextResponse.json({
+      clients: [
+        { id: 'ent-1', name: 'Amritsar Silk Mills Pvt Ltd', pan: 'AABCA1234F', isCompany: false, constitution: 'PRIVATE_LIMITED' },
+        { id: 'ent-2', name: 'Ranjit Logistics & Infra LLP', pan: 'AAKFR2290D', isCompany: false, constitution: 'LLP' },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/itr-returns')) {
+    return NextResponse.json({
+      returns: [
+        { id: 'ret-1', assessmentYear: '2026-27', form: 'ITR-3', regime: 'NEW', status: 'DRAFT', ackNumber: null, filedOn: null, basis: 'ENGINE', totalIncome: 1250000, totalTax: 95000, taxesPaid: 100000, payable: 0, version: '1' },
+      ],
+    });
+  }
+
   /* Default JSON for unhandled GET */
   return NextResponse.json({ success: true, data: [] });
 }
@@ -682,4 +738,21 @@ export async function POST(
 
   /* Default POST success */
   return NextResponse.json({ success: true, message: 'Executed in client demo mode' });
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ path: string[] }> }
+) {
+  const { path } = await params;
+  const endpoint = path.join('/');
+
+  const proxied = await tryProxy(request, endpoint);
+  if (proxied) return proxied;
+
+  return NextResponse.json({
+    id: 'demo-ret-1',
+    summary: { totalIncome: 1250000, totalTax: 95000, netPayable: 0 },
+    version: new Date().toISOString(),
+  });
 }
