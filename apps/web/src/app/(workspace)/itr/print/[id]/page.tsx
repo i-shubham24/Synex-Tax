@@ -74,9 +74,9 @@ export default function ItrComputationPrintPage() {
       <article id="itr-computation" className="pos-card mx-auto max-w-[820px] space-y-5 bg-pos-surface p-8">
         <header className="space-y-1 border-b border-pos-line pb-4">
           <p className="text-[12px] font-medium text-pos-ink/70">Computation of income prepared by {firm}</p>
-          <h1 className="text-[22px] font-semibold text-pos-ink">{r.entityName}</h1>
+          <h1 className="text-[22px] font-semibold text-pos-ink">{r.entityName || (r as any).clientName || 'Assessee'}</h1>
           <dl className="grid gap-x-6 gap-y-1 text-[13px] text-pos-ink/80 sm:grid-cols-2">
-            <div className="flex gap-2"><dt className="text-pos-ink/70">PAN</dt><dd className="font-mono">{fullPan ?? r.pan}</dd></div>
+            <div className="flex gap-2"><dt className="text-pos-ink/70">PAN</dt><dd className="font-mono">{fullPan ?? r.pan ?? (r as any).panMasked ?? ''}</dd></div>
             <div className="flex gap-2"><dt className="text-pos-ink/70">Assessment year</dt><dd>{r.assessmentYear} (previous year {Number(r.assessmentYear.slice(0, 4)) - 1}-{r.assessmentYear.slice(2, 4)})</dd></div>
             <div className="flex gap-2"><dt className="text-pos-ink/70">Return form</dt><dd>{r.form}</dd></div>
             <div className="flex gap-2"><dt className="text-pos-ink/70">Regime</dt><dd>{r.regime === 'NEW' ? 'New regime' : 'Old regime (opted out of the new regime)'}</dd></div>
@@ -134,12 +134,12 @@ export default function ItrComputationPrintPage() {
           </section>
         )}
 
-        {(notes.length > 0 || s.notes.length > 0) && (
+        {(notes.length > 0 || (s.notes && s.notes.length > 0)) && (
           <section>
             <h2 className="mb-1 text-[14px] font-semibold text-pos-ink">Notes to the return</h2>
             <ol className="list-decimal space-y-0.5 pl-5 text-[13px] text-pos-ink/80">
               {notes.map((n, i) => <li key={`n${i}`}>{n}</li>)}
-              {s.notes.map((n) => <li key={n}>{n}</li>)}
+              {s.notes?.map((n) => <li key={n}>{n}</li>)}
             </ol>
           </section>
         )}

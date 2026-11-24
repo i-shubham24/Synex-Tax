@@ -29,7 +29,12 @@ export function Gstr1Panel({ gstin }: { gstin: string }) {
 
   const load = useCallback(async () => {
     const r = await authFetch(`/api/v1/billing/gstr1?gstin=${gstin}&period=${period}`);
-    setData(r.ok ? await r.json() : null);
+    if (r.ok) {
+      const b = await r.json();
+      setData(b && Array.isArray(b.sections) ? b : null);
+    } else {
+      setData(null);
+    }
   }, [authFetch, gstin, period]);
   useEffect(() => {
     void load();

@@ -47,8 +47,8 @@ export function StockPanel({ gstin, items }: { gstin: string; items: Item[] }) {
 
   const load = useCallback(async () => {
     const [s, p] = await Promise.all([authFetch(`/api/v1/billing/stock?gstin=${gstin}&to=${asOn}`), authFetch(`/api/v1/billing/purchases?gstin=${gstin}`)]);
-    if (s.ok) setRows((await s.json()).rows);
-    if (p.ok) setPurchases((await p.json()).purchases);
+    if (s.ok) setRows((await s.json()).rows || []);
+    if (p.ok) setPurchases((await p.json()).purchases || []);
   }, [authFetch, gstin, asOn]);
   useEffect(() => {
     void load();

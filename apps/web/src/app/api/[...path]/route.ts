@@ -443,10 +443,149 @@ export async function GET(
       ],
     });
   }
+  if (endpoint.startsWith('v1/billing/stock')) {
+    return NextResponse.json({
+      rows: [
+        { itemId: 'itm-1', name: 'Raw Silk Yarn Grade A', unit: 'KGS', openingQty: '200.00', openingValue: '240000.00', inwardQty: '350.00', inwardValue: '420000.00', outwardQty: '100.00', returnedQty: '0.00', closingQty: '450.00', averageCost: '1200.00', closingValue: '540000.00', short: false },
+        { itemId: 'itm-2', name: 'Jacquard Weaving Fabric', unit: 'MTR', openingQty: '500.00', openingValue: '225000.00', inwardQty: '800.00', inwardValue: '360000.00', outwardQty: '100.00', returnedQty: '0.00', closingQty: '1200.00', averageCost: '450.00', closingValue: '540000.00', short: false },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/purchases')) {
+    return NextResponse.json({
+      purchases: [
+        { id: 'pur-1', itemName: 'Raw Silk Yarn Grade A', unit: 'KGS', supplierName: 'Kashmir Silk Co-op', supplierGstin: '01AAACK9988D1Z2', billNo: 'PUR/26/102', billDate: '2026-11-10', quantity: '350.00', value: '420000.00', status: 'ACTIVE', version: '1' },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/gstr1')) {
+    return NextResponse.json({
+      documents: 1,
+      sections: [
+        { section: 'B2B', table: '4A', documents: 1, taxable: '150000.00', igst: '7500.00', cgst: '0.00', sgst: '0.00', cess: '0.00' },
+      ],
+      hsn: [
+        { tab: 'B2B', hsn: '500200', uqc: 'KGS', rate: 5, quantity: '100.00', taxable: '150000.00', igst: '7500.00', cgst: '0.00', sgst: '0.00', cess: '0.00', totalValue: '157500.00' },
+      ],
+      documentsIssued: [
+        { nature: 'Invoices for outward supply', series: 'INV/26-27/', from: '041', to: '041', total: 1, cancelled: 0, netIssued: 1 },
+      ],
+      pushes: [
+        { batch: 'bch-1', documents: 1, rows: 1, superseded: false, at: '2026-11-20T10:30:00Z' },
+      ],
+    });
+  }
+  if (endpoint.startsWith('v1/billing/documents/')) {
+    return NextResponse.json({
+      document: {
+        id: 'doc-1',
+        docType: 'INV',
+        docNo: 'INV/26-27/041',
+        docDate: '2026-11-20',
+        dueDate: '2026-12-05',
+        buyerName: 'Delhi Textiles Hub LLP',
+        buyerGstin: '07AAACD1122B1Z3',
+        buyer: {
+          legalName: 'Delhi Textiles Hub LLP',
+          tradeName: 'Delhi Textiles Hub',
+          gstin: '07AAACD1122B1Z3',
+          stateCode: '07',
+          address1: 'Plot 44, Okhla Phase III',
+          address2: null,
+          place: 'New Delhi',
+          pincode: '110020',
+        },
+        placeOfSupply: '07',
+        reverseCharge: false,
+        interState: true,
+        originalDocNo: null,
+        originalDocDate: null,
+        notes: null,
+        section: 'B2B',
+        pos: '07',
+        taxable: '150000.00',
+        tax: '7500.00',
+        total: '157500.00',
+        invoiceValue: '157500.00',
+        irn: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
+        ackNo: '11261004829104',
+        ackDate: '2026-11-20',
+        ewayBillNo: '231098451234',
+        ewayBillDate: '2026-11-20',
+        status: 'ACTIVE',
+        version: '1',
+        ewayBillRequired: true,
+        consignmentValue: '157500.00',
+        transport: {
+          mode: 1,
+          distanceKm: 450,
+          vehicleNo: 'PB02CC9900',
+          vehicleType: 'R',
+          transporterId: '07AAACD1122B1Z3',
+          transporterName: 'Delhi Express Logistics',
+        },
+        lines: [
+          {
+            lineNo: 1,
+            description: 'Raw Silk Yarn Grade A',
+            hsn: '500200',
+            isService: false,
+            unit: 'KGS',
+            quantity: '100.00',
+            unitPrice: '1500.00',
+            gross: '150000.00',
+            discount: '0.00',
+            taxable: '150000.00',
+            gstRate: 5,
+            igst: '7500.00',
+            cgst: '0.00',
+            sgst: '0.00',
+            cess: '0.00',
+            total: '157500.00',
+          },
+        ],
+        totals: {
+          taxable: '150000.00',
+          igst: '7500.00',
+          cgst: '0.00',
+          sgst: '0.00',
+          cess: '0.00',
+          tax: '7500.00',
+          roundOff: '0.00',
+          invoiceValue: '157500.00',
+          amountPayable: '157500.00',
+        },
+      },
+      seller: {
+        legalName: 'Amritsar Silk Mills Pvt Ltd',
+        tradeName: 'Amritsar Silk Mills',
+        gstin: '03AABCA1234F1Z8',
+        address1: 'Grand Trunk Road, Putlighar',
+        address2: null,
+        place: 'Amritsar',
+        pincode: '143001',
+        stateCode: '03',
+      },
+    });
+  }
   if (endpoint.startsWith('v1/billing/documents')) {
     return NextResponse.json({
       documents: [
-        { id: 'doc-1', documentType: 'INV', number: 'INV/26-27/041', date: '2026-11-20', customerName: 'Delhi Textiles Hub LLP', total: '157500.00', taxTotal: '7500.00', irn: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b', ewayBillNo: '231098451234' },
+        {
+          id: 'doc-1',
+          docType: 'INV',
+          docNo: 'INV/26-27/041',
+          docDate: '2026-11-20',
+          buyerName: 'Delhi Textiles Hub LLP',
+          buyerGstin: '07AAACD1122B1Z3',
+          section: 'B2B',
+          taxable: '150000.00',
+          tax: '7500.00',
+          invoiceValue: '157500.00',
+          status: 'ACTIVE',
+          irn: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
+          ewbNo: '231098451234',
+        },
       ],
     });
   }
@@ -460,10 +599,52 @@ export async function GET(
       ],
     });
   }
-  if (endpoint.startsWith('v1/itr-returns')) {
+  if (endpoint.endsWith('/pan')) {
+    return NextResponse.json({ pan: 'AABCA1234F' });
+  }
+  if (endpoint.startsWith('v1/itr-returns/')) {
+    const returnId = endpoint.replace('v1/itr-returns/', '');
+    return NextResponse.json({
+      id: returnId || 'demo-return-1',
+      entityId: 'ent-1',
+      entityName: 'Amritsar Silk Mills Pvt Ltd',
+      clientName: 'Amritsar Silk Mills Pvt Ltd',
+      pan: 'AABCA1234F',
+      firmName: 'Verma & Associates CA (Amritsar)',
+      assessmentYear: '2026-27',
+      form: 'ITR-3',
+      regime: 'NEW',
+      status: 'DRAFT',
+      panMasked: 'AABCA****F',
+      notes: 'Salary as per Form 16; interest on fixed deposits as per AIS.',
+      summary: {
+        totalIncome: 1250000,
+        totalTax: 95000,
+        taxesPaid: 100000,
+        payable: -5000,
+        basis: 'ENGINE',
+        notes: ['Salary as per Form 16 of both employers.', 'Interest on fixed deposits as per AIS.'],
+      },
+      input: {
+        values: {
+          salary: 1100000,
+          standardDeduction: 75000,
+          houseIncome: 120000,
+          otherIncome: 105000,
+          advanceTax: 60000,
+          tds: 40000,
+        },
+        ageBand: 'BELOW_60',
+        metroCity: false,
+      },
+      version: '1',
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  if (endpoint === 'v1/itr-returns') {
     return NextResponse.json({
       returns: [
-        { id: 'ret-1', assessmentYear: '2026-27', form: 'ITR-3', regime: 'NEW', status: 'DRAFT', ackNumber: null, filedOn: null, basis: 'ENGINE', totalIncome: 1250000, totalTax: 95000, taxesPaid: 100000, payable: 0, version: '1' },
+        { id: 'demo-return-1', assessmentYear: '2026-27', form: 'ITR-3', regime: 'NEW', status: 'DRAFT', ackNumber: null, filedOn: null, basis: 'ENGINE', totalIncome: 1250000, totalTax: 95000, taxesPaid: 100000, payable: -5000, version: '1' },
       ],
     });
   }

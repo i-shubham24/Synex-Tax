@@ -109,9 +109,11 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
     const r = await authFetch(`/api/v1/billing/documents/${id}`);
     if (!r.ok) return setMsg({ tone: 'error', text: await errorText(r) });
     const b = await r.json();
-    setDoc(b.document);
-    setSeller(b.seller);
-    if (b.document.transport) setTransport(b.document.transport);
+    if (b && b.document) {
+      setDoc(b.document);
+      setSeller(b.seller || null);
+      if (b.document.transport) setTransport(b.document.transport);
+    }
   }, [authFetch, id]);
   useEffect(() => {
     setMsg(null);
@@ -129,7 +131,7 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
     setMsg({ tone: 'ok', text: 'JSON downloaded. Upload it on the portal, then record the number it gives below.' });
     if (init?.method === 'POST') await load();
   };
-  const fileSafe = doc.docNo.replace(/[^A-Za-z0-9-]/g, '-');
+  const fileSafe = (doc.docNo || (doc as unknown as { number?: string }).number || 'document').replace(/[^A-Za-z0-9-]/g, '-');
 
   const send = async (url: string, method: string, body: unknown, ok: string) => {
     const r = await authFetch(url, { method, headers: json, body: JSON.stringify(body) });
@@ -145,7 +147,7 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-[16px] font-semibold text-pos-ink">{DOC_LABEL[doc.docType]} <span className="font-mono">{doc.docNo}</span></h3>
-          <p className="text-[13px] text-pos-ink/70">{dmy(doc.docDate)} to {doc.buyer.legalName} ({doc.buyer.gstin ?? 'unregistered'}). Place of supply {stateName(doc.placeOfSupply)}. GSTR-1 {doc.section}.{doc.status === 'CANCELLED' ? ` Cancelled: ${doc.cancelReason ?? ''}` : ''}</p>
+          <p className="text-[13px] text-pos-ink/70">{dmy(doc.docDate)} to {doc.buyer?.legalName || 'Buyer'} ({doc.buyer?.gstin ?? 'unregistered'}). Place of supply {stateName(doc.placeOfSupply)}. GSTR-1 {doc.section}.{doc.status === 'CANCELLED' ? ` Cancelled: ${doc.cancelReason ?? ''}` : ''}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={ghostCls} onClick={() => { if (!printDocument(invoiceHtml(doc, seller))) setMsg({ tone: 'error', text: 'Allow pop-ups for this site to print.' }); }}>Print</button>
@@ -161,12 +163,12 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
             {doc.lines.map((l) => (
               <tr key={l.lineNo} className="border-t border-pos-line"><td className={td}>{l.description}</td><td className={`${td} font-mono`}>{l.hsn}</td><td className={tdr}>{Number(l.quantity)} {l.isService ? '' : l.unit}</td><td className={tdr}>{Number(l.unitPrice).toFixed(2)}</td><td className={tdr}>{inr(l.taxable)}</td><td className={tdr}>{l.gstRate}%</td><td className={tdr}>{inr(l.total)}</td></tr>
             ))}
-            <tr className="border-t-2 border-pos-line font-semibold"><td className={td} colSpan={4}>{doc.reverseCharge ? 'Amount payable (reverse charge)' : 'Invoice value'}</td><td className={tdr}>{inr(doc.totals.taxable)}</td><td className={tdr}>{inr(doc.totals.tax)}</td><td className={tdr}>{inr(doc.totals.amountPayable)}</td></tr>
+            <tr className="border-t-2 border-pos-line font-semibold"><td className={td} colSpan={4}>{doc.reverseCharge ? 'Amount payable (reverse charge)' : 'Invoice value'}</td><td className={tdr}>{inr(doc.totals?.taxable)}</td><td className={tdr}>{inr(doc.totals?.tax)}</td><td className={tdr}>{inr(doc.totals?.amountPayable)}</td></tr>
           </tbody>
         </table>
       </div>
 
-      {active && doc.buyer.gstin && (
+      {active && doc.buyer?.gstin && (
         <div className="space-y-2 rounded-[10px] border border-pos-line p-3">
           <h4 className="text-[14px] font-semibold text-pos-ink">E-invoice</h4>
           <p className="text-[12px] text-pos-ink/70">The JSON follows the e-invoice schema INV-01 version 1.1. Upload it on the IRP (bulk upload); SynexTax does not call the IRP. Then record the IRN and acknowledgement here.</p>
