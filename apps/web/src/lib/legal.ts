@@ -5,7 +5,7 @@
  * Officer must be a named person, and the courts clause is the founders' choice.
  */
 export const LEGAL = {
-  product: 'SynexTax',
+  product: 'SynTax',
   company: 'Synex Labs',
   city: 'Amritsar, Punjab',
   updated: '20 November 2026',

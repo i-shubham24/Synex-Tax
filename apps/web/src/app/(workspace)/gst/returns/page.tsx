@@ -186,7 +186,7 @@ export default function GstReturnsPage() {
         <section className="pos-card overflow-hidden">
           <h2 className="border-b border-pos-line px-4 py-3 text-[14px] font-semibold text-pos-ink">GSTR-1 for {period}, from the sales register kept here</h2>
           {summary ? <SummaryTable s={summary} /> : <p className="px-4 py-4 text-[13px] text-pos-ink/55">Choose a GSTIN.</p>}
-          <p className="border-t border-pos-line px-4 py-3 text-[12px] text-pos-ink/55">Filing GSTR-1 from SynexTax needs a GST Suvidha Provider connection, which is being set up. Until then, use this summary to check the return you upload.</p>
+          <p className="border-t border-pos-line px-4 py-3 text-[12px] text-pos-ink/55">Filing GSTR-1 from SynTax needs a GST Suvidha Provider connection, which is being set up. Until then, use this summary to check the return you upload.</p>
         </section>
       )}
 

@@ -171,7 +171,7 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
       {active && doc.buyer?.gstin && (
         <div className="space-y-2 rounded-[10px] border border-pos-line p-3">
           <h4 className="text-[14px] font-semibold text-pos-ink">E-invoice</h4>
-          <p className="text-[12px] text-pos-ink/70">The JSON follows the e-invoice schema INV-01 version 1.1. Upload it on the IRP (bulk upload); SynexTax does not call the IRP. Then record the IRN and acknowledgement here.</p>
+          <p className="text-[12px] text-pos-ink/70">The JSON follows the e-invoice schema INV-01 version 1.1. Upload it on the IRP (bulk upload); SynTax does not call the IRP. Then record the IRN and acknowledgement here.</p>
           <button type="button" className={btnCls} onClick={() => download(`/api/v1/billing/documents/${doc.id}/einvoice`, undefined, `einvoice-${fileSafe}.json`)}>Download JSON for the IRP</button>
           {doc.irn ? (
             <p className="text-[13px] text-pos-ink/80">IRN <span className="break-all font-mono text-[12px]">{doc.irn}</span>, ack no. <span className="font-mono">{doc.ackNo}</span></p>

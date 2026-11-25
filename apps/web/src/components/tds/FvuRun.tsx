@@ -7,8 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 const AGENT = 'http://127.0.0.1:18531';
 
 /**
- * Hands the statement to Protean's FVU on this computer through the SynexTax agent, then reads
- * back what the FVU produced. The FVU is Protean's own program; SynexTax only prepares the folder.
+ * Hands the statement to Protean's FVU on this computer through the SynTax agent, then reads
+ * back what the FVU produced. The FVU is Protean's own program; SynTax only prepares the folder.
  */
 export function FvuRun({ fileName, text }: { fileName: string; text: string }) {
   const [folder, setFolder] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export function FvuRun({ fileName, text }: { fileName: string; text: string }) {
   const start = async () => {
     setState(null);
     setErrors('');
-    // The agent acts only on a single-use token signed by the SynexTax server.
+    // The agent acts only on a single-use token signed by the SynTax server.
     const c = await authFetch('/api/v1/dsc/agent-challenge', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'fvu.prepare' }) });
     const cb = await c.json().catch(() => ({}));
     if (!c.ok) return setState({ tone: 'bad', text: cb.message ?? 'Could not get a code for the agent from the server.' });
@@ -41,7 +41,7 @@ export function FvuRun({ fileName, text }: { fileName: string; text: string }) {
         ? { tone: 'info', text: `The FVU is open with ${fileName} in ${b.folder}. Validate it there, then check the result here.` }
         : { tone: 'bad', text: `${b.launchError ?? 'The FVU could not be opened.'} The file is saved in ${b.folder}.` });
     } catch {
-      setState({ tone: 'bad', text: 'The SynexTax agent is not running on this computer. Start it, or validate the downloaded file with the FVU yourself.' });
+      setState({ tone: 'bad', text: 'The SynTax agent is not running on this computer. Start it, or validate the downloaded file with the FVU yourself.' });
     }
   };
 
@@ -52,10 +52,10 @@ export function FvuRun({ fileName, text }: { fileName: string; text: string }) {
       const b = await r.json();
       if (!r.ok) return setState({ tone: 'bad', text: b.error ?? 'Could not read the result.' });
       if (b.validated) setState({ tone: 'ok', text: `Passed: the FVU wrote ${b.fvuFile}. Upload it with your digital signature.` });
-      else if (b.errors) { setState({ tone: 'bad', text: 'The FVU found errors. Fix the rows in SynexTax and write the statement again.' }); setErrors(b.errors); }
+      else if (b.errors) { setState({ tone: 'bad', text: 'The FVU found errors. Fix the rows in SynTax and write the statement again.' }); setErrors(b.errors); }
       else setState({ tone: 'info', text: 'No FVU output yet. Run the validation in the FVU window first.' });
     } catch {
-      setState({ tone: 'bad', text: 'The SynexTax agent is not running on this computer.' });
+      setState({ tone: 'bad', text: 'The SynTax agent is not running on this computer.' });
     }
   };
 

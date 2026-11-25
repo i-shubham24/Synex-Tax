@@ -219,7 +219,7 @@ export default function SettingsPage() {
                   <span>Local Desktop DSC Bridge Daemon Setup</span>
                 </div>
                 <p className="text-pos-ink/70 leading-relaxed text-[12px]">
-                  No Java applet or browser extension. The SynexTax agent (apps/dsc-agent) runs on the computer at 127.0.0.1:18531 and
+                  No Java applet or browser extension. The SynTax agent (apps/dsc-agent) runs on the computer at 127.0.0.1:18531 and
                   signs through the token driver installed with the DSC; the token's own window asks for the PIN.
                 </p>
                 <div className="text-[12px] text-pos-accent pt-1">

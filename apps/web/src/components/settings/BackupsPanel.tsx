@@ -18,7 +18,7 @@ const when = (s: string | null) => (s ? new Date(s).toLocaleString('en-IN', { da
 const size = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 /**
- * Accounting backups uploaded by the SynexTax agent: the computers paired with a device token,
+ * Accounting backups uploaded by the SynTax agent: the computers paired with a device token,
  * the backup rules (what, when, how long to keep), the versions kept, and which are late.
  */
 export function BackupsPanel() {
@@ -110,7 +110,7 @@ export function BackupsPanel() {
     <div className="space-y-6">
       <div className="border-b border-pos-line pb-4">
         <h3 className="text-lg font-semibold text-pos-ink">Backups</h3>
-        <p className="mt-1 text-xs text-pos-ink/70">The SynexTax agent backs up Tally, Busy and Marg data, Zoho Books exports and Vyapar backups on your office computers, and uploads them daily. Unchanged data is not uploaded again. Partners get an email when a backup is more than a day late.</p>
+        <p className="mt-1 text-xs text-pos-ink/70">The SynTax agent backs up Tally, Busy and Marg data, Zoho Books exports and Vyapar backups on your office computers, and uploads them daily. Unchanged data is not uploaded again. Partners get an email when a backup is more than a day late.</p>
       </div>
 
       {late.length > 0 && (

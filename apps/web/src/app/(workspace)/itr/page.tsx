@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Calculator, TrendingUp } from 'lucide-react';
+import Link from 'next/link';
+import { Calculator, TrendingUp, Users } from 'lucide-react';
 import { itrComputation, itrInputFromValues, type ItrInput, type ItrRegimeResult } from '@synextax/tax-engine';
 import { ItrFormPicker, formFor, type Form, type Taxpayer } from '../../../components/itr/ItrFormPicker';
 import { AdvanceTaxForecasterPanel } from '../../../components/itr/AdvanceTaxForecasterPanel';
@@ -82,7 +83,13 @@ function ItrWorkspace() {
           <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">Income tax & Advance tax</h1>
           <p className="mt-1 max-w-3xl text-[14px] text-pos-ink/60">Dual-regime computation, official JSON generation, and live Section 234B/234C advance tax forecasting for Tax Year 2026-27.</p>
         </div>
-        <div className="flex gap-2" role="tablist">
+        <div className="flex flex-wrap items-center gap-2" role="tablist">
+          <Link
+            href="/itr/register"
+            className="inline-flex items-center gap-2 rounded-full border border-pos-line px-4 py-2 text-[13.5px] text-pos-ink/70 hover:bg-pos-tint transition-colors"
+          >
+            <Users className="h-4 w-4" /> Assessee register
+          </Link>
           <button
             type="button"
             role="tab"

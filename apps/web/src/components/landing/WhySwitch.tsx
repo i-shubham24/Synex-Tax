@@ -39,7 +39,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       type="button"
       role="switch"
       aria-checked={on}
-      aria-label={on ? 'Showing SynexTax' : 'Showing desktop software'}
+      aria-label={on ? 'Showing SynTax' : 'Showing desktop software'}
       onClick={() => onChange(!on)}
       className={`relative mx-1.5 inline-flex h-[0.78em] w-[1.5em] translate-y-[0.06em] items-center rounded-full align-middle transition-colors duration-300 ${
         on ? 'bg-sky' : 'bg-ink/20'
@@ -92,7 +92,7 @@ export function WhySwitch() {
               </span>
             </h2>
             <p className="mt-3 text-[11px] text-ink-faint">
-              Toggle to compare: {cloud ? 'SynexTax in the cloud' : 'a typical desktop suite'}.
+              Toggle to compare: {cloud ? 'SynTax in the cloud' : 'a typical desktop suite'}.
             </p>
 
             <div className="mt-10 grid grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-end gap-6">
@@ -168,7 +168,7 @@ export function WhySwitch() {
         {/* Right column */}
         <div className="flex flex-col">
           <div className="hidden h-[156px] items-end border-b border-hairline p-9 lg:flex">
-            <p className="text-[18px] font-medium tracking-[-0.03em]">&copy;2026 SynexTax</p>
+            <p className="text-[18px] font-medium tracking-[-0.03em]">&copy;2026 SynTax</p>
           </div>
           <div className="border-b border-hairline p-6 sm:p-9">
             <Chips items={['Zero install', 'Partner approvals', 'Local signer', 'Continuous history', 'Punjabi support']} more={3} />

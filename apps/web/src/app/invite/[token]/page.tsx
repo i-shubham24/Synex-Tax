@@ -20,7 +20,7 @@ function InviteCard({ invite }: { invite: Invite | null }) {
       <p className="flex items-center gap-1.5 font-display text-[13px] font-semibold text-ink">
         <Building2 className="h-4 w-4 text-sky-deep" /> {invite?.firmName ?? 'Your CA firm'}
       </p>
-      <p className="mt-1 font-display text-[12px] leading-[1.45] text-ink/60">Every SynexTax login uses a password and an authenticator app. Nobody, not even the firm, can sign in as you.</p>
+      <p className="mt-1 font-display text-[12px] leading-[1.45] text-ink/60">Every SynTax login uses a password and an authenticator app. Nobody, not even the firm, can sign in as you.</p>
     </div>
   );
 }
@@ -125,7 +125,7 @@ export default function InvitePage() {
             value={mode}
             onChange={(v) => { setMode(v); setError(null); }}
             options={[
-              { value: 'new', label: 'New to SynexTax' },
+              { value: 'new', label: 'New to SynTax' },
               { value: 'existing', label: 'I already have an account' },
             ]}
           />
@@ -136,7 +136,7 @@ export default function InvitePage() {
             </>
           ) : (
             <>
-              <Field label="Your SynexTax password" icon={LockKeyhole} type="password" required maxLength={128} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your SynexTax password" />
+              <Field label="Your SynTax password" icon={LockKeyhole} type="password" required maxLength={128} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your SynTax password" />
               <Field label="Authenticator code" icon={ShieldCheck} hint="6 digits" inputMode="numeric" required maxLength={6} value={totp} onChange={(e) => setTotp(digits(e.target.value))} placeholder="Authenticator code" className="[&_input]:tabular-nums" />
             </>
           )}

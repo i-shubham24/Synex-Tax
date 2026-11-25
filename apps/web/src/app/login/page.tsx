@@ -85,7 +85,7 @@ export default function LoginPage() {
             <DemoPill onClick={() => handleDemo('STAFF')}>Staff</DemoPill>
           </div>
           <p className="font-display text-[13px] text-ink/55">
-            New to SynexTax?{' '}
+            New to SynTax?{' '}
             <Link href="/signup" className="font-semibold text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-ink">
               Create an account
             </Link>

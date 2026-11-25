@@ -49,7 +49,7 @@ export function AboutStairs() {
   return (
     <section id="about" data-nav-theme="dark" className="relative bg-night pb-20 pt-16 text-white sm:pt-20" aria-labelledby="about-title">
       <div className="mx-auto max-w-[1380px] px-6 sm:px-10">
-        <Eyebrow dark>Why SynexTax</Eyebrow>
+        <Eyebrow dark>Why SynTax</Eyebrow>
         <div ref={ref} className="relative mt-7 grid gap-10 lg:grid-cols-[minmax(0,38fr)_minmax(0,62fr)]">
           <div>
             <h2 id="about-title" className="max-w-[26rem] text-[clamp(30px,3.2vw,44px)] font-normal leading-[1.14] tracking-[-0.035em]">

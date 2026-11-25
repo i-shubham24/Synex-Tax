@@ -9,7 +9,7 @@ const month = (p: string) => new Date(`${p}-01T00:00:00Z`).toLocaleDateString('e
 const th = 'px-3 py-2 text-right text-[12px] font-medium whitespace-nowrap';
 const td = 'px-3 py-2 text-right text-[13px] tabular-nums text-pos-ink';
 const STATE: Record<Gstr3bMonth['state'], [string, string]> = {
-  FILED: ['Filed', 'text-[#15803d]'], FILED_LATE: ['Filed late', 'text-[#b45309]'], OVERDUE: ['Overdue', 'text-[#dc2626]'], NOT_DUE: ['Not due', 'text-pos-ink/60'], IN_PROGRESS: ['In progress', 'text-pos-ink/70'], NOT_RECORDED: ['Not in SynexTax', 'text-pos-ink/60'],
+  FILED: ['Filed', 'text-[#15803d]'], FILED_LATE: ['Filed late', 'text-[#b45309]'], OVERDUE: ['Overdue', 'text-[#dc2626]'], NOT_DUE: ['Not due', 'text-pos-ink/60'], IN_PROGRESS: ['In progress', 'text-pos-ink/70'], NOT_RECORDED: ['Not in SynTax', 'text-pos-ink/60'],
 };
 
 interface Year { year: string; months: Gstr3bMonth[]; totals: Record<string, string>; netOutputShortfall: string; netExcessCredit: string }

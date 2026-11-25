@@ -7,8 +7,8 @@ interface Status { uploads: 'S3' | 'DISK' | 'DEV_DISK' | 'OFF'; email: boolean; 
 
 const ROWS: Array<{ key: keyof Status; title: string; on: string; off: string; how: string }> = [
   { key: 'uploads', title: 'Client document uploads', on: 'Files are stored', off: 'Switched off', how: 'S3_BUCKET and S3_REGION (ap-south-1 or ap-south-2) with AWS keys, or FILE_STORE_DIR on a server with a disk.' },
-  { key: 'email', title: 'Email (Amazon SES, India)', on: 'Reminders are sent from SynexTax', off: 'Reminders open in your mail app', how: 'MAIL_FROM, SES_REGION and AWS keys.' },
-  { key: 'whatsapp', title: 'WhatsApp (Meta Cloud API)', on: 'Reminders are sent from SynexTax', off: 'Reminders open in WhatsApp', how: 'WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID and an approved WHATSAPP_REMINDER_TEMPLATE.' },
+  { key: 'email', title: 'Email (Amazon SES, India)', on: 'Reminders are sent from SynTax', off: 'Reminders open in your mail app', how: 'MAIL_FROM, SES_REGION and AWS keys.' },
+  { key: 'whatsapp', title: 'WhatsApp (Meta Cloud API)', on: 'Reminders are sent from SynTax', off: 'Reminders open in WhatsApp', how: 'WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID and an approved WHATSAPP_REMINDER_TEMPLATE.' },
   { key: 'assistant', title: 'Assistant (Amazon Bedrock, India)', on: 'Explains FVU errors; identifiers are masked first', off: 'Not set up', how: 'BEDROCK_REGION and BEDROCK_MODEL_ID (an India model or profile) with AWS keys.' },
   { key: 'itrSoftwareId', title: 'ITR software ID', on: 'ITR-1 files can be written', off: 'ITR-1 is checked but not written', how: 'ITR_SOFTWARE_ID, issued by the Income Tax Department to a registered e-return intermediary.' },
   { key: 'desktopAgent', title: 'Desktop agent key', on: 'The agent accepts signed requests', off: 'The agent cannot be used', how: 'AGENT_CHALLENGE_PRIVATE_KEY on the server; its public half on each computer running the agent.' },
@@ -42,7 +42,7 @@ export function ConnectionsPanel() {
         ))}
         {[
           ['GST portal (GSP)', 'Filing GSTR-1 and GSTR-3B, downloading GSTR-2B and ledgers needs a contract with a GST Suvidha Provider and each client’s consent on the GST portal.'],
-          ['TRACES', 'There is no API for TRACES. Download the consolidated file, CSI file and certificates there; SynexTax reads them.'],
+          ['TRACES', 'There is no API for TRACES. Download the consolidated file, CSI file and certificates there; SynTax reads them.'],
         ].map(([t, d]) => (
           <div key={t} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-pos-line bg-pos-muted p-4">
             <div className="space-y-1"><div className="text-sm font-semibold text-pos-ink">{t}</div><div className="text-[12px] text-pos-ink/60">{d}</div></div>

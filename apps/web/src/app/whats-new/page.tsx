@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { MarketingPage } from '../../components/marketing/MarketingPage';
 
 export const metadata: Metadata = {
-  title: "What's new | SynexTax",
-  description: 'Changes to SynexTax, newest first.',
+  title: "What's new | SynTax",
+  description: 'Changes to SynTax, newest first.',
 };
 
 const RELEASES: Array<{ date: string; title: string; items: Array<[string, string, string?]> }> = [
@@ -21,7 +21,7 @@ const RELEASES: Array<{ date: string; title: string; items: Array<[string, strin
       ['Function keys', 'F2 GST returns, F3 TDS, F4 Practice, F6 Bank, F7 Income tax, F8 Documents, F9 Clients, F10 Control Tower.'],
       ['Salary TDS, fuller', 'Perquisites, salary from an earlier employer, LTA and home-loan interest in the calculator, and Form 124 checks on each claim.', '/tools'],
       ['ITC-04 and the 3B year', 'Job work positions with deemed supplies flagged, and every month’s GSTR-3B set against GSTR-1 and GSTR-2B.', '/features/gst'],
-      ['Backups of Tally, Busy and Marg data', 'The SynexTax desktop agent zips a client’s accounting data on your machine, with a checksum for every file. Nothing is uploaded.'],
+      ['Backups of Tally, Busy and Marg data', 'The SynTax desktop agent zips a client’s accounting data on your machine, with a checksum for every file. Nothing is uploaded.'],
       ['This quarter’s TDS from your Excel sheet', 'Paste the quarter’s payments with their challans; the rows are checked and the draft return is ready for its statement file.', '/features/tds'],
       ['TDS registers and default analysis', 'Interest for late deduction and deposit, short deposits, no-PAN rows below the higher rate, a deposit register, section-wise totals for the tax audit report and a Form 121 register.', '/features/tds'],
       ['GST returns', 'Sales register import with GSTR-1 classification, a rate-wise GSTR-1 summary, and CMP-08 and GSTR-4 workings for composition clients.', '/features/gst'],
@@ -58,7 +58,7 @@ export default function WhatsNewPage() {
       eyebrow="What's new"
       title="Changes, Newest First"
       cta={false}
-      summary={<p>What changed in SynexTax and when. Updates reach every firm automatically; there is nothing to download or install.</p>}
+      summary={<p>What changed in SynTax and when. Updates reach every firm automatically; there is nothing to download or install.</p>}
     >
       <ol className="space-y-12">
         {RELEASES.map((r) => (

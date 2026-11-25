@@ -27,9 +27,9 @@ const XIcon = ({ className }: IconProps) => (
 
 // Social handles are not confirmed yet. Replace these placeholders with the real URLs before launch.
 const SOCIAL = [
-  { label: 'SynexTax on Instagram', href: '#contact', icon: InstagramIcon },
-  { label: 'SynexTax on LinkedIn', href: '#contact', icon: LinkedinIcon },
-  { label: 'SynexTax on X', href: '#contact', icon: XIcon },
+  { label: 'SynTax on Instagram', href: '#contact', icon: InstagramIcon },
+  { label: 'SynTax on LinkedIn', href: '#contact', icon: LinkedinIcon },
+  { label: 'SynTax on X', href: '#contact', icon: XIcon },
 ];
 
 const PRODUCT: Array<[string, string]> = [
@@ -40,7 +40,7 @@ const PRODUCT: Array<[string, string]> = [
   ["What's new", '/whats-new'],
 ];
 const COMPANY: Array<[string, string]> = [
-  ['Switch to SynexTax', '/switch'],
+  ['Switch to SynTax', '/switch'],
   ['Security', '/security'],
   ['Contact', '/contact'],
   ['Privacy', '/privacy'],
@@ -91,7 +91,7 @@ export function LandingFooter() {
           <PixelField seed={141} count={24} cell={16} cols={18} rows={12} maxOpacity={0.2} />
 
           <p className="relative flex items-center gap-2.5 font-display text-[24px] font-semibold tracking-[-0.03em]">
-            <LogoMark size={22} tone="paper" /> SynexTax
+            <LogoMark size={22} tone="paper" /> SynTax
           </p>
 
           <p className="relative max-w-[21rem] font-display text-[clamp(22px,2vw,28px)] font-medium leading-[1.22] tracking-[-0.03em] [text-shadow:0_2px_14px_rgba(20,60,120,0.2)]">
@@ -175,7 +175,7 @@ export function LandingFooter() {
           style={{ y: rise }}
           className="absolute inset-x-0 top-0 text-center font-display text-[22vw] font-light leading-[0.82] tracking-[-0.06em] text-transparent [background-clip:text] [-webkit-background-clip:text] [background-image:linear-gradient(180deg,#52b0f8_0%,#a9d6fb_45%,rgba(255,255,255,0)_92%)]"
         >
-          SynexTax
+          SynTax
         </motion.p>
       </div>
     </footer>

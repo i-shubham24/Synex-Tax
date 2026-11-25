@@ -50,7 +50,7 @@ export function AuthFrame({
       </div>
 
       <header className="relative z-10 mx-auto flex h-[76px] w-full max-w-[1480px] shrink-0 items-center justify-between px-6 sm:px-10">
-        <Link href="/" aria-label="SynexTax home" className="rounded-md">
+        <Link href="/" aria-label="SynTax home" className="rounded-md">
           <Wordmark className="font-display [&>span:last-child]:text-[22px] [&>span:last-child]:font-semibold [&>span:last-child]:tracking-[-0.035em]" />
         </Link>
         <nav aria-label="Account" className="flex items-center gap-6 font-display text-[15.5px] font-medium tracking-[-0.015em]">

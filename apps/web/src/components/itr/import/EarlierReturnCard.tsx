@@ -67,7 +67,7 @@ export function EarlierReturnCard({ values, onApply }: { values: PageValues; onA
 
   return (
     <div className="space-y-3">
-      <FileDrop label="Upload last year's return" hint="ITR-1 to ITR-4 JSON as downloaded from the e-filing portal or written by SynexTax. Up to 5 MB, read once and not stored." busy={busy} onFile={load} />
+      <FileDrop label="Upload last year's return" hint="ITR-1 to ITR-4 JSON as downloaded from the e-filing portal or written by SynTax. Up to 5 MB, read once and not stored." busy={busy} onFile={load} />
       {error && <p className="text-[13px] text-[#dc2626]">{error}</p>}
       {r && (
         <div className="space-y-4">

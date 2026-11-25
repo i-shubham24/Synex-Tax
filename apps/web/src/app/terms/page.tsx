@@ -4,8 +4,8 @@ import { Bullets, LegalPage, type LegalSection } from '../../components/legal/Le
 import { LEGAL } from '../../lib/legal';
 
 export const metadata: Metadata = {
-  title: 'Terms of service | SynexTax',
-  description: 'The terms that apply when a firm or business uses SynexTax for GST and TDS compliance.',
+  title: 'Terms of service | SynTax',
+  description: 'The terms that apply when a firm or business uses SynTax for GST and TDS compliance.',
 };
 
 const SECTIONS: LegalSection[] = [
@@ -180,7 +180,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       eyebrow="Terms of service"
-      title="Plain Terms For Using SynexTax"
+      title="Plain Terms For Using SynTax"
       summary={
         <p>
           What we provide, what your firm stays responsible for, how billing works and what happens to your data if you leave.

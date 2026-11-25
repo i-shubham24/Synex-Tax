@@ -556,7 +556,7 @@ export function PracticeComplianceHeatmap() {
                       {ent.contactPhone ? (
                         <a
                           href={`https://wa.me/${ent.contactPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                            `STATUTORY REMINDER from SynexTax for ${ent.name}: Pending compliance action required for ${period}. Ground: ${ent.reasons[0] || 'Statutory filing due.'}`
+                            `STATUTORY REMINDER from SynTax for ${ent.name}: Pending compliance action required for ${period}. Ground: ${ent.reasons[0] || 'Statutory filing due.'}`
                           )}`}
                           target="_blank"
                           rel="noreferrer"

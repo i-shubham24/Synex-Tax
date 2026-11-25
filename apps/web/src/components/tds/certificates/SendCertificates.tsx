@@ -62,7 +62,7 @@ export function SendCertificates({ selected, onDone }: { selected: CheckedCert[]
     setRows(selected.map((c) => ({ file: c.file, pan: c.pan, quarter: c.quarter ?? 'Q1', email: '', mobile: '' })));
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Addresses SynexTax already knows: last ones used for this client, or the deductee records.
+  // Addresses SynTax already knows: last ones used for this client, or the deductee records.
   useEffect(() => {
     if (!entityId || !selected.length) return;
     const pans = [...new Set(selected.map((c) => c.pan))];
@@ -123,7 +123,7 @@ export function SendCertificates({ selected, onDone }: { selected: CheckedCert[]
         items.push({ certificateId: ub.id, email: row.email.trim() || undefined, mobile: row.mobile.trim() || undefined, idx: out.length - 1 });
       } catch {
         setBusy(null);
-        return setError('The SynexTax agent is not running on this computer.');
+        return setError('The SynTax agent is not running on this computer.');
       }
     }
     if (items.length) {

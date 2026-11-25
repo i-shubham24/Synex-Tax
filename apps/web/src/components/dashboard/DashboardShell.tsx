@@ -214,7 +214,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             title={expanded ? 'Click to collapse navigation' : 'Click to expand navigation'}
           >
             <AppMark />
-            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'hidden'}`}>SynexTax</span>
+            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'hidden'}`}>SynTax</span>
           </button>
           <button
             type="button"

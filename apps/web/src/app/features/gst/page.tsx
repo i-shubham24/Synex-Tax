@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { FeatureGroups, MarketingPage } from '../../../components/marketing/MarketingPage';
 
 export const metadata: Metadata = {
-  title: 'GST, IMS and GSTR-2B reconciliation | SynexTax',
+  title: 'GST, IMS and GSTR-2B reconciliation | SynTax',
   description: 'GSTR-1 and 3B, a four-pass match against GSTR-2B, IMS actions before the 14th, and a 3B set-off that keeps cash outflow low.',
 };
 
@@ -13,7 +13,7 @@ export default function GstFeaturesPage() {
       title="GSTR-2B, IMS And 3B, Built For The Way Credit Works Now"
       summary={
         <p>
-          Input credit now depends on GSTR-2B and the Invoice Management System, not GSTR-2A. SynexTax matches every purchase to
+          Input credit now depends on GSTR-2B and the Invoice Management System, not GSTR-2A. SynTax matches every purchase to
           2B, keeps IMS actions ahead of the 14th, and computes 3B with the set-off order the law requires.
         </p>
       }

@@ -4,8 +4,8 @@ import { Bullets, LegalPage, type LegalSection } from '../../components/legal/Le
 import { LEGAL } from '../../lib/legal';
 
 export const metadata: Metadata = {
-  title: 'Privacy notice | SynexTax',
-  description: 'How SynexTax collects, uses, stores and protects personal data under the Digital Personal Data Protection Act, 2023.',
+  title: 'Privacy notice | SynTax',
+  description: 'How SynTax collects, uses, stores and protects personal data under the Digital Personal Data Protection Act, 2023.',
 };
 
 const mail = (address: string) => (

@@ -54,7 +54,7 @@ async function agentFetch(path: string, init?: RequestInit, ms = 1500) {
 /**
  * Signs an open return with a Class 3 DSC on this computer. The server builds the document and
  * its digest; the desktop agent signs the digest with a certificate from the Windows store (the
- * token's own driver asks for the PIN, SynexTax never sees it); the server checks the signature
+ * token's own driver asks for the PIN, SynTax never sees it); the server checks the signature
  * against the certificate and records the attempt in the signing trail.
  */
 export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
@@ -163,7 +163,7 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
           {agent === 'checking' && <div className="p-4 text-center text-xs text-pos-ink/60">Looking for the desktop agent…</div>}
           {agent === 'offline' && (
             <div className="space-y-1.5 rounded-lg border border-pos-line bg-pos-surface p-3 text-xs text-pos-ink/70">
-              <div className="font-semibold text-pos-ink">The SynexTax desktop agent is not running</div>
+              <div className="font-semibold text-pos-ink">The SynTax desktop agent is not running</div>
               <div>Start the agent on this computer with your DSC token plugged in, then check again.</div>
             </div>
           )}
@@ -207,7 +207,7 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
           <div className="flex items-center justify-between border-b border-pos-line pb-3">
             <div>
               <h2 className="text-sm font-semibold text-pos-ink">Sign a return</h2>
-              <p className="text-[12px] text-pos-ink/60">SynexTax prepares the return; your token signs it; the server checks the signature and records it.</p>
+              <p className="text-[12px] text-pos-ink/60">SynTax prepares the return; your token signs it; the server checks the signature and records it.</p>
             </div>
             <span className="rounded border border-pos-line bg-pos-surface px-2 py-0.5 text-[12px] font-semibold text-pos-accent">Partner or manager</span>
           </div>
@@ -231,7 +231,7 @@ export function DscSigningPanel({ onSigned }: { onSigned?: () => void }) {
 
             <div className="space-y-2 rounded-lg border border-pos-line bg-pos-surface p-3.5 text-[12px] text-pos-ink/70">
               <div className="flex justify-between gap-3"><span>Signed with</span><span className="text-right font-semibold text-pos-ink">{cert ? `${cert.commonName}, ${maskPan(cert.pan)}` : 'Choose a certificate'}</span></div>
-              <div className="flex justify-between gap-3"><span>PIN</span><span className="text-right">Entered in your token’s own window; SynexTax never sees it</span></div>
+              <div className="flex justify-between gap-3"><span>PIN</span><span className="text-right">Entered in your token’s own window; SynTax never sees it</span></div>
               <div className="flex justify-between gap-3"><span>Time to sign</span><span className="text-right">Two minutes from pressing Sign</span></div>
             </div>
 

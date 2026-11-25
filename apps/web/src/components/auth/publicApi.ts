@@ -16,6 +16,6 @@ export async function postPublic<T = Record<string, unknown>>(path: string, body
     const data = await res.json().catch(() => ({}));
     return { ok: res.ok, status: res.status, data };
   } catch {
-    return { ok: false, status: 0, data: { message: 'We could not reach SynexTax. Check your connection and try again.' } as T & { message?: string } };
+    return { ok: false, status: 0, data: { message: 'We could not reach SynTax. Check your connection and try again.' } as T & { message?: string } };
   }
 }

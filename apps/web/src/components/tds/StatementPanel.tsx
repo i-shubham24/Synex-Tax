@@ -76,7 +76,7 @@ export function StatementPanel({ tan }: { tan: string }) {
       a.download = body.fileName;
       a.click();
       URL.revokeObjectURL(url);
-      setMessage(`${body.fileName} is ready. Validate it with Protean's FVU 1.2 before uploading; SynexTax checked the file format rules it can check without the FVU.`);
+      setMessage(`${body.fileName} is ready. Validate it with Protean's FVU 1.2 before uploading; SynTax checked the file format rules it can check without the FVU.`);
       setWritten({ fileName: body.fileName, text: body.text });
     } else {
       setIssues(body.issues ?? []);

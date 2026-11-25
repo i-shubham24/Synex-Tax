@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { FeatureGroups, MarketingPage } from '../../components/marketing/MarketingPage';
 
 export const metadata: Metadata = {
-  title: 'Security | SynexTax',
-  description: 'How SynexTax keeps each firm’s client data apart, who can file what, what is logged, and what we never store.',
+  title: 'Security | SynTax',
+  description: 'How SynTax keeps each firm’s client data apart, who can file what, what is logged, and what we never store.',
 };
 
 export default function SecurityPage() {

@@ -95,7 +95,7 @@ export function SiteNav() {
       onFocusCapture={() => setHidden(false)}
     >
       <div className="mx-auto flex h-[76px] max-w-[1480px] items-center justify-between px-6 sm:px-10">
-        <Link href="/" aria-label="SynexTax home" className="rounded-md">
+        <Link href="/" aria-label="SynTax home" className="rounded-md">
           <Wordmark
             tone={dark ? 'paper' : 'ink'}
             className="font-display [&>span:last-child]:text-[22px] [&>span:last-child]:font-semibold [&>span:last-child]:tracking-[-0.035em] [&>span:last-child]:transition-colors [&>span:last-child]:duration-500"

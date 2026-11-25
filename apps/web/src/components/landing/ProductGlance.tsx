@@ -51,7 +51,7 @@ function ItcCard() {
   return (
     <div className="relative w-[230px] rounded-[10px] bg-white p-3.5 shadow-[0_18px_40px_-18px_rgba(20,40,80,0.35)] ring-1 ring-black/5">
       <p className="flex items-center gap-1.5 text-[10px] text-ink">
-        <LogoMark size={10} /> SynexTax
+        <LogoMark size={10} /> SynTax
       </p>
       <div className="mt-2 flex items-start justify-between">
         <div>
@@ -174,7 +174,7 @@ export function ProductGlance() {
           {/* Top row */}
           <div className="border-b border-hairline p-6 lg:border-r lg:p-7">
             <p className="flex items-center gap-2 text-[13px] font-medium">
-              <LogoMark size={14} /> SynexTax
+              <LogoMark size={14} /> SynTax
             </p>
             <ul className="mt-6 space-y-1.5 text-[12px] text-ink-soft">
               {SECTIONS.map((s) => (
@@ -206,7 +206,7 @@ export function ProductGlance() {
             </div>
           </div>
           <div className="hidden items-center justify-between border-b border-r border-hairline p-6 lg:flex lg:flex-col lg:items-start lg:justify-start lg:gap-5 lg:p-7">
-            <p className="text-[12px] font-medium">&copy;2026 SynexTax</p>
+            <p className="text-[12px] font-medium">&copy;2026 SynTax</p>
             <RoleStack />
           </div>
           <div className="hidden border-b border-hairline p-6 lg:block lg:p-7">

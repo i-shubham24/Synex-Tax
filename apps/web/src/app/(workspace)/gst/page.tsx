@@ -475,7 +475,7 @@ export default function MasterInvoicesPage() {
               </button>
             </div>
             <p className="text-sm leading-relaxed text-[#3F444B] dark:text-[#C4C9D0]">
-              Offsetting liability and filing GSTR-1 or GSTR-3B happen on the GST portal: SynexTax is not connected to a GST Suvidha Provider yet, so it cannot read the ledgers or file for you.
+              Offsetting liability and filing GSTR-1 or GSTR-3B happen on the GST portal: SynTax is not connected to a GST Suvidha Provider yet, so it cannot read the ledgers or file for you.
             </p>
             <ol className="list-decimal space-y-2 pl-5 text-sm text-[#3F444B] dark:text-[#C4C9D0]">
               <li>Prepare the return and its tables under GST returns, and download the JSON for the portal.</li>

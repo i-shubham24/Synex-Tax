@@ -39,7 +39,7 @@ export function PlansStairs() {
     <section id="pricing" className="site-base px-3 py-10 sm:px-6 sm:py-14 lg:px-10" aria-labelledby="plans-title">
       <div data-nav-theme="dark" className="relative mx-auto max-w-[1480px] overflow-hidden rounded-[30px] bg-night text-white sm:rounded-[38px]">
         <div className="flex items-center justify-between px-7 pt-6 text-[11px] text-white/70 sm:px-10">
-          <span>SynexTax</span>
+          <span>SynTax</span>
           <span>Annual plans, plus GST</span>
         </div>
 

@@ -3,8 +3,8 @@ import { Check, Minus } from 'lucide-react';
 import { MarketingPage, StatusTag, type Availability } from '../../components/marketing/MarketingPage';
 
 export const metadata: Metadata = {
-  title: 'Switch from desktop tax software | SynexTax',
-  description: 'Move your client list, GSTINs and team from installed tax software to SynexTax, and see what changes for your practice.',
+  title: 'Switch from desktop tax software | SynTax',
+  description: 'Move your client list, GSTINs and team from installed tax software to SynTax, and see what changes for your practice.',
 };
 
 const STEPS: Array<{ title: string; body: string; status: Availability }> = [
@@ -47,7 +47,7 @@ const COMPARE: Array<[string, string, string]> = [
 export default function SwitchPage() {
   return (
     <MarketingPage
-      eyebrow="Switch to SynexTax"
+      eyebrow="Switch to SynTax"
       title="Move Your Practice Over In An Afternoon"
       summary={
         <p>
@@ -80,7 +80,7 @@ export default function SwitchPage() {
               <tr>
                 <th scope="col" className="px-5 py-3.5 font-medium"><span className="sr-only">Topic</span></th>
                 <th scope="col" className="px-5 py-3.5 font-medium">Typical desktop software</th>
-                <th scope="col" className="px-5 py-3.5 font-medium">SynexTax</th>
+                <th scope="col" className="px-5 py-3.5 font-medium">SynTax</th>
               </tr>
             </thead>
             <tbody>

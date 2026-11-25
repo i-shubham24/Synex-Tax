@@ -10,7 +10,7 @@ import { PillButton } from './primitives';
 function FormMarks({ revealed }: { revealed: boolean }) {
   const base = `transition-all duration-[1100ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`;
   return (
-    <div className="space-y-4" aria-label="Returns and statements SynexTax prepares">
+    <div className="space-y-4" aria-label="Returns and statements SynTax prepares">
       <p className={`text-[12px] text-ink-faint ${base}`} style={{ transitionDelay: '500ms' }}>
         Ready for the 2026-27 returns and statements
       </p>

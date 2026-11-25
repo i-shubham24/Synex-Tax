@@ -7,7 +7,7 @@ import { ContactForm } from '../../components/legal/ContactForm';
 import { LEGAL } from '../../lib/legal';
 
 export const metadata: Metadata = {
-  title: 'Contact | SynexTax',
+  title: 'Contact | SynTax',
   description: 'Book a demo, ask about pricing or moving your clients, or reach support and the grievance officer.',
 };
 

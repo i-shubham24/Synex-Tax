@@ -602,6 +602,59 @@ export async function GET(
   if (endpoint.endsWith('/pan')) {
     return NextResponse.json({ pan: 'AABCA1234F' });
   }
+  if (endpoint.startsWith('v1/itr-returns/register.csv')) {
+    const csvContent = [
+      'Client Name,PAN,Constitution,Assessment Year,Form,Regime,Status,Ack Number,Filed On,Total Income,Total Tax,Tax Payable',
+      '"Amritsar Silk Mills Pvt Ltd","AABCA****F","PRIVATE_LIMITED","2026-27","ITR-3","NEW","READY","984512938471902","2026-07-28",1250000,95000,-5000',
+      '"Ranjit Logistics & Infra LLP","AAKFR****D","LLP","2026-27","ITR-5","NEW","FILED","871928491823712","2026-09-14",2480000,744000,0',
+      '"Harpreet Singh & Sons HUF","AAFHH****K","HUF","2026-27","ITR-2","NEW","DRAFT","","",850000,42500,2500',
+      '"Karamjit Kaur Sole Prop","BFPPK****E","INDIVIDUAL","2026-27","ITR-4","NEW","NONE","","",0,0,0',
+    ].join('\n');
+    return new NextResponse(csvContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="assessee-register-AY-2026-27.csv"',
+      },
+    });
+  }
+  if (endpoint.startsWith('v1/itr-returns/register')) {
+    return NextResponse.json({
+      assessmentYear: '2026-27',
+      canExport: true,
+      rows: [
+        { entityId: 'ent-1', name: 'Amritsar Silk Mills Pvt Ltd', pan: 'AABCA****F', constitution: 'PRIVATE_LIMITED', returnId: 'demo-return-1', form: 'ITR-3', regime: 'NEW', status: 'READY', ackNumber: '984512938471902', filedOn: '2026-07-28', totalIncome: 1250000, totalTax: 95000, payable: -5000 },
+        { entityId: 'ent-2', name: 'Ranjit Logistics & Infra LLP', pan: 'AAKFR****D', constitution: 'LLP', returnId: 'demo-return-2', form: 'ITR-5', regime: 'NEW', status: 'FILED', ackNumber: '871928491823712', filedOn: '2026-09-14', totalIncome: 2480000, totalTax: 744000, payable: 0 },
+        { entityId: 'ent-3', name: 'Harpreet Singh & Sons HUF', pan: 'AAFHH****K', constitution: 'HUF', returnId: 'demo-return-3', form: 'ITR-2', regime: 'NEW', status: 'DRAFT', ackNumber: null, filedOn: null, totalIncome: 850000, totalTax: 42500, payable: 2500 },
+        { entityId: 'ent-4', name: 'Karamjit Kaur Sole Prop', pan: 'BFPPK****E', constitution: 'INDIVIDUAL', returnId: null, form: 'ITR-4', regime: 'NEW', status: 'NONE', ackNumber: null, filedOn: null, totalIncome: null, totalTax: null, payable: null },
+      ],
+    });
+  }
+  if (endpoint.endsWith('/challan')) {
+    return NextResponse.json({
+      payOn: new Date().toISOString().slice(0, 10),
+      assessmentYear: '2026-27',
+      pan: 'AABCA****F',
+      selfAssessment: {
+        majorHead: '0021',
+        majorHeadName: 'Income tax other than corporation tax (0021)',
+        minorHead: '300',
+        minorHeadName: 'Self-assessment tax (300)',
+        tax: 2500,
+        surcharge: 0,
+        cess: 100,
+        interest: 0,
+        penalty: 0,
+        fee: 0,
+        others: 0,
+        total: 2600,
+      },
+      nextAdvance: null,
+      instalments: [],
+      interest: { i234A: 0, i234B: 0, i234C: 0, months234B: 0 },
+      notes: ['Challan generated for e-Pay Tax self-assessment.'],
+    });
+  }
   if (endpoint.startsWith('v1/itr-returns/')) {
     const returnId = endpoint.replace('v1/itr-returns/', '');
     return NextResponse.json({

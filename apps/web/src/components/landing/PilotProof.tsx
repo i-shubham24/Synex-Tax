@@ -99,7 +99,7 @@ export function PilotProof() {
             <RoleStack />
           </div>
           <div className="hidden items-center border-b border-r border-hairline p-9 lg:flex">
-            <p className="text-[18px] font-medium tracking-[-0.03em]">&copy;2026 SynexTax</p>
+            <p className="text-[18px] font-medium tracking-[-0.03em]">&copy;2026 SynTax</p>
           </div>
           <div className="flex items-center justify-end border-b border-hairline p-6 sm:p-9">
             <Eyebrow tone="sky">Founding pilot</Eyebrow>

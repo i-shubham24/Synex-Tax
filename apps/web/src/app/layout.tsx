@@ -37,7 +37,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SynexTax | GST and TDS filing for CA practices',
+  title: 'SynTax | GST, TDS and Income Tax for CA Practices',
   description:
     'Cloud GST and dual-Act TDS filing for Chartered Accountants: IMS, 2B reconciliation, Forms 138 to 144, FVU validation and local DSC signing.',
 };

@@ -30,7 +30,7 @@ export function Wordmark({ tone = 'ink', className = '' }: { tone?: 'ink' | 'pap
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <LogoMark tone={tone} />
       <span className={`text-[17px] font-medium tracking-[-0.02em] ${tone === 'ink' ? 'text-ink' : 'text-white'}`}>
-        SynexTax
+        SynTax
       </span>
     </span>
   );

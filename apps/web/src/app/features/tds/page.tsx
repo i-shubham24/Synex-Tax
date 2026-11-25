@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { FeatureGroups, MarketingPage } from '../../../components/marketing/MarketingPage';
 
 export const metadata: Metadata = {
-  title: 'Dual-Act TDS and TCS | SynexTax',
+  title: 'Dual-Act TDS and TCS | SynTax',
   description: 'TDS under the Income-tax Act, 1961 and the Income-tax Act, 2025 side by side: multi-section ITNS 281N challans, CSI matching, interest and late fees.',
 };
 
@@ -14,7 +14,7 @@ export default function TdsFeaturesPage() {
       summary={
         <p>
           Statements up to FY 2025-26 stay on the 1961 Act. From Tax Year 2026-27 work moves to the 2025 Act and its new forms.
-          SynexTax routes each period by date, so your team works the same way for both.
+          SynTax routes each period by date, so your team works the same way for both.
         </p>
       }
     >
@@ -65,7 +65,7 @@ export default function TdsFeaturesPage() {
               { title: 'Government deductors and Form 24G', body: 'State, ministry and AIN in the statement for government deductors, book adjustments with their 24G receipt and DDO serial.', status: 'live' },
               { title: 'Salary register and Form 124', body: 'Each employee’s tax for the year, TDS so far and monthly TDS, with a Form 124 report of every claim and what it still needs.', status: 'live' },
               { title: 'Challans kept separately', body: 'Paste payments and challans as two lists; each month’s rows are linked to the challan paid for it.', status: 'live' },
-              { title: 'FVU on your computer', body: 'The statement handed to Protean’s FVU through the SynexTax agent, and the result read back.', status: 'pilot' },
+              { title: 'FVU on your computer', body: 'The statement handed to Protean’s FVU through the SynTax agent, and the result read back.', status: 'pilot' },
               { title: 'Correction statements', body: 'Open the consolidated file from TRACES, correct PANs, challans and rows or add a missed challan, and download the C5, C3 or C9 correction file, per Protean’s correction formats of August 2026.', status: 'live' },
               { title: 'Certificate check', body: 'Form 130 and 131 PDFs from the TRACES converter checked for one PAN each and a digital signature before they go out.', status: 'pilot' },
               { title: 'Correction statements', body: 'Built from the TRACES consolidated file, with drafts and versions.', status: 'coming' },

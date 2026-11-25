@@ -351,7 +351,7 @@ export default function ClientImportPage() {
             <div className="rounded-2xl border border-pos-accent/30 bg-pos-accent/5 p-4 text-[13.5px] text-pos-ink/80">
               <div className="font-semibold text-pos-accent">60-Second SmartBiz Legacy Migrator</div>
               <p className="mt-1">
-                Drop raw SmartBiz exports, TRACES CONSO files, or Protean .txt return files. SynexTax automatically discovers the client PAN, infers constitution, registers the TAN, and imports all past returns, challans, and payee directories in one pass.
+                Drop raw SmartBiz exports, TRACES CONSO files, or Protean .txt return files. SynTax automatically discovers the client PAN, infers constitution, registers the TAN, and imports all past returns, challans, and payee directories in one pass.
               </p>
             </div>
 
