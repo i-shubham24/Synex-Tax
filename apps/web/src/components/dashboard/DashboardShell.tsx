@@ -71,8 +71,8 @@ const NAV_ITEMS: NavItem[] = [
 /* Brand tile with the SynTax dynamic logo mark */
 function AppMark() {
   return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#141416] p-1 shadow-[0_8px_18px_-8px_rgba(20,20,22,0.7),inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-      <SynTaxMark size={28} priority />
+    <span className="flex shrink-0 items-center justify-center">
+      <SynTaxMark size={32} priority />
     </span>
   );
 }
@@ -203,12 +203,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={toggleRail}
-            className="flex items-center gap-2.5 rounded-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pos-accent text-left"
+            className="flex items-center gap-3 rounded-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-pos-accent text-left"
             aria-label={expanded ? 'Collapse navigation' : 'Expand navigation'}
             title={expanded ? 'Click to collapse navigation' : 'Click to expand navigation'}
           >
             <AppMark />
-            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'block md:hidden'}`}>SynTax</span>
+            <span className={`font-display text-[19px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'block md:hidden'}`}>SynTax</span>
           </button>
           <button
             type="button"

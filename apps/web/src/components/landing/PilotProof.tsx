@@ -32,10 +32,10 @@ function PostCard() {
       <div className="rounded-[10px] bg-[#232326] p-3">
         <div className="flex items-center justify-between text-[11px] text-white">
           <span className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mint">
-              <LogoMark size={11} />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mint">
+              <LogoMark size={16} />
             </span>
-            synextax
+            syntax
           </span>
           <MoreHorizontal className="h-4 w-4 text-white/50" />
         </div>

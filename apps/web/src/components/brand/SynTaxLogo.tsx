@@ -13,27 +13,29 @@ interface SynTaxMarkProps {
  */
 export function SynTaxMark({ size = 32, className = '', priority = false }: SynTaxMarkProps) {
   const [failed, setFailed] = useState(false);
+  const h = size;
+  const w = Math.round(h * (397 / 232));
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden ${className}`}
-      style={{ width: size, height: size }}
+      className={`inline-flex shrink-0 items-center justify-center ${className}`}
+      style={{ width: w, height: h }}
     >
       {!failed ? (
         <img
-          src="/brand/syntax-mark-512.png"
+          src="/brand/syntax-logo.png"
           alt="SynTax Mark"
-          width={size}
-          height={size}
+          width={w}
+          height={h}
           loading={priority ? 'eager' : 'lazy'}
           onError={() => setFailed(true)}
           className="h-full w-full object-contain"
         />
       ) : (
         <svg
-          width={size}
-          height={size}
-          viewBox="0 0 100 100"
+          width={w}
+          height={h}
+          viewBox="0 0 397 232"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="h-full w-full"
@@ -50,16 +52,16 @@ export function SynTaxMark({ size = 32, className = '', priority = false }: SynT
             </linearGradient>
           </defs>
           <path
-            d="M20 38 C20 22, 34 16, 52 16 L65 16 C72 16, 75 22, 75 28 L52 28 C42 28, 35 32, 35 38 C35 44, 42 48, 52 48 L68 48 C82 48, 90 56, 90 68 C90 82, 78 88, 60 88 L35 88 C26 88, 22 82, 22 76 L48 76 C58 76, 72 74, 72 68 C72 62, 60 59, 52 59 L38 59 C24 59, 20 50, 20 38 Z"
+            d="M50 88 C50 40, 90 20, 160 20 L220 20 C240 20, 250 35, 250 55 L160 55 C130 55, 100 65, 100 88 C100 110, 130 120, 160 120 L230 120 C280 120, 310 145, 310 180 C310 215, 270 230, 200 230 L110 230 C75 230, 60 215, 60 195 L150 195 C180 195, 230 190, 230 175 C230 155, 190 145, 160 145 L110 145 C65 145, 50 120, 50 88 Z"
             fill="url(#stNavy)"
           />
           <path
-            d="M38 59 L18 84 L36 84 L52 59 Z"
+            d="M110 145 L50 225 L100 225 L160 145 Z"
             fill="url(#stCyan)"
           />
-          <rect x="76" y="24" width="16" height="4" rx="2" fill="#00C4D4" />
-          <rect x="70" y="32" width="16" height="4" rx="2" fill="#00C4D4" />
-          <rect x="64" y="40" width="16" height="4" rx="2" fill="#00C4D4" />
+          <rect x="260" y="55" width="55" height="12" rx="6" fill="#00C4D4" />
+          <rect x="240" y="80" width="55" height="12" rx="6" fill="#00C4D4" />
+          <rect x="220" y="105" width="55" height="12" rx="6" fill="#00C4D4" />
         </svg>
       )}
     </span>
@@ -77,7 +79,7 @@ interface SynTaxWordmarkProps {
  * SynTax combined logo: brand mark alongside crisp modern typography.
  */
 export function SynTaxWordmark({
-  size = 28,
+  size = 32,
   tone = 'ink',
   className = '',
   showText = true,
@@ -85,12 +87,12 @@ export function SynTaxWordmark({
   const textClass = tone === 'paper' ? 'text-white' : 'text-pos-ink';
 
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex items-center gap-3 ${className}`}>
       <SynTaxMark size={size} />
       {showText && (
         <span
           className={`font-display font-semibold tracking-[-0.03em] ${textClass}`}
-          style={{ fontSize: Math.max(16, Math.round(size * 0.72)) }}
+          style={{ fontSize: Math.max(18, Math.round(size * 0.72)) }}
         >
           SynTax
         </span>

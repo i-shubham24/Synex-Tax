@@ -84,7 +84,7 @@ export function LandingHero() {
         {/* Copy (the nav lives in the fixed SiteNav) */}
         <div className="relative z-10 order-1 flex flex-1 flex-col px-4 sm:px-10 lg:w-[54%] lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
           <p
-            className={`mb-6 inline-flex max-w-full flex-wrap sm:flex-nowrap items-center gap-2 rounded-2xl sm:rounded-full border border-ink/10 bg-white/70 py-1.5 pl-2 pr-3.5 text-[12px] sm:text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
+            className={`mb-6 inline-flex w-fit self-start max-w-full flex-wrap sm:flex-nowrap items-center gap-2 rounded-2xl sm:rounded-full border border-ink/10 bg-white/70 py-1.5 pl-2 pr-3.5 text-[12px] sm:text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
           >
             <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-ink">2025 Act</span>
             <span className="leading-snug">

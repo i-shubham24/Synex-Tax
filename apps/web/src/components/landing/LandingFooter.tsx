@@ -90,8 +90,8 @@ export function LandingFooter() {
           <div aria-hidden className="absolute inset-0 opacity-[0.16] mix-blend-soft-light" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '3px 3px' }} />
           <PixelField seed={141} count={24} cell={16} cols={18} rows={12} maxOpacity={0.2} />
 
-          <p className="relative flex items-center gap-2.5 font-display text-[24px] font-semibold tracking-[-0.03em]">
-            <LogoMark size={22} tone="paper" /> SynTax
+          <p className="relative flex items-center gap-3 font-display text-[24px] font-semibold tracking-[-0.03em]">
+            <LogoMark size={32} tone="paper" /> SynTax
           </p>
 
           <p className="relative max-w-[21rem] font-display text-[clamp(22px,2vw,28px)] font-medium leading-[1.22] tracking-[-0.03em] [text-shadow:0_2px_14px_rgba(20,60,120,0.2)]">

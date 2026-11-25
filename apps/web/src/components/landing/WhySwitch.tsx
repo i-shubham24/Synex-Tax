@@ -85,9 +85,8 @@ export function WhySwitch() {
               <Toggle on={cloud} onChange={setCloud} />{' '}
               so your team can breathe easy
               <span className="ml-2 inline-flex translate-y-[0.08em] items-center align-middle">
-                <span className="h-[0.8em] w-[0.8em] rounded-full bg-ink" />
-                <span className="-ml-[0.25em] flex h-[0.8em] w-[0.8em] items-center justify-center rounded-full bg-mint">
-                  <LogoMark size={11} />
+                <span className="flex h-[0.9em] w-[0.9em] items-center justify-center rounded-full bg-mint">
+                  <LogoMark size={14} />
                 </span>
               </span>
             </h2>
