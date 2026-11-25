@@ -40,6 +40,10 @@ export const metadata: Metadata = {
   title: 'SynTax | GST, TDS and Income Tax for CA Practices',
   description:
     'Cloud GST and dual-Act TDS filing for Chartered Accountants: IMS, 2B reconciliation, Forms 138 to 144, FVU validation and local DSC signing.',
+  icons: {
+    icon: '/brand/syntax-mark-32.png',
+    apple: '/brand/syntax-mark-192.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

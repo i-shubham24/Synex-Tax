@@ -72,7 +72,7 @@ export function ProfileMenu({ dark, onToggleTheme }: { dark: boolean; onToggleTh
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.98 }}
               transition={{ duration: 0.18 }}
-              className={`${panelClass} right-0 w-[290px] origin-top-right`}
+              className={`${panelClass} fixed right-3 top-16 sm:absolute sm:right-0 sm:top-[calc(100%+10px)] w-[calc(100vw-24px)] sm:w-[290px] max-w-[290px] origin-top-right`}
             >
               <div className="flex items-center gap-3 border-b border-pos-line p-4">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#141416] text-[14px] font-semibold text-white">{initials}</span>

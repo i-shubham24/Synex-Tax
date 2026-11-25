@@ -456,7 +456,7 @@ export default function ReconPage() {
 
       {/* Rapid Filter Tabs & Keyboard Legend */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-pos-muted p-2.5 rounded-lg border border-pos-line">
-        <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
+        <div className="flex max-w-full items-center gap-1.5 overflow-x-auto text-xs font-semibold [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: 'ALL', label: 'All Invoices', count: items.length },
             { id: 'MATCHED', label: 'Matched', count: 3 },
@@ -481,7 +481,7 @@ export default function ReconPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 text-[12px] text-pos-ink/60">
+        <div className="hidden sm:flex items-center gap-2 text-[12px] text-pos-ink/60">
           <span className="text-pos-ink/60">Hotkeys:</span>
           <span className="px-1.5 py-0.5 rounded bg-pos-muted text-pos-green font-semibold border border-pos-line">A</span> Accept
           <span className="px-1.5 py-0.5 rounded bg-pos-muted text-pos-red font-semibold border border-pos-line">R</span> Reject

@@ -31,7 +31,7 @@ export function ClientPill() {
   const id = activeClient?.gstin ?? activeClient?.tan ?? activeEntity?.pan;
 
   return (
-    <div ref={pop.ref} className="relative min-w-0 max-w-[200px] sm:max-w-[280px] md:max-w-[360px]">
+    <div ref={pop.ref} className="relative min-w-0 max-w-[140px] sm:max-w-[260px] md:max-w-[360px]">
       <div
         className={`flex h-10 min-w-0 items-center gap-1.5 rounded-full border pl-3 pr-1.5 text-[13px] transition-colors ${
           activeEntity ? 'border-pos-accent/40 bg-pos-tint text-pos-ink' : 'border-dashed border-pos-line text-pos-ink/60'
@@ -76,7 +76,7 @@ export function ClientPill() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16 }}
-            className={`${panelClass} left-0 w-[420px]`}
+            className={`${panelClass} fixed left-3 right-3 top-16 w-auto max-w-[420px] mx-auto sm:absolute sm:left-0 sm:right-auto sm:top-[calc(100%+10px)] sm:w-[420px] origin-top sm:origin-top-left`}
           >
             <div className="relative border-b border-pos-line p-3">
               <Search className="pointer-events-none absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-pos-ink/60" />

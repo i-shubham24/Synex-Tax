@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlarmClock,
@@ -141,9 +141,9 @@ function Velocity({ values }: { values: number[] }) {
   const [px, py] = pts[peak];
   const share = Math.round((values.slice(17, 21).reduce((a, b) => a + b, 0) / Math.max(1, values.reduce((a, b) => a + b, 0))) * 100);
   return (
-    <div>
-      <div className="relative h-[170px]">
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-full w-full overflow-visible" aria-hidden>
+    <div className="w-full min-w-0">
+      <div className="relative h-[170px] w-full min-w-0 overflow-hidden">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden>
           <defs>
             <linearGradient id="vel-fill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#52B0F8" stopOpacity="0.32" />
@@ -156,7 +156,7 @@ function Velocity({ values }: { values: number[] }) {
           <path d={`${d} L ${W} ${H} L 0 ${H} Z`} fill="url(#vel-fill)" />
           <path d={d} fill="none" stroke="#2F8AE0" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
         </svg>
-        <span className="absolute -translate-x-1/2 -translate-y-full rounded-full bg-pos-accent px-2.5 py-0.5 text-[12.5px] font-semibold text-white" style={{ left: `${(px / W) * 100}%`, top: `${(py / H) * 100}%` }}>
+        <span className="absolute -translate-x-1/2 -translate-y-full rounded-full bg-pos-accent px-2.5 py-0.5 text-[12.5px] font-semibold text-white pointer-events-none" style={{ left: `${(px / W) * 100}%`, top: `${(py / H) * 100}%` }}>
           {values[peak]} on the {ordinal(peak + 1)}
         </span>
       </div>
@@ -175,10 +175,10 @@ function Velocity({ values }: { values: number[] }) {
 function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
   const max = Math.max(...data.map((d) => d.itc + d.cash), 1);
   return (
-    <div>
-      <div className="flex h-[150px] items-end gap-2">
+    <div className="w-full min-w-0">
+      <div className="flex h-[150px] items-end gap-1 sm:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {data.map((m) => (
-          <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+          <div key={m.month} className="flex h-full flex-1 min-w-[20px] flex-col items-center justify-end gap-1.5">
             <div className="flex h-full w-full items-end justify-center gap-[3px]">
               {[{ v: m.itc, c: 'bg-pos-accent' }, { v: m.cash, c: 'bg-pos-ink/35' }].map((b, i) => (
                 <div key={i} className="relative h-full w-[8px] overflow-hidden rounded-full bg-pos-muted">
@@ -218,6 +218,15 @@ export default function ControlTowerPage() {
   const [approvalsOpen, setApprovalsOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
+  const searchParams = useSearchParams();
+  const searchView = searchParams ? searchParams.get('view') : null;
+
+  useEffect(() => {
+    if (searchView === 'matrix' || searchView === 'analytics' || searchView === 'heatmap') {
+      setView(searchView);
+    }
+  }, [searchView]);
+
   useEffect(() => {
     const checkView = () => {
       const v = new URLSearchParams(window.location.search).get('view');
@@ -233,10 +242,12 @@ export default function ControlTowerPage() {
         setView(detail);
       }
     };
+    window.addEventListener('syntax:switch-view', handleSwitch);
     window.addEventListener('synextax:switch-view', handleSwitch);
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => {
       window.removeEventListener('popstate', checkView);
+      window.removeEventListener('syntax:switch-view', handleSwitch);
       window.removeEventListener('synextax:switch-view', handleSwitch);
       window.clearInterval(id);
     };
@@ -273,35 +284,35 @@ export default function ControlTowerPage() {
   const setF = (patch: Partial<Filters>) => setFilters({ ...filters, ...patch });
 
   return (
-    <div className="mx-auto max-w-[1560px] space-y-5">
+    <div className="mx-auto max-w-[1560px] space-y-5 min-w-0">
       {/* Title, view toggle, period pills */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <h1 className="flex items-center gap-2.5 text-[24px] font-semibold tracking-[-0.01em] text-pos-ink">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+          <h1 className="flex items-center gap-2.5 text-[22px] sm:text-[24px] font-semibold tracking-[-0.01em] text-pos-ink shrink-0">
             <StepMark tone="sky" /> Control Tower
           </h1>
-          <div className="flex rounded-full bg-pos-muted p-1" role="tablist" aria-label="View">
+          <div className="flex max-w-full min-w-0 overflow-x-auto rounded-full bg-pos-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="View">
             {([['analytics', 'Analytics', LineChart], ['matrix', 'Filing matrix', LayoutGrid], ['heatmap', 'Compliance Heatmap', CalendarClock]] as const).map(([id, label, Icon]) => (
               <button
                 key={id}
                 role="tab"
                 aria-selected={view === id}
                 onClick={() => setView(id)}
-                className={`flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors ${view === id ? 'bg-pos-surface text-pos-ink shadow-sm' : 'text-pos-ink/55 hover:text-pos-ink'}`}
+                className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 sm:px-3.5 text-[12.5px] sm:text-[13px] font-medium transition-colors ${view === id ? 'bg-pos-surface text-pos-ink shadow-sm' : 'text-pos-ink/55 hover:text-pos-ink'}`}
               >
                 <Icon className="h-3.5 w-3.5" /> {label}
               </button>
             ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Period">
+        <div className="flex max-w-full min-w-0 overflow-x-auto gap-2 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Period">
           {PERIODS.map(([id, label]) => (
             <button
               key={id}
               role="tab"
               aria-selected={period === id}
               onClick={() => setPeriod(id)}
-              className={`h-9 rounded-full px-4 text-[13px] font-medium transition-colors ${
+              className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 sm:px-4 text-[12.5px] sm:text-[13px] font-medium transition-colors ${
                 period === id ? 'bg-pos-accent text-white shadow-md' : 'bg-pos-surface text-pos-ink/65 ring-1 ring-inset ring-pos-line hover:text-pos-ink'
               }`}
             >
@@ -313,51 +324,55 @@ export default function ControlTowerPage() {
 
       {/* Filter chips: partners and managers */}
       {canFilter && (
-        <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          <CustomDropdown
-            id="f-staff"
-            variant="pill"
-            placeholder="All staff"
-            value={filters.staffId ?? ''}
-            onChange={(val) => setF({ staffId: val || null })}
-            options={[
-              { value: '', label: 'All staff' },
-              ...snapshot.staff.filter((s) => s.role !== 'PARTNER').map((s) => ({
-                value: s.id,
-                label: s.name,
-                badge: s.role,
-              })),
-            ]}
-          />
-          <CustomDropdown
-            id="f-group"
-            variant="pill"
-            placeholder="All client groups"
-            value={filters.groupId ?? ''}
-            onChange={(val) => setF({ groupId: val || null })}
-            options={[
-              { value: '', label: 'All client groups' },
-              ...snapshot.groups.map((g) => ({
-                value: g.id,
-                label: g.name,
-              })),
-            ]}
-          />
-          {(['ALL', 'REGULAR_MONTHLY', 'QRMP', 'COMPOSITION', 'TDS'] as const).map((c) => (
-            <button
-              key={c}
-              onClick={() => setF({ category: c })}
-              aria-pressed={filters.category === c}
-              className={`h-9 rounded-full px-3.5 font-medium transition-colors ${filters.category === c ? 'bg-pos-ink text-pos-surface' : 'text-pos-ink/60 ring-1 ring-inset ring-pos-line hover:text-pos-ink'}`}
-            >
-              {{ ALL: 'All categories', REGULAR_MONTHLY: 'Regular monthly', QRMP: 'QRMP', COMPOSITION: 'Composition', TDS: 'TDS' }[c]}
-            </button>
-          ))}
-          {(filters.staffId || filters.groupId || filters.category !== 'ALL') && (
-            <button onClick={() => setFilters({ staffId: null, groupId: null, category: 'ALL' })} className="flex h-9 items-center gap-1 rounded-full px-3 text-pos-accent hover:bg-pos-tint">
-              <X className="h-3.5 w-3.5" /> Clear
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 text-[13px] min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <CustomDropdown
+              id="f-staff"
+              variant="pill"
+              placeholder="All staff"
+              value={filters.staffId ?? ''}
+              onChange={(val) => setF({ staffId: val || null })}
+              options={[
+                { value: '', label: 'All staff' },
+                ...snapshot.staff.filter((s) => s.role !== 'PARTNER').map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  badge: s.role,
+                })),
+              ]}
+            />
+            <CustomDropdown
+              id="f-group"
+              variant="pill"
+              placeholder="All client groups"
+              value={filters.groupId ?? ''}
+              onChange={(val) => setF({ groupId: val || null })}
+              options={[
+                { value: '', label: 'All client groups' },
+                ...snapshot.groups.map((g) => ({
+                  value: g.id,
+                  label: g.name,
+                })),
+              ]}
+            />
+          </div>
+          <div className="flex max-w-full min-w-0 overflow-x-auto items-center gap-2 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(['ALL', 'REGULAR_MONTHLY', 'QRMP', 'COMPOSITION', 'TDS'] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setF({ category: c })}
+                aria-pressed={filters.category === c}
+                className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 font-medium transition-colors ${filters.category === c ? 'bg-pos-ink text-pos-surface' : 'text-pos-ink/60 ring-1 ring-inset ring-pos-line hover:text-pos-ink'}`}
+              >
+                {{ ALL: 'All categories', REGULAR_MONTHLY: 'Regular monthly', QRMP: 'QRMP', COMPOSITION: 'Composition', TDS: 'TDS' }[c]}
+              </button>
+            ))}
+            {(filters.staffId || filters.groupId || filters.category !== 'ALL') && (
+              <button onClick={() => setFilters({ staffId: null, groupId: null, category: 'ALL' })} className="flex h-9 shrink-0 whitespace-nowrap items-center gap-1 rounded-full px-3 text-pos-accent hover:bg-pos-tint">
+                <X className="h-3.5 w-3.5" /> Clear
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -372,7 +387,7 @@ export default function ControlTowerPage() {
         <AnimatePresence initial={false}>
           {radarOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="-m-2 overflow-hidden p-2">
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-5">
                 {tiles.map((t) => {
                   const Icon = TILE_ICON[t.id];
                   const sev = SEVERITY_STYLE[t.severity];
@@ -431,9 +446,9 @@ export default function ControlTowerPage() {
       ) : view === 'analytics' ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_380px]">
           {/* Card 1: composition donut */}
-          <section className="pos-card p-5" aria-labelledby="comp-title">
+          <section className="pos-card p-4 sm:p-5" aria-labelledby="comp-title">
             <h2 id="comp-title" className="text-[15px] font-semibold text-pos-ink">Tax and ITC composition</h2>
-            <div className="mt-4 flex items-center gap-5">
+            <div className="mt-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
               <div className="relative h-[150px] w-[150px] shrink-0">
                 <Donut data={snapshot.composition} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -441,7 +456,7 @@ export default function ControlTowerPage() {
                   <span className="text-[17px] font-semibold tabular-nums text-pos-ink">{inrShort(total)}</span>
                 </div>
               </div>
-              <ul className="space-y-2 text-[13px]">
+              <ul className="w-full space-y-2 text-[13px]">
                 {snapshot.composition.map((d, i) => (
                   <li key={d.key} className="flex items-center gap-2.5">
                     <i className="h-2.5 w-2.5 rounded-full" style={{ background: DONUT[i % DONUT.length] }} />
@@ -454,14 +469,14 @@ export default function ControlTowerPage() {
           </section>
 
           {/* Card 2: KPIs, each jumps to the filtered work queue */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {[
               { label: 'Returns due', value: String(k.due), tone: '#2F8AE0', icon: CircleAlert, go: () => { setPeriod('pending'); setView('matrix'); } },
               { label: 'Returns filed', value: String(k.filed), tone: '#14A44D', icon: ClipboardCheck, go: () => setView('matrix') },
               { label: 'ITC reconciled', value: inrShort(k.itcReconciled), tone: '#5A50F2', icon: BadgeIndianRupee, go: () => router.push('/gst/recon-2b') },
               { label: 'Pending mismatches', value: inrShort(k.pendingMismatch), tone: '#D99A17', icon: FileWarning, go: () => router.push('/gst/recon-2b') },
             ].map((c) => (
-              <button key={c.label} onClick={c.go} className="pos-card group flex flex-col p-4 text-left transition-transform hover:-translate-y-0.5">
+              <button key={c.label} onClick={c.go} className="pos-card group flex flex-col p-3 sm:p-4 text-left transition-transform hover:-translate-y-0.5">
                 <span className="flex w-full items-start justify-between">
                   <span className="text-[13.5px] font-medium text-pos-ink/80">{c.label}</span>
                   <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: `${c.tone}1f`, color: c.tone }}>
@@ -477,7 +492,7 @@ export default function ControlTowerPage() {
           </div>
 
           {/* Card 3: ITC vs cash */}
-          <section className="pos-card p-5" aria-labelledby="out-title">
+          <section className="pos-card p-4 sm:p-5" aria-labelledby="out-title">
             <h2 id="out-title" className="text-[15px] font-semibold text-pos-ink">Monthly outflow: ITC vs cash (Rs lakh)</h2>
             <div className="mt-4">
               <Outflow data={snapshot.outflow} />
@@ -485,7 +500,7 @@ export default function ControlTowerPage() {
           </section>
 
           {/* Card 4: filing velocity */}
-          <section className="pos-card p-5 xl:col-span-2" aria-labelledby="vel-title">
+          <section className="pos-card p-4 sm:p-5 xl:col-span-2" aria-labelledby="vel-title">
             <h2 id="vel-title" className="text-[15px] font-semibold text-pos-ink">Filing velocity this month</h2>
             <div className="mt-4">
               <Velocity values={snapshot.velocity} />
@@ -493,7 +508,7 @@ export default function ControlTowerPage() {
           </section>
 
           {/* Card 5: urgent deadlines */}
-          <section className="pos-card p-5" aria-labelledby="due-title">
+          <section className="pos-card p-4 sm:p-5" aria-labelledby="due-title">
             <div className="flex items-center justify-between">
               <h2 id="due-title" className="text-[15px] font-semibold text-pos-ink">Urgent deadlines</h2>
               <button onClick={() => { setPeriod('pending'); setView('matrix'); }} className="text-[12.5px] font-medium text-pos-accent">View all</button>

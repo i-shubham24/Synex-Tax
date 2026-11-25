@@ -3,26 +3,11 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import React, { useMemo } from 'react';
+import { SynTaxMark } from '../brand/SynTaxLogo';
 
 /* ------------------------------------------------------------------ Logo */
-// Pixel "S": the same stepped language as the section marks.
-const S_PIXELS: Array<[number, number]> = [
-  [1, 0], [2, 0], [3, 0],
-  [0, 1],
-  [1, 2], [2, 2],
-  [3, 3],
-  [0, 4], [1, 4], [2, 4],
-];
-
 export function LogoMark({ size = 22, tone = 'ink' }: { size?: number; tone?: 'ink' | 'paper' }) {
-  const fill = tone === 'ink' ? '#141416' : '#ffffff';
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 25" aria-hidden>
-      {S_PIXELS.map(([x, y], i) => (
-        <rect key={i} x={x * 5} y={y * 5} width={4.6} height={4.6} rx={0.9} fill={i === 3 ? '#52b0f8' : i === 6 ? '#5fe88a' : fill} />
-      ))}
-    </svg>
-  );
+  return <SynTaxMark size={size} />;
 }
 
 export function Wordmark({ tone = 'ink', className = '' }: { tone?: 'ink' | 'paper'; className?: string }) {

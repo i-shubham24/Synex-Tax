@@ -28,6 +28,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { SynTaxMark } from '../brand/SynTaxLogo';
 import { useWorkspace } from '../../workspace/WorkspaceContext';
 import { ClientPill } from './shell/ClientPill';
 import { CommandPalette, openCommandPalette } from './shell/CommandPalette';
@@ -67,18 +68,11 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'audit', label: 'Audit and reports', href: '/audit', icon: ScrollText, roles: ['PARTNER', 'MANAGER'], module: 'AUDIT' },
 ];
 
-/* Ink tile with the site's pixel S */
+/* Brand tile with the SynTax dynamic logo mark */
 function AppMark() {
-  const px: Array<[number, number]> = [
-    [1, 0], [2, 0], [3, 0], [0, 1], [1, 2], [2, 2], [3, 3], [0, 4], [1, 4], [2, 4],
-  ];
   return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#141416] shadow-[0_8px_18px_-8px_rgba(20,20,22,0.7),inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-      <svg width="16" height="20" viewBox="0 0 20 25" aria-hidden>
-        {px.map(([x, y], i) => (
-          <rect key={i} x={x * 5} y={y * 5} width={4.4} height={4.4} rx={0.9} fill={i === 3 ? '#52b0f8' : i === 6 ? '#5fe88a' : '#fff'} />
-        ))}
-      </svg>
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#141416] p-1 shadow-[0_8px_18px_-8px_rgba(20,20,22,0.7),inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+      <SynTaxMark size={28} priority />
     </span>
   );
 }
@@ -141,7 +135,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const role = (user?.role ?? 'STAFF') as AppRole;
   const items = NAV_ITEMS.filter((i) => (!i.roles || i.roles.includes(role)) && (!i.module || !modules || modules.includes(i.module)));
   const isActive = (href: string) => (href === '/dashboard' || href === '/gst' ? pathname === href : pathname.startsWith(href));
-  const railW = expanded ? 'w-[240px] md:w-[220px]' : 'w-[240px] md:w-[72px]';
+  const railW = expanded ? 'w-[270px] md:w-[220px]' : 'w-[270px] md:w-[72px]';
   const mainMl = expanded ? 'ml-0 md:ml-[220px]' : 'ml-0 md:ml-[72px]';
 
   const handleMouseEnter = (label: string, e: React.MouseEvent<HTMLElement>) => {
@@ -175,13 +169,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         onMouseEnter={(e) => handleMouseEnter(item.label, e)}
         onMouseLeave={handleMouseLeave}
         className={`group relative flex h-12 items-center gap-3 rounded-[14px] transition-colors shrink-0 ${
-          expanded ? 'w-full px-3' : 'w-12 justify-center'
+          expanded ? 'w-full px-3' : 'w-full px-3 md:w-12 md:justify-center'
         } ${
           active ? 'bg-pos-tint text-pos-accent' : 'text-pos-ink/70 hover:bg-pos-tint/70 hover:text-pos-accent'
         }`}
       >
         <Icon className="h-[22px] w-[22px] shrink-0" strokeWidth={1.5} />
-        <span className={`truncate text-[13.5px] font-medium ${expanded ? 'block' : 'hidden'}`}>{item.label}</span>
+        <span className={`truncate text-[13.5px] font-medium ${expanded ? 'block' : 'block md:hidden'}`}>{item.label}</span>
         {active && <span className="absolute -left-[12px] h-7 w-[4px] rounded-r-full bg-pos-accent" />}
       </Link>
     );
@@ -198,7 +192,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Rail: 72px icons / 220px on desktop, slide-out 240px drawer on mobile */}
+      {/* Rail: 72px icons / 220px on desktop, slide-out 270px drawer on mobile */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-pos-line bg-pos-surface px-3 overflow-x-hidden transition-transform duration-300 ease-out-expo md:transition-[width] ${railW} ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -214,7 +208,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             title={expanded ? 'Click to collapse navigation' : 'Click to expand navigation'}
           >
             <AppMark />
-            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'hidden'}`}>SynTax</span>
+            <span className={`font-display text-[17px] font-semibold tracking-[-0.03em] text-pos-ink ${expanded ? 'block' : 'block md:hidden'}`}>SynTax</span>
           </button>
           <button
             type="button"
@@ -229,14 +223,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         {/* Scrollable features list: strictly vertical scroll without horizontal overflow */}
         <nav
           className={`mt-2 flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto py-1 ${
-            expanded ? 'w-full px-0' : 'w-full items-center'
+            expanded ? 'w-full px-0' : 'w-full px-0 md:items-center'
           } [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.2)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-pos-ink/15 hover:[&::-webkit-scrollbar-thumb]:bg-pos-ink/30`}
           onScroll={() => setHoveredTip(null)}
         >
           {items.map(navLink)}
         </nav>
 
-        <div className={`mb-3 mt-1 flex flex-col gap-1 shrink-0 ${expanded ? 'w-full' : 'w-full items-center'}`}>
+        <div className={`mb-3 mt-1 flex flex-col gap-1 shrink-0 ${expanded ? 'w-full' : 'w-full md:items-center'}`}>
           {navLink({ id: 'settings', label: 'Settings', href: '/settings', icon: Settings })}
           {expanded && (
             <button
@@ -266,14 +260,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex min-h-screen flex-col transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
-        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b px-4 sm:px-5 lg:px-6">
-          <div className="flex shrink-0 items-center gap-3">
+      <div className={`flex min-h-screen flex-col w-full min-w-0 max-w-full overflow-x-hidden transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
+        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-2 sm:gap-3 border-b px-3 sm:px-5 lg:px-6">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
               aria-label="Open navigation menu"
-              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-pos-line text-pos-ink/75 hover:bg-pos-tint md:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-pos-line text-pos-ink/75 hover:bg-pos-tint md:hidden shrink-0"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -295,7 +289,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button type="button" onClick={toggleTheme} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} className={iconButtonClass}>
               {dark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </button>
@@ -304,7 +298,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">{children}</main>
+        <main className="flex-1 w-full min-w-0 max-w-full px-3 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</main>
       </div>
 
       <CommandPalette />

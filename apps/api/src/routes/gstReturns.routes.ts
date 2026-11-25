@@ -193,8 +193,19 @@ export async function gstReturnsRoutes(fastify: FastifyInstance) {
         )
       ).rows,
     );
-    const section = (r: { doc_type: string; supply_type: string; customer_gstin: string | null }): SalesInvoice['section'] =>
-      r.doc_type !== 'INV' ? (r.customer_gstin ? 'CDNR' : 'CDNUR') : (r.supply_type as SalesInvoice['section']);
+    const section = (r: { doc_type: string; supply_type: string; table_section?: string | null; customer_gstin: string | null }): SalesInvoice['section'] => {
+      if (r.table_section === '7' || r.supply_type === 'B2CS') {
+        return 'B2CS';
+      }
+      if (r.table_section === '5' || (r.doc_type === 'INV' && r.supply_type === 'B2CL')) {
+        return 'B2CL';
+      }
+      if (r.doc_type !== 'INV') {
+        if (r.customer_gstin || r.supply_type === 'B2B') return 'CDNR';
+        return r.supply_type === 'B2CL' || r.table_section === '9B' ? 'CDNUR' : 'B2CS';
+      }
+      return (r.supply_type as SalesInvoice['section']) || 'B2B';
+    };
     const invoices = rows.map((r) => ({
       section: ['B2B', 'B2CL', 'B2CS', 'EXPWP', 'EXPWOP'].includes(r.supply_type) || r.doc_type !== 'INV' ? section(r) : 'B2B',
       pos: r.pos_state_code,

@@ -69,7 +69,7 @@ export function NotificationCenter() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className={`${panelClass} right-0 w-[390px] origin-top-right`}
+            className={`${panelClass} fixed left-3 right-3 top-16 w-auto max-w-[390px] mx-auto sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[390px] origin-top sm:origin-top-right`}
           >
             <div className="flex items-center justify-between px-4 pb-2 pt-3">
               <p className="text-[15px] font-semibold text-pos-ink">Notifications</p>
@@ -99,7 +99,7 @@ export function NotificationCenter() {
                 </button>
               ))}
             </div>
-            <ul className="max-h-[380px] overflow-y-auto py-1">
+            <ul className="max-h-[min(380px,calc(100svh-190px))] overflow-y-auto py-1">
               {list.map((n) => {
                 const meta = ICON[n.category];
                 const Icon = meta.icon;
@@ -115,6 +115,7 @@ export function NotificationCenter() {
                         if (n.href.includes('view=')) {
                           const v = new URLSearchParams(n.href.split('?')[1]).get('view');
                           if (v && typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('syntax:switch-view', { detail: v }));
                             window.dispatchEvent(new CustomEvent('synextax:switch-view', { detail: v }));
                           }
                         }

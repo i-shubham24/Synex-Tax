@@ -45,7 +45,7 @@ export function PlanMeter() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16 }}
-            className={`${panelClass} right-0 w-[340px] p-4 text-pos-ink`}
+            className={`${panelClass} fixed right-3 top-16 sm:absolute sm:right-0 sm:top-[calc(100%+10px)] w-[calc(100vw-24px)] sm:w-[340px] max-w-[340px] p-4 text-pos-ink origin-top-right`}
           >
             <p className="text-[15px] font-semibold">Your trial</p>
             <p className="mt-1 text-[13px] text-pos-ink/60">

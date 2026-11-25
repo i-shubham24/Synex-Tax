@@ -82,22 +82,25 @@ export function LandingHero() {
         />
 
         {/* Copy (the nav lives in the fixed SiteNav) */}
-        <div className="relative z-10 order-1 flex flex-1 flex-col px-6 pt-12 sm:px-10 lg:w-[54%] lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
+        <div className="relative z-10 order-1 flex flex-1 flex-col px-4 sm:px-10 lg:w-[54%] lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
           <p
-            className={`mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/70 py-1.5 pl-1.5 pr-3.5 text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
+            className={`mb-6 inline-flex max-w-full items-center gap-1.5 sm:gap-2 rounded-full border border-ink/10 bg-white/70 py-1 sm:py-1.5 pl-1.5 pr-2.5 sm:pr-3 text-[11px] sm:text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
           >
-            <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-ink">2025 Act</span>
-            Built for both Income-tax Acts, routed by date
+            <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10.5px] sm:text-[11px] font-semibold text-ink">2025 Act</span>
+            <span className="leading-tight truncate sm:whitespace-normal">
+              <span className="sm:hidden">Built for both Income-tax Acts</span>
+              <span className="hidden sm:inline">Built for both Income-tax Acts, routed by date</span>
+            </span>
           </p>
           <h1
             id="hero-title"
-            className={`font-display text-[clamp(50px,6.5vw,104px)] font-semibold leading-[1.02] tracking-hero transition-colors duration-[1200ms] ease-out-expo ${ink}`}
+            className={`font-display text-[clamp(42px,6.5vw,104px)] font-semibold leading-[1.02] tracking-hero transition-colors duration-[1200ms] ease-out-expo ${ink}`}
           >
             <span className="block whitespace-nowrap">GST &amp; TDS</span>
             <span className="block whitespace-nowrap">Made Easy</span>
           </h1>
           <p
-            className={`mt-6 max-w-[25rem] font-display text-[clamp(16px,1.35vw,19px)] leading-[1.45] tracking-[-0.015em] transition-colors duration-[1200ms] ease-out-expo ${
+            className={`mt-6 max-w-[25rem] font-display text-[clamp(15px,1.35vw,19px)] leading-[1.45] tracking-[-0.015em] transition-colors duration-[1200ms] ease-out-expo ${
               revealed ? 'text-ink/80' : 'text-[#d6d6dc]'
             }`}
             style={{ transitionDelay: '120ms' }}
@@ -108,11 +111,11 @@ export function LandingHero() {
             className={`mt-9 transition-colors duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
             style={{ transitionDelay: '260ms' }}
           >
-            <div className="flex flex-wrap items-center gap-5">
-              <PillButton href="/signup" size="lg">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 w-full sm:w-auto">
+              <PillButton href="/signup" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
                 Book a free demo
               </PillButton>
-              <Link href="/switch" className="font-display text-[16px] font-medium tracking-[-0.015em] text-ink/70 transition-colors hover:text-ink">
+              <Link href="/switch" className="text-center sm:text-left font-display text-[15px] sm:text-[16px] font-medium tracking-[-0.015em] text-ink/70 transition-colors hover:text-ink">
                 Switching from desktop software?
               </Link>
             </div>
@@ -122,7 +125,7 @@ export function LandingHero() {
           </div>
         </div>
 
-        <div className="relative z-10 order-3 px-6 pb-10 sm:px-10 lg:hidden">
+        <div className="relative z-10 order-3 px-4 pb-10 sm:px-10 lg:hidden">
           <FormMarks revealed={revealed} />
         </div>
       </div>

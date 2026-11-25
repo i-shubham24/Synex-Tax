@@ -80,7 +80,7 @@ export function DscAgentPill() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.16 }}
-            className={`${panelClass} right-0 w-[320px] p-4 text-[13px] text-pos-ink`}
+            className={`${panelClass} fixed right-3 top-16 sm:absolute sm:right-0 sm:top-[calc(100%+10px)] w-[calc(100vw-24px)] sm:w-[320px] max-w-[320px] p-4 text-[13px] text-pos-ink origin-top-right`}
           >
             <p className="text-[14.5px] font-semibold">Local DSC signer</p>
             {ready ? (

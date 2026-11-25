@@ -10,6 +10,9 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: '#2f8ae0',
-    icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+    icons: [
+      { src: '/brand/syntax-mark-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/brand/syntax-mark-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    ],
   };
 }
