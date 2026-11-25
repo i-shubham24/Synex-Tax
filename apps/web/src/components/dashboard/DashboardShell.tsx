@@ -260,7 +260,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex min-h-screen flex-col w-full min-w-0 max-w-full overflow-x-hidden transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
+      <div className={`flex min-h-screen flex-col min-w-0 transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
         <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-2 sm:gap-3 border-b px-3 sm:px-5 lg:px-6">
           <div className="flex shrink-0 items-center gap-2 sm:gap-3 min-w-0">
             <button

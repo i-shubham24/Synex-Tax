@@ -259,7 +259,7 @@ export default function MasterInvoicesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left Master Table (8.5 cols ~ 72%) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
+        <div className="lg:col-span-8 min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
           
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left text-xs border-collapse font-sans">
@@ -375,7 +375,7 @@ export default function MasterInvoicesPage() {
         </div>
 
         {/* Right Elevated Floating Inspector Card (4 cols ~ 28%) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
+        <div className="lg:col-span-4 min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
           
           {/* Solid Sky Cobalt Header Bar with Doc Ref & Expand Arrow */}
           <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">
