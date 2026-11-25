@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
+  images: {
+    unoptimized: true,
+  },
   transpilePackages: ['@synextax/tax-engine', '@synextax/shared-schemas'],
   async redirects() {
     return [
