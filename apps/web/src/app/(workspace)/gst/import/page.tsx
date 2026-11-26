@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { GstCommandBar } from '../../../../components/gst/GstCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface ImportedPreviewRow {
   vendorGstin: string;
@@ -61,6 +62,7 @@ const SAMPLE_REGISTER_CSV = [
 
 export default function GstImportSanitizerPage() {
   const { activeEntity, activeClient, activePeriod } = useWorkspace();
+  const { authFetch } = useAuth();
   const [selectedFile, setSelectedFile] = useState<{ fileName: string; content: string } | null>(null);
   const [report, setReport] = useState<RegisterReport | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export default function GstImportSanitizerPage() {
     setRegisterError(null);
     try {
       const qs = new URLSearchParams({ period, ...(commit ? { commit: 'true' } : {}) });
-      const res = await fetch(`/api/v1/gst/${gstin}/import/register-file?${qs.toString()}`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/import/register-file?${qs.toString()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +123,7 @@ export default function GstImportSanitizerPage() {
     setTwoBError(null);
     try {
       const content = await file.text();
-      const res = await fetch(`/api/v1/gst/${gstin}/recon/2b-file`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/recon/2b-file`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

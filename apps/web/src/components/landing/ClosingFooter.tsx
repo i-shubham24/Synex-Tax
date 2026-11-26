@@ -39,14 +39,14 @@ export function ClosingCta() {
 
         <div className="relative z-10 px-7 pb-10 pt-8 sm:px-10">
           <h2 id="closing-title" className="max-w-[40rem] text-[clamp(40px,5vw,76px)] font-medium leading-[1.02] tracking-[-0.05em]">
-            Clarity Meets
+            Your next GSTR-3B,
             <br />
-            Compliance
+            on SynTax
           </h2>
           <div className="mt-10 pl-[16%] sm:pl-[26%] lg:mt-12 lg:pr-[40%]">
-            <p className="text-[15px] font-medium text-mint-pale">Our solution</p>
+            <p className="text-[15px] font-medium text-mint-pale">14 days, no card</p>
             <p className="mt-2 max-w-[30rem] text-[clamp(20px,1.9vw,27px)] leading-[1.3] tracking-[-0.02em]">
-              Turning complex tax rules into confident filings.
+              Two sample clients are ready when you sign in. Run a 2B match before lunch.
             </p>
             <div className="mt-7">
               <SplitButton href="/signup" tone="light">

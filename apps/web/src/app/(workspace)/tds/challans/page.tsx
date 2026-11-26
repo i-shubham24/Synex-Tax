@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { TdsCommandBar } from '../../../../components/tds/TdsCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface ChallanItem {
   id: string;
@@ -32,6 +33,7 @@ interface ChallanItem {
 
 export default function ChallansPage() {
   const { activeEntity, activeClient } = useWorkspace();
+  const { authFetch } = useAuth();
   const [challans, setChallans] = useState<ChallanItem[]>([]);
   const [selectedChallan, setSelectedChallan] = useState<ChallanItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ export default function ChallansPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/v1/tds/${tan}/challans?quarter=Q1&taxYear=2026`)
+    authFetch(`/api/v1/tds/${tan}/challans?quarter=Q1&taxYear=2026`)
       .then((r) => r.json())
       .then((data) => {
         if (data.challans) {
@@ -56,7 +58,7 @@ export default function ChallansPage() {
 
   const handleCsiMatch = async () => {
     try {
-      const res = await fetch(`/api/v1/tds/${tan}/csi/match`, {
+      const res = await authFetch(`/api/v1/tds/${tan}/csi/match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

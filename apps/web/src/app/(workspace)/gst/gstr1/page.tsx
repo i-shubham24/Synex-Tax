@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { GstCommandBar } from '../../../../components/gst/GstCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface InvoiceItem {
   id: string;
@@ -37,6 +38,7 @@ interface InvoiceItem {
 
 export default function Gstr1Page() {
   const { activeEntity, activeClient, activePeriod } = useWorkspace();
+  const { authFetch } = useAuth();
   const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('B2B 4A');
@@ -51,7 +53,7 @@ export default function Gstr1Page() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/v1/gst/${gstin}/sales?period=${period}`)
+    authFetch(`/api/v1/gst/${gstin}/sales?period=${period}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.invoices) {
@@ -86,7 +88,7 @@ export default function Gstr1Page() {
   const handleApplyGstr1a = async () => {
     if (!selectedInvoice) return;
     try {
-      const res = await fetch(`/api/v1/gst/${gstin}/gstr1a/${period}/amend`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/gstr1a/${period}/amend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -38,7 +38,6 @@ const PRODUCT: Array<[string, string]> = [
   ['SynTax Sign', '/products/sign'],
   ['SynTax Desk', '/products/desk'],
   ['Pricing', '/pricing'],
-  ['Free tools', '/tools'],
   ["What's new", '/whats-new'],
 ];
 const COMPANY: Array<[string, string]> = [

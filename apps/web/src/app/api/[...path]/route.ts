@@ -23,7 +23,12 @@ const DEMO_USER = {
   maxTrialClients: 10,
 };
 
-/* Resilient proxy: try forwarding to external API, fallback to mock if unreachable */
+/**
+ * Forwards to the API. The built-in demo answers (the mock handlers below) are used ONLY when no
+ * API is configured or a bypass flag is set (the Vercel demo). When an API is configured and
+ * cannot be reached, the caller gets a 503: showing demo data there would tell a CA that a
+ * register was saved, a return reconciled or a PAN reveal logged when nothing happened.
+ */
 async function tryProxy(request: Request, endpoint: string): Promise<Response | null> {
   if (process.env.BYPASS_POSTGRES === 'true' || process.env.BYPASS_API === 'true') {
     return null;
@@ -31,9 +36,9 @@ async function tryProxy(request: Request, endpoint: string): Promise<Response | 
   const rawApiUrl = process.env.API_URL;
   if (!rawApiUrl) return null;
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25000);
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 25000);
     const targetUrl = `${rawApiUrl.replace(/\/+$/, '')}/api/${endpoint}`;
     const reqHeaders = new Headers(request.headers);
     reqHeaders.delete('host');
@@ -47,12 +52,20 @@ async function tryProxy(request: Request, endpoint: string): Promise<Response | 
       init.body = await request.clone().arrayBuffer();
     }
 
-    const res = await fetch(targetUrl, init);
+    return await fetch(targetUrl, init);
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === 'AbortError';
+    return NextResponse.json(
+      {
+        error: 'API_UNAVAILABLE',
+        message: timedOut
+          ? 'The SynTax server took too long to answer. Nothing was saved; please try again.'
+          : 'The SynTax server cannot be reached right now. Nothing was saved; please try again.',
+      },
+      { status: timedOut ? 504 : 503 },
+    );
+  } finally {
     clearTimeout(timer);
-    return res;
-  } catch {
-    /* Backend offline or network failure. Fall back to internal mock handler */
-    return null;
   }
 }
 
@@ -1202,9 +1215,11 @@ export async function POST(
     if (!body.accessReason || body.accessReason.trim().length < 5) {
       return NextResponse.json({ error: 'REASON_REQUIRED', message: 'State why full PANs are needed.' }, { status: 400 });
     }
+    // Demo mode has no audit log: say so rather than claim the reveal was logged.
     return NextResponse.json({
       success: true,
-      logged: true,
+      logged: false,
+      demo: true,
       panCombinations: [
         { deducteeId: 'demo-1', pan: 'BQRPS4410K', masked: false, amount: '1500.00' },
         { deducteeId: 'demo-2', pan: 'AAKFR2290D', masked: false, amount: '4400.00' },

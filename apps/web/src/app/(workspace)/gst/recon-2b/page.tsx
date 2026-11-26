@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { GstCommandBar } from '../../../../components/gst/GstCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 type ReconStatus =
   | 'EXACT_MATCH'
@@ -156,6 +157,7 @@ const INITIAL_RECON_ITEMS: ReconItem[] = [
 
 export default function ReconPage() {
   const { activeEntity, activeClient, activePeriod } = useWorkspace();
+  const { authFetch } = useAuth();
   const [items, setItems] = useState<ReconItem[]>(INITIAL_RECON_ITEMS);
   const [filter, setFilter] = useState<string>('ALL');
   const [acknowledgedDeltas, setAcknowledgedDeltas] = useState<Record<string, boolean>>({});
@@ -186,7 +188,7 @@ export default function ReconPage() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (csrfToken) headers['x-csrf-token'] = csrfToken;
 
-      const res = await fetch('/api/v1/recon/chaser', {
+      const res = await authFetch('/api/v1/recon/chaser', {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -337,7 +339,7 @@ export default function ReconPage() {
     let cancelled = false;
     async function loadRecon() {
       try {
-        const res = await fetch(`/api/v1/recon/active?period=${encodeURIComponent(activePeriodLabel)}`, {
+        const res = await authFetch(`/api/v1/recon/active?period=${encodeURIComponent(activePeriodLabel)}`, {
           credentials: 'include',
         });
         if (!res.ok) return;
@@ -368,7 +370,7 @@ export default function ReconPage() {
   const handleRunRecon = async () => {
     setRunningRecon(true);
     try {
-      const res = await fetch(`/api/v1/gst/${activeGstin}/recon/2b/${activePeriodLabel}`, {
+      const res = await authFetch(`/api/v1/gst/${activeGstin}/recon/2b/${activePeriodLabel}`, {
         method: 'POST',
         headers: { 'Idempotency-Key': crypto.randomUUID() },
         credentials: 'include',
@@ -402,7 +404,7 @@ export default function ReconPage() {
     setUploadingTwoB(true);
     try {
       const content = await file.text();
-      const res = await fetch(`/api/v1/gst/${activeGstin}/recon/2b-file`, {
+      const res = await authFetch(`/api/v1/gst/${activeGstin}/recon/2b-file`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -447,7 +449,7 @@ export default function ReconPage() {
     setTimeout(() => setNotification(null), 3000);
 
     try {
-      await fetch('/api/v1/recon/ims-action', {
+      await authFetch('/api/v1/recon/ims-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

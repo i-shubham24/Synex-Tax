@@ -9,6 +9,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/invoices', destination: '/gst', permanent: false },
+      { source: '/tools', destination: '/', permanent: true },
     ];
   },
   async rewrites() {

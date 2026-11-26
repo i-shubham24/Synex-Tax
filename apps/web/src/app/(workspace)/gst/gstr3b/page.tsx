@@ -16,9 +16,11 @@ import {
 } from 'lucide-react';
 import { GstCommandBar } from '../../../../components/gst/GstCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 export default function Gstr3bPage() {
   const { activeEntity, activeClient, activePeriod } = useWorkspace();
+  const { authFetch } = useAuth();
   const [activeTab, setActiveTab] = useState<'SET_OFF' | 'PMT06'>('SET_OFF');
   const [loading, setLoading] = useState(false);
   const [draftData, setDraftData] = useState<any>(null);
@@ -38,12 +40,12 @@ export default function Gstr3bPage() {
   useEffect(() => {
     setLoading(true);
     // 1. Trigger auto-draft
-    fetch(`/api/v1/gst/${gstin}/gstr3b/${period}/auto-draft`, { method: 'POST' })
+    authFetch(`/api/v1/gst/${gstin}/gstr3b/${period}/auto-draft`, { method: 'POST' })
       .then((r) => r.json())
       .then((data) => {
         setDraftData(data.draft);
         // 2. Trigger compute set-off
-        return fetch(`/api/v1/gst/${gstin}/gstr3b/${period}/set-off`, {
+        return authFetch(`/api/v1/gst/${gstin}/gstr3b/${period}/set-off`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -70,7 +72,7 @@ export default function Gstr3bPage() {
   const handleComputePmt06 = async (method: 'FIXED_SUM_35_PCT' | 'SELF_ASSESSMENT') => {
     setPmt06Method(method);
     try {
-      const res = await fetch(`/api/v1/gst/${gstin}/qrmp/pmt06/${period}/compute`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/qrmp/pmt06/${period}/compute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -90,7 +92,7 @@ export default function Gstr3bPage() {
   const handleFileReturn = async () => {
     setFilingInProgress(true);
     try {
-      const res = await fetch(`/api/v1/gst/${gstin}/gstr3b/${period}/file`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/gstr3b/${period}/file`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ auditNote }),

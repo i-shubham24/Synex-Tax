@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { ArrowUpRight, ChevronDown, Menu } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Eyebrow, LogoMark, PixelField, SplitButton, Stat } from './primitives';
 
-const SECTIONS = [
-  { label: 'Products', href: '/products/gst' },
-  { label: 'Why switch', href: '/switch' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'Pilot', href: '#pilot' },
+/** Monthly due dates the workspace runs to, for a monthly GST filer. */
+const DEADLINES: Array<[string, string]> = [
+  ['7th', 'TDS deposit'],
+  ['11th', 'GSTR-1'],
+  ['14th', 'IMS actions'],
+  ['20th', 'GSTR-3B'],
 ];
 
 const PERIODS = {
@@ -144,7 +145,7 @@ function ImsBars() {
   const bars = [34, 52, 44, 78, 60, 70];
   return (
     <div className="relative h-[180px] w-[150px] overflow-hidden rounded-[10px] bg-gradient-to-b from-[#e8f3fe] to-white p-3 shadow-[0_18px_40px_-20px_rgba(20,40,80,0.3)] ring-1 ring-black/5">
-      <span className="absolute left-[38%] top-2 rounded bg-white px-1 text-[8px] shadow-sm tabular-nums">+12.4%</span>
+      <span className="absolute left-[38%] top-2 rounded bg-white px-1 text-[8px] shadow-sm tabular-nums">Day 4</span>
       <div className="absolute inset-x-3 top-[46px] border-t border-dashed border-mint" />
       <div className="absolute inset-x-3 bottom-[46px] flex h-[96px] items-end gap-[5px]">
         {bars.map((h, i) => (
@@ -160,8 +161,8 @@ function ImsBars() {
           </motion.span>
         ))}
       </div>
-      <p className="absolute bottom-6 left-3 text-[11px] font-medium text-ink">IMS acted</p>
-      <p className="absolute bottom-2.5 left-3 text-[8.5px] text-ink-soft">before the 14th cut-off</p>
+      <p className="absolute bottom-6 left-3 text-[11px] font-medium text-ink">IMS actions</p>
+      <p className="absolute bottom-2.5 left-3 text-[8.5px] text-ink-soft">by day, up to the 14th</p>
     </div>
   );
 }
@@ -174,22 +175,16 @@ export function ProductGlance() {
           {/* Top row */}
           <div className="border-b border-hairline p-6 lg:border-r lg:p-7">
             <p className="flex items-center gap-2 text-[14px] font-semibold text-ink">
-              <LogoMark size={18} /> SynTax
+              <LogoMark size={18} /> Every month
             </p>
-            <ul className="mt-6 space-y-1.5 text-[12px] text-ink-soft">
-              {SECTIONS.map((s) => (
-                <li key={s.label}>
-                  <a href={s.href} className="hover:text-ink">
-                    {s.label}
-                  </a>
-                </li>
+            <dl className="mt-6 space-y-1.5 text-[12px]">
+              {DEADLINES.map(([day, what]) => (
+                <div key={what} className="flex gap-3">
+                  <dt className="w-9 shrink-0 tabular-nums text-ink">{day}</dt>
+                  <dd className="text-ink-soft">{what}</dd>
+                </div>
               ))}
-              <li>
-                <Link href="/contact" className="inline-flex items-center gap-1 border-b border-ink pb-0.5 text-ink">
-                  Contact us <ArrowUpRight className="h-3 w-3" />
-                </Link>
-              </li>
-            </ul>
+            </dl>
           </div>
           <div className="hidden border-b border-r border-hairline p-6 lg:flex lg:items-start lg:gap-4 lg:p-7">
             <div className="relative mt-1 h-14 w-[72px] shrink-0 overflow-hidden rounded-[4px] bg-sky">
@@ -198,26 +193,17 @@ export function ProductGlance() {
               <PixelField seed={3} count={8} cell={6} cols={12} rows={9} maxOpacity={0.5} anchor="full" />
             </div>
             <div className="text-[11px] leading-[1.45]">
-              <p className="italic text-ink-soft">
-                &ldquo;Accept, reject or park every supplier document before the 14th, then recompute 2B in one
-                click.&rdquo;
+              <p className="font-medium text-ink">IMS</p>
+              <p className="mt-1 text-ink-soft">
+                Accept, reject or keep pending each supplier document before the 14th, then recompute 2B.
               </p>
-              <p className="mt-2 font-medium text-ink">The IMS console</p>
             </div>
           </div>
           <div className="hidden items-center justify-between border-b border-r border-hairline p-6 lg:flex lg:flex-col lg:items-start lg:justify-start lg:gap-5 lg:p-7">
-            <p className="text-[12px] font-medium">&copy;2026 SynTax</p>
+            <p className="text-[12px] leading-[1.45] text-ink-soft"><span className="font-medium text-ink">Partner, manager, staff.</span> Staff prepare, a partner or manager approves.</p>
             <RoleStack />
           </div>
-          <div className="hidden border-b border-hairline p-6 lg:block lg:p-7">
-            <Link
-              href="/contact"
-              aria-label="Contact SynTax team"
-              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition-transform hover:scale-105"
-            >
-              <Menu className="h-4 w-4" />
-            </Link>
-          </div>
+          <div className="hidden border-b border-hairline lg:block" />
 
           {/* Bottom row */}
           <div className="relative col-span-1 min-h-[440px] overflow-hidden border-b border-hairline sm:min-h-[380px] lg:col-span-2 lg:border-b-0 lg:border-r">
@@ -250,20 +236,20 @@ export function ProductGlance() {
                 id="glance-title"
                 className="mt-5 text-[clamp(38px,4.2vw,62px)] font-medium leading-[1.02] tracking-[-0.045em] text-ink"
               >
-                Smarter Filing
+                One desk for
                 <br />
-                Starts Here
+                every client.
               </h2>
             </div>
             <div className="mt-10 border-t border-hairline pt-6">
               <p className="max-w-[24rem] text-[12.5px] leading-[1.6] text-ink-soft">
-                One workspace for every GSTIN and TAN your practice handles. Staff prepare, partners approve, and every
-                change is logged for the auditors.
+                Staff prepare, partners approve, and every change is logged for the auditors. Add a client once and GST,
+                TDS and signing all use it.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-5">
                 <SplitButton href="/signup">Start 14-day free trial</SplitButton>
-                <Link href="#pilot" className="text-[12.5px] font-medium text-ink hover:underline">
-                  Start your free pilot
+                <Link href="/products/gst" className="text-[12.5px] font-medium text-ink hover:underline">
+                  See how GST works
                 </Link>
               </div>
             </div>

@@ -226,7 +226,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       eyebrow="Privacy notice"
-      title="Your Clients’ Data Stays In India, And In Your Control"
+      title="Your clients’ data stays in India, and in your control."
       summary={
         <p>
           What we collect, why, where it is stored and the rights you have under the Digital Personal Data Protection Act,

@@ -66,29 +66,23 @@ async function saveDscChallenge(record: ChallengeRecord): Promise<void> {
   activeChallenges.set(record.challengeNonce, record);
 }
 
-async function getDscChallenge(nonce: string): Promise<ChallengeRecord | undefined> {
-  const redis = sharedRedis();
-  if (redis) {
-    try {
-      const raw = await redis.get(`${CHALLENGE_REDIS_PREFIX}${nonce}`);
-      if (raw) return JSON.parse(raw) as ChallengeRecord;
-    } catch {
-      // Fall back to in-memory map
-    }
-  }
-  return activeChallenges.get(nonce);
-}
-
-async function deleteDscChallenge(nonce: string): Promise<void> {
+/**
+ * Takes a challenge out of the store and returns it, in one step, so it can be used once only:
+ * two requests racing with the same nonce (even on different API servers) cannot both get it.
+ */
+async function takeDscChallenge(nonce: string): Promise<ChallengeRecord | undefined> {
+  const local = activeChallenges.get(nonce);
   activeChallenges.delete(nonce);
   const redis = sharedRedis();
   if (redis) {
     try {
-      await redis.del(`${CHALLENGE_REDIS_PREFIX}${nonce}`);
+      const raw = await redis.getdel(`${CHALLENGE_REDIS_PREFIX}${nonce}`);
+      if (raw) return JSON.parse(raw) as ChallengeRecord;
     } catch {
-      // Ignore cleanup error
+      // Redis unavailable: only a challenge kept in this process can be used.
     }
   }
+  return local;
 }
 
 const maskPan = (pan: string | null) => (pan ? `XXXXX${pan.slice(5)}` : null);
@@ -238,7 +232,8 @@ export async function dscRoutes(app: FastifyInstance) {
     }
     const { challengeNonce, filingId, signature, algorithm, certificate, chain } = parsed.data;
 
-    const challenge = await getDscChallenge(challengeNonce);
+    // Single use, whatever the outcome: taken out of the store before anything is checked.
+    const challenge = await takeDscChallenge(challengeNonce);
     if (!challenge) {
       return reply.status(403).send({
         error: 'CHALLENGE_NOT_FOUND_OR_EXPIRED',
@@ -249,8 +244,6 @@ export async function dscRoutes(app: FastifyInstance) {
     if (challenge.firmId !== req.user?.firmId) {
       return reply.status(403).send({ error: 'FORBIDDEN', message: 'This signing request belongs to another firm.' });
     }
-    // Single use, whatever the outcome.
-    await deleteDscChallenge(challengeNonce);
     if (Date.now() > challenge.expiresAt) {
       return reply.status(403).send({ error: 'CHALLENGE_EXPIRED', message: 'The two minutes to sign have passed. Start again.' });
     }

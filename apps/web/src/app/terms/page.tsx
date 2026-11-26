@@ -180,7 +180,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       eyebrow="Terms of service"
-      title="Plain Terms For Using SynTax"
+      title="Plain terms for using SynTax."
       summary={
         <p>
           What we provide, what your firm stays responsible for, how billing works and what happens to your data if you leave.

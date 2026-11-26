@@ -284,13 +284,13 @@ export default function ClientsMasterPage() {
       </div>
 
       {/* Main 72% Table + 28% Floating Summary Split */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Left Client Table (8 cols on XL, full width below XL) */}
-        <div className="xl:col-span-8 w-full min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
+        {/* Left Client Table (8 cols) */}
+        <div className="lg:col-span-8 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
           
-          <div className="w-full min-w-0 overflow-x-auto [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.2)_transparent]">
-            <table className="w-full min-w-[650px] text-left text-xs border-collapse">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
               
               {/* Solid Obsidian Header */}
               <thead>
@@ -369,8 +369,8 @@ export default function ClientsMasterPage() {
 
         </div>
 
-        {/* Right Floating Client Inspector (4 cols on XL, full width below XL) */}
-        <div className="xl:col-span-4 w-full min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
+        {/* Right Floating Client Inspector (4 cols) */}
+        <div className="lg:col-span-4 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
           
           {/* Header Bar */}
           <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">

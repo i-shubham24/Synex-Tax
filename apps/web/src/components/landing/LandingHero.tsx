@@ -1,7 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { nextDue, type NextDue } from '../../lib/deadlines';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../context/AuthContext';
 import { HeroPillars } from './hero/HeroPillars';
 import { PillButton } from './primitives';
 
@@ -49,6 +51,21 @@ function FormMarks({ revealed }: { revealed: boolean }) {
 }
 
 export function LandingHero() {
+  const router = useRouter();
+  const { loginDemo } = useAuth();
+  const [opening, setOpening] = useState(false);
+  const [due, setDue] = useState<NextDue | null>(null);
+  // Worked out in the browser so it reads the visitor's today, not the build's.
+  useEffect(() => setDue(nextDue(new Date())), []);
+  // Signs in to the sample firm (two sample clients, partner role) and opens its workspace.
+  const openSample = useCallback(async () => {
+    setOpening(true);
+    try {
+      await loginDemo('PARTNER');
+    } finally {
+      router.push('/dashboard');
+    }
+  }, [loginDemo, router]);
   const trackRef = useRef<HTMLElement>(null);
   const [revealed, setRevealed] = useState(false);
   const onReveal = useCallback(() => setRevealed(true), []);
@@ -86,10 +103,18 @@ export function LandingHero() {
           <p
             className={`mb-6 inline-flex w-fit self-start max-w-full flex-wrap sm:flex-nowrap items-center gap-2 rounded-2xl sm:rounded-full border border-ink/10 bg-white/70 py-1.5 pl-2 pr-3.5 text-[12px] sm:text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
           >
-            <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-ink">2025 Act</span>
-            <span className="leading-snug">
-              <span className="sm:hidden">Built for both Income-tax Acts</span>
-              <span className="hidden sm:inline">Built for both Income-tax Acts, routed by date</span>
+            <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-ink">Next due</span>
+            <span className="min-h-[1.25em] leading-snug" aria-live="polite">
+              {due ? (
+                <>
+                  {due.what}, {due.due}
+                  <span className="text-ink/50">
+                    {due.days === 0 ? ', today' : due.days === 1 ? ', tomorrow' : `, in ${due.days} days`}
+                  </span>
+                </>
+              ) : (
+                '\u00a0'
+              )}
             </span>
           </p>
           <h1
@@ -112,16 +137,21 @@ export function LandingHero() {
             style={{ transitionDelay: '260ms' }}
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 w-full sm:w-auto">
-              <PillButton href="/signup" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
-                Start 14-day free trial
+              <PillButton
+                onClick={openSample}
+                disabled={opening}
+                size="lg"
+                className="w-full sm:w-auto justify-between sm:justify-start"
+              >
+                {opening ? 'Opening the sample firm…' : 'Explore a sample firm'}
               </PillButton>
-              <PillButton href="/contact" tone="light" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
-                Book a demo
-              </PillButton>
-              <Link href="/switch" className="text-center sm:text-left font-display text-[15px] sm:text-[16px] font-medium tracking-[-0.015em] text-ink/70 transition-colors hover:text-ink">
+              <PillButton href="/switch" tone="light" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
                 Switching from desktop?
-              </Link>
+              </PillButton>
             </div>
+            <p className="mt-4 text-[13.5px] text-ink/55">
+              The sample firm opens with two clients set up. No sign-up needed.
+            </p>
           </div>
           <div className="mt-14 hidden lg:block">
             <FormMarks revealed={revealed} />

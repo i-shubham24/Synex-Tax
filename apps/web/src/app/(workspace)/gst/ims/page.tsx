@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { GstCommandBar } from '../../../../components/gst/GstCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface ImsRecord {
   id: string;
@@ -34,6 +35,7 @@ interface ImsRecord {
 
 export default function ImsConsolePage() {
   const { activeEntity, activeClient, activePeriod } = useWorkspace();
+  const { authFetch } = useAuth();
   const [viewMode, setViewMode] = useState<'RECIPIENT' | 'SUPPLIER' | 'BYPASS'>('RECIPIENT');
   const [records, setRecords] = useState<ImsRecord[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -49,7 +51,7 @@ export default function ImsConsolePage() {
 
   const fetchRecords = () => {
     setLoading(true);
-    fetch(`/api/v1/gst/${gstin}/ims/actions?period=${period}&view=${viewMode}`)
+    authFetch(`/api/v1/gst/${gstin}/ims/actions?period=${period}&view=${viewMode}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.queue) {
@@ -70,7 +72,7 @@ export default function ImsConsolePage() {
     if (targets.length === 0) return;
 
     try {
-      const res = await fetch(`/api/v1/gst/${gstin}/ims/actions`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/ims/actions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +102,7 @@ export default function ImsConsolePage() {
   const handleRecompute2B = async () => {
     setRecomputing(true);
     try {
-      const res = await fetch(`/api/v1/gst/${gstin}/ims/recompute-2b`, {
+      const res = await authFetch(`/api/v1/gst/${gstin}/ims/recompute-2b`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ period }),

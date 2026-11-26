@@ -22,10 +22,10 @@ import (
 	"github.com/synextax/synextax/apps/dsc-agent/security"
 )
 
-const (
-	ListenAddress = "127.0.0.1:15850"
-	AgentVersion  = "0.1.0"
-)
+const ListenAddress = "127.0.0.1:15850"
+
+// AgentVersion is set at build time: go build -ldflags "-X main.AgentVersion=1.2.3".
+var AgentVersion = "0.1.0"
 
 type AppServer struct {
 	tallyPoller   *tally.TallyPoller

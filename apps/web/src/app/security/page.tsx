@@ -11,13 +11,12 @@ export default function SecurityPage() {
   return (
     <MarketingPage
       eyebrow="Security"
-      title="Your Clients’ Data, Walled Off And Logged"
-      cta={false}
+      title="Your clients’ data, walled off and logged."
       summary={
         <p>
           A CA firm holds PANs, bank details and filing rights for hundreds of businesses. This page lists the controls that
-          protect them, marked with what is working today. Privacy terms are in the{' '}
-          <Link href="/privacy" className="text-sky-deep underline-offset-4 hover:underline">privacy notice</Link>.
+          protect them, each marked with whether it works today. Privacy terms are in the{' '}
+          <Link href="/privacy" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">privacy notice</Link>.
         </p>
       }
     >
@@ -65,7 +64,7 @@ export default function SecurityPage() {
             items: [
               { title: 'Portal passwords', body: 'We do not ask for or store GST, income tax or TRACES passwords. Portal access uses the official API consent you can revoke.', status: 'live' },
               { title: 'Aadhaar numbers', body: 'Full 12-digit Aadhaar numbers are never stored.', status: 'live' },
-              { title: 'DSC PINs and keys', body: 'Signing will happen on your own computer through a small local signer; the PIN and private key never leave the token.', status: 'coming' },
+              { title: 'DSC PINs and keys', body: 'Signing happens on your own computer through the small SynTax signing app. The token’s driver asks for the PIN, and the private key never leaves the token.', status: 'live' },
             ],
           },
           {
@@ -78,8 +77,10 @@ export default function SecurityPage() {
           },
         ]}
       />
-      <p className="mt-14 rounded-[20px] bg-mist px-5 py-4 text-[14px] leading-[1.6] text-ink/65">
-        Found a security issue? Write to us through the <Link href="/contact" className="text-sky-deep underline-offset-4 hover:underline">contact page</Link> and mark it Privacy. We reply to reports first.
+      <p className="mt-20 border-t border-ink/15 pt-6 text-[15px] leading-[1.6] text-ink">
+        Found a security issue? Write to us through the{' '}
+        <Link href="/contact" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">contact page</Link> and choose
+        Privacy. Reports are answered before anything else.
       </p>
     </MarketingPage>
   );

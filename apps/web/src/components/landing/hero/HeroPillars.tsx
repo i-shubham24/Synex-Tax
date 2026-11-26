@@ -99,15 +99,31 @@ export function HeroPillars({ trackRef, onReveal, className }: Props) {
         track.removeEventListener('pointerleave', onLeave);
       });
 
-      // Only measure while the scene is on screen (no layout reads once the hero has scrolled away).
+      // The hero's page position is measured once (and on resize), so scrolling reads no layout:
+      // each scroll event is just arithmetic on window.scrollY.
+      let trackTop = 0;
+      let trackHeight = 1;
+      const measure = () => {
+        const r = (trackRef.current ?? wrap).getBoundingClientRect();
+        trackTop = r.top + window.scrollY;
+        trackHeight = Math.max(1, r.height);
+      };
+      measure();
       const onScroll = () => {
         if (!onScreen) return;
-        const r = (trackRef.current ?? wrap).getBoundingClientRect();
-        scene?.setScroll(-r.top / Math.max(1, r.height));
+        scene?.setScroll((window.scrollY - trackTop) / trackHeight);
+      };
+      const onResize = () => {
+        measure();
+        onScroll();
       };
       window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onResize);
       onScroll();
-      cleanups.push(() => window.removeEventListener('scroll', onScroll));
+      cleanups.push(() => {
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onResize);
+      });
     });
 
     return () => {

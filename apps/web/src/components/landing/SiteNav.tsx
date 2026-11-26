@@ -60,7 +60,9 @@ export function SiteNav() {
   const [active, setActive] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  // The bar stays on screen and stays transparent; its text colour follows the section under it.
+  // Once the page scrolls, a soft blur band sits behind it so content passing under the links blurs out.
+  const [blurred, setBlurred] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -81,23 +83,9 @@ export function SiteNav() {
     };
     buildThemeIO();
 
-    let lastY = window.scrollY;
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const delta = y - lastY;
-        if (y < 120) setHidden(false);
-        else if (delta > 6) {
-          setHidden(true);
-          setProductsOpen(false);
-        } else if (delta < -6) setHidden(false);
-        lastY = y;
-        ticking = false;
-      });
-    };
+    // Only a threshold is tracked, so React re-renders twice per page at most, not on every frame.
+    const onScroll = () => setBlurred(window.scrollY > 24);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', buildThemeIO);
 
@@ -125,11 +113,18 @@ export function SiteNav() {
   return (
     <header
       ref={headerRef}
-      className={`fixed inset-x-0 top-0 z-50 transition-transform duration-500 ease-out-expo ${
-        hidden && !open ? '-translate-y-full' : 'translate-y-0'
-      }`}
-      onFocusCapture={() => setHidden(false)}
+      className="fixed inset-x-0 top-0 z-50 bg-transparent"
     >
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-x-0 top-0 -z-10 h-[108px] transition-opacity duration-300 ${blurred && !open ? 'opacity-100' : 'opacity-0'}`}
+        style={{
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          maskImage: 'linear-gradient(to bottom, #000 45%, transparent)',
+          WebkitMaskImage: 'linear-gradient(to bottom, #000 45%, transparent)',
+        }}
+      />
       <div className="mx-auto flex h-[76px] max-w-[1480px] items-center justify-between px-6 sm:px-10">
         <Link href="/" aria-label="SynTax home" className="rounded-md">
           <Wordmark
@@ -139,7 +134,7 @@ export function SiteNav() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav aria-label="Primary" className="hidden md:block">
+        <nav aria-label="Primary" className="hidden lg:block">
           <ul className="flex items-center gap-1 font-display text-[15.5px] font-medium tracking-[-0.015em]">
             {/* Products Interactive Dropdown */}
             <li className="relative" ref={dropdownRef}>
@@ -261,21 +256,11 @@ export function SiteNav() {
               </a>
             </li>
 
-            <li>
-              <Link
-                href="/tools"
-                className={`relative block rounded-full px-4 py-2 transition-colors duration-300 ${
-                  dark ? 'text-white/70 hover:text-white' : 'text-ink/70 hover:text-ink'
-                }`}
-              >
-                Free tools
-              </Link>
-            </li>
           </ul>
         </nav>
 
         {/* Action CTAs */}
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-4 lg:flex">
           <Link
             href="/login"
             className={`font-display text-[15.5px] font-medium tracking-[-0.015em] transition-colors duration-300 ${
@@ -284,7 +269,7 @@ export function SiteNav() {
           >
             Sign in
           </Link>
-          <PillButton href="/contact" size="sm" tone={dark ? 'light' : 'dark'}>
+          <PillButton href="/contact" size="sm" tone={dark ? 'light' : 'dark'} className="hidden xl:inline-flex">
             Book a demo
           </PillButton>
           <PillButton href="/signup" size="sm" tone="mint">
@@ -298,7 +283,7 @@ export function SiteNav() {
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-label={open ? 'Close menu' : 'Open menu'}
-          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 md:hidden ${
+          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 lg:hidden ${
             dark ? 'bg-white text-ink' : 'bg-ink text-white'
           }`}
         >
@@ -308,7 +293,7 @@ export function SiteNav() {
 
       {/* Mobile menu sheet */}
       {open && (
-        <div className="mx-3 rounded-[24px] bg-white p-5 shadow-[0_24px_60px_-24px_rgba(20,20,22,0.45)] md:hidden max-h-[85vh] overflow-y-auto">
+        <div className="mx-3 rounded-[24px] bg-white p-5 shadow-[0_24px_60px_-24px_rgba(20,20,22,0.45)] lg:hidden max-h-[85vh] overflow-y-auto">
           <div className="text-[12px] font-semibold text-ink/40 uppercase tracking-wider mb-2">
             Product Suites
           </div>
@@ -342,11 +327,6 @@ export function SiteNav() {
               <a href={`${base}#pilot`} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
                 Pilot
               </a>
-            </li>
-            <li>
-              <Link href="/tools" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
-                Free tools
-              </Link>
             </li>
             <li>
               <Link href="/login" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">

@@ -23,16 +23,16 @@ export const ALL_IN_ONE_PLANS: PlanTier[] = [
     name: 'Solo Practitioner',
     price: '8,999',
     period: '/ year',
-    blurb: 'Complete compliance suite for individual CAs and emerging practice partners.',
+    blurb: 'For a CA working alone or with one or two staff.',
     quota: '50 GSTINs, 25 TANs, 3 seats',
     suites: ['SynTax GST', 'SynTax TDS', 'SynTax Sign', 'SynTax Desk'],
     features: [
-      'All 4 core product suites unlocked',
-      '4-pass fuzzy GSTR-2B reconciliation',
-      'Native IMS console with 1-period CN lock',
-      'Dual-Act TDS cutover router & Forms 138 to 144',
-      'Zero-Java Go USB DSC agent with FIPS detection',
-      'Unified 4-tier Client Master & audit log',
+      'GST, TDS, signing and Desk',
+      'Purchase register and GSTR-2B matching',
+      'IMS actions before the 14th',
+      'TDS under both Acts, Forms 138 to 144',
+      'Signing with your USB token, no Java',
+      'Client master and audit trail',
     ],
   },
   {
@@ -40,16 +40,16 @@ export const ALL_IN_ONE_PLANS: PlanTier[] = [
     name: 'Growth Firm',
     price: '15,999',
     period: '/ year',
-    blurb: 'Full-featured compliance operating system for expanding accounting practices.',
+    blurb: 'For a firm with a team handling a few hundred clients.',
     quota: '200 GSTINs, 100 TANs, unlimited seats',
     suites: ['SynTax GST', 'SynTax TDS', 'SynTax Sign', 'SynTax Desk'],
     features: [
-      'Everything in Solo Practitioner',
-      'Partner maker-checker approval queue',
-      'Anti-poaching partner export protection',
-      'MCA Rule 3(1) edit log & Rule 3(6) vault',
-      'DPDP multilingual consent tracking',
-      'Extended crunch-week support till 10 PM',
+      'Everything in Solo',
+      '200 GSTINs and 100 TANs',
+      'As many people as you need',
+      'Screens and clients set per staff member',
+      'Consent records in English, Punjabi and Hindi',
+      'Support until 10 PM in filing weeks',
     ],
     popular: true,
   },
@@ -58,16 +58,16 @@ export const ALL_IN_ONE_PLANS: PlanTier[] = [
     name: 'Scale Practice',
     price: '29,999',
     period: '/ year',
-    blurb: 'High-throughput enterprise compliance engine for multi-partner firms.',
+    blurb: 'For multi-partner firms and firms with branches.',
     quota: '600 GSTINs, 300 TANs, unlimited seats',
     suites: ['SynTax GST', 'SynTax TDS', 'SynTax Sign', 'SynTax Desk'],
     features: [
-      'Everything in Growth Firm',
-      'Dedicated account manager & priority SLA',
-      'Custom Tally / Busy migration assistance',
-      'Multi-branch practice control tower',
-      'High-volume Docker FVU validation queue',
-      'Phase 2 early access: WhatsApp client portal',
+      'Everything in Growth',
+      '600 GSTINs and 300 TANs',
+      'A named account manager',
+      'Priority support',
+      'We move your Tally and Busy data for you',
+      'Early access to the client WhatsApp portal',
     ],
   },
 ];
@@ -78,16 +78,16 @@ export const STANDALONE_PLANS: PlanTier[] = [
     name: 'SynTax GST + Sign',
     price: '5,999',
     period: '/ year',
-    blurb: 'Dedicated GST compliance and digital signature suite with instant upgrade path.',
+    blurb: 'GST returns and signing, with Desk Lite.',
     quota: '50 GSTINs, unlimited DSC signing, 3 seats',
     suites: ['SynTax GST', 'SynTax Sign', 'SynTax Desk Lite'],
     features: [
-      'GSTR-1, 1A, IFF & auto HSN tables',
-      '4-pass fuzzy GSTR-2B reconciliation engine',
-      'Native IMS console before 14th recompute lock',
-      'Hard-locked GSTR-3B set-off (Rule 88A / 86B)',
-      'Zero-Java Go 1.27 USB DSC signer (PKCS#11)',
-      '1-click in-app upgrade to All-in-One suite',
+      'GSTR-1, 1A and IFF from the sales register',
+      'Purchase register and GSTR-2B matching',
+      'IMS actions before the 14th',
+      'GSTR-3B set-off in the Rule 88A order',
+      'Signing with your USB token, no Java',
+      'Add TDS later without re-entering clients',
     ],
   },
   {
@@ -95,16 +95,16 @@ export const STANDALONE_PLANS: PlanTier[] = [
     name: 'SynTax TDS + Sign',
     price: '4,999',
     period: '/ year',
-    blurb: 'Dual-Act TDS return filing and batch certificate signing engine.',
+    blurb: 'TDS and TCS statements and signing, with Desk Lite.',
     quota: '25 TANs, unlimited DSC signing, 3 seats',
     suites: ['SynTax TDS', 'SynTax Sign', 'SynTax Desk Lite'],
     features: [
-      'IT Act 1961 vs IT Act 2025 cutover router',
-      'ITNS 281 vs ITNS 281N 20-section challans',
-      'CSI matching & bulk PAN operative checks',
-      'Forms 138 to 144 + legacy 24Q/26Q/27Q/27EQ',
-      'Isolated Docker FVU v1.2 / v9.5 validation',
-      '1-click in-app upgrade to All-in-One suite',
+      'Rows routed to the 1961 or 2025 Act by date',
+      'ITNS 281 and 281N challans, matched to CSI',
+      'Forms 138 to 144, and 24Q, 26Q, 27Q, 27EQ',
+      'Checked with Protean FVU 1.2 and 9.5',
+      'Form 130 and 131 certificates checked and sent',
+      'Add GST later without re-entering clients',
     ],
   },
 ];
@@ -119,9 +119,9 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
         {/* Top Header Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div>
-            <span className="text-[12px] font-semibold text-mint uppercase tracking-wider">Transparent Practice Pricing</span>
+            <span className="text-[13px] text-mint">Pricing</span>
             <h2 id="plans-title" className="mt-1 text-[clamp(32px,3.8vw,56px)] font-medium leading-[1.05] tracking-[-0.04em]">
-              Simple, Predictable Plans
+              One price a year for the whole firm
             </h2>
           </div>
 
@@ -136,7 +136,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
                   : 'text-white/70 hover:text-white'
               }`}
             >
-              All-in-One Suites (All 4 Unlocked)
+              All four suites
             </button>
             <button
               type="button"
@@ -147,7 +147,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
                   : 'text-white/70 hover:text-white'
               }`}
             >
-              Standalone Entry Packs
+              GST or TDS only
             </button>
           </div>
         </div>
@@ -156,8 +156,8 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
         <div className="mt-6 flex items-center justify-between text-[12.5px] text-white/60">
           <p>
             {tab === 'all'
-              ? 'Every all-in-one plan unlocks SynTax GST, SynTax TDS, SynTax Sign, and SynTax Desk under one unified Client Master.'
-              : 'Standalone packs give you focused compliance power today with 1-click in-app upgrade using the exact same Client Master.'}
+              ? 'Every all-in-one plan has GST, TDS, signing and Desk, working from the same client list.'
+              : 'Start with GST or TDS alone. When you add the other, your clients are already there.'}
           </p>
           <span className="hidden md:inline font-mono text-[11px] text-white/40">/ FY 2026-27 /</span>
         </div>
@@ -175,7 +175,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
             >
               {plan.popular && (
                 <span className="absolute -top-3 right-6 rounded-full bg-mint px-3 py-0.5 text-[11px] font-semibold text-ink">
-                  Most Popular For CA Firms
+                  Best for a team
                 </span>
               )}
 
@@ -186,7 +186,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
                 <p className="mt-2 text-[13px] text-white/70 leading-relaxed min-h-[40px]">{plan.blurb}</p>
 
                 <div className="mt-6 flex items-baseline gap-1 border-y border-white/10 py-4">
-                  <span className="text-[14px] text-white/60 font-medium">Rs</span>
+                  <span className="text-[22px] text-white/80 font-medium">&#8377;</span>
                   <span className="text-[36px] font-semibold text-white tracking-tight tabular-nums">{plan.price}</span>
                   <span className="text-[13px] text-white/60">{plan.period}</span>
                 </div>
@@ -196,7 +196,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
                 </div>
 
                 <div className="mt-6 space-y-2.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Included Capabilities</p>
+                  <p className="text-[12px] text-white/50">What’s included</p>
                   {plan.features.map((feat) => (
                     <div key={feat} className="flex items-start gap-2.5 text-[13px] text-white/80">
                       <Check className="h-4 w-4 shrink-0 text-mint mt-0.5" />
@@ -218,9 +218,6 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
                   <span>Start 14-day free trial</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-                <p className="mt-2 text-center text-[11px] text-white/45">
-                  Instant access to Amritsar sample client workspace
-                </p>
               </div>
             </div>
           ))}
@@ -230,10 +227,10 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-[12px] text-white/60">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-mint" />
-            <span>No per-PC dongle fees. Unlimited cloud storage. 18% GST additional.</span>
+            <span>Prices are a year, before 18% GST. No per-PC fees.</span>
           </div>
           <Link href="/contact" className="text-white hover:text-mint font-medium transition-colors">
-            Need custom volume or multi-branch setup? Talk with our engineering team
+            More than 600 GSTINs, or several branches? Talk to us
           </Link>
         </div>
       </div>

@@ -119,17 +119,17 @@ const MODULES: Module[] = [
     id: 'ims',
     title: 'GST returns and IMS',
     teaser: 'GSTR-1, 1A and 3B with the IMS deadline in view, for every GSTIN you handle.',
-    body: 'Accept, reject or park supplier documents, then recompute 2B before 3B can be filed.',
+    body: 'Accept, reject or keep pending each supplier document, then recompute 2B before 3B is filed.',
     chips: ['GSTR-1', 'GSTR-3B', 'IMS', 'GSTR-1A'],
     more: 3,
     screen: <ImsScreen />,
   },
   {
     id: 'recon',
-    title: 'Clarity meets compliance',
-    teaser: 'Purchase register against GSTR-2B in four passes, rounding and typos included.',
-    body: 'Exact, fuzzy invoice number, GSTIN with date and tolerance, then probable matches for review.',
-    chips: ['2B recon', 'Vendor follow-up', 'Section 16(4)'],
+    title: 'Purchase register and 2B',
+    teaser: 'Your Tally or Busy register matched with GSTR-2B, invoice numbers written either way.',
+    body: 'Exact matches first, then numbers written differently, then value and tax-head differences to take up with the supplier.',
+    chips: ['2B matching', 'Supplier follow-up', 'Rule 88A set-off'],
     more: 2,
     screen: <ReconScreen />,
   },
@@ -137,7 +137,7 @@ const MODULES: Module[] = [
     id: 'tds',
     title: 'Dual-Act TDS and TCS',
     teaser: 'Old periods on the 1961 Act, Tax Year 2026-27 on the 2025 Act, routed by date.',
-    body: 'Forms 138, 140, 143 and 144 alongside 24Q to 27EQ, validated in isolated FVU 1.2 and 9.5 runners.',
+    body: 'Forms 138, 140, 143 and 144 alongside 24Q to 27EQ, checked with Protean’s own FVU 1.2 and 9.5.',
     chips: ['Form 138', 'Form 140', '281N', 'FVU 1.2'],
     more: 4,
     screen: <TdsScreen />,
@@ -145,8 +145,8 @@ const MODULES: Module[] = [
   {
     id: 'dsc',
     title: 'Local DSC signer',
-    teaser: 'A small native agent signs on the partner PC. No Java, no emSigner ports.',
-    body: 'Works with FIPS 140-2 and 140-3 tokens. The PIN and private key never leave the machine.',
+    teaser: 'A small app signs on the partner’s PC. No Java, no emSigner ports.',
+    body: 'Works with ePass2003, ProxKey, mToken and eToken on Windows. The PIN goes to the token’s own driver, and the key never leaves the token.',
     chips: ['RETFILE', 'Form 130', 'Form 131'],
     more: 1,
     screen: <DscScreen />,
@@ -204,10 +204,10 @@ export function ModulesAccordion() {
         </Eyebrow>
         <div className="mt-7 flex flex-wrap items-end justify-between gap-6">
           <h2 id="modules-title" className="max-w-[34rem] text-[clamp(28px,2.9vw,40px)] font-normal leading-[1.15] tracking-[-0.035em]">
-            Redefining compliance work for CA practices
+            Four parts, one client list
           </h2>
           <p className="max-w-[16rem] text-[11px] leading-[1.6] text-white/55">
-            We do not just file returns. We keep the whole practice on one calm schedule.
+            GST, TDS, signing and the client master share the same records, so a client is added once.
           </p>
         </div>
 

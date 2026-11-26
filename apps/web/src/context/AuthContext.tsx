@@ -112,7 +112,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * Pages a CLIENT login may open outside its portal: the public site and the token links.
  * Everything else (the firm workspace, sign in) sends a client to /client.
  */
-const CLIENT_OPEN_PATHS = ['/client', '/upload', '/contact', '/features', '/privacy', '/security', '/terms', '/tools', '/whats-new'];
+/** The public site: anyone may read these, signed in or not. */
+const PUBLIC_SITE_PATHS = ['/products', '/pricing', '/switch', '/contact', '/features', '/privacy', '/security', '/terms', '/whats-new'];
+const CLIENT_OPEN_PATHS = ['/client', '/upload', ...PUBLIC_SITE_PATHS];
 function clientMayOpen(pathname: string): boolean {
   return pathname === '/' || CLIENT_OPEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
@@ -177,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         /* Default demo fallback if visiting any workspace screen directly on preview */
-        const isPublicPath = ['/', '/login', '/signup', '/client', '/upload', '/contact', '/features', '/privacy', '/security', '/terms', '/tools', '/whats-new'].some(
+        const isPublicPath = ['/', '/login', '/signup', '/forgot-password', '/invite', '/client', '/upload', ...PUBLIC_SITE_PATHS].some(
           (p) => window.location.pathname === p || window.location.pathname.startsWith(`${p}/`)
         );
         if (!isPublicPath && mounted) {

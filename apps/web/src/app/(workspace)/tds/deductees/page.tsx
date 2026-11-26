@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { TdsCommandBar } from '../../../../components/tds/TdsCommandBar';
 import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface DeducteeItem {
   id: string;
@@ -29,6 +30,7 @@ interface DeducteeItem {
 
 export default function DeducteesPage() {
   const { activeEntity, activeClient } = useWorkspace();
+  const { authFetch } = useAuth();
   const [deductees, setDeductees] = useState<DeducteeItem[]>([]);
   const [selectedDeductee, setSelectedDeductee] = useState<DeducteeItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ export default function DeducteesPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/v1/tds/${tan}/deductees`)
+    authFetch(`/api/v1/tds/${tan}/deductees`)
       .then((r) => r.json())
       .then((data) => {
         if (data.deductees) {
@@ -55,7 +57,7 @@ export default function DeducteesPage() {
     setVerifyingPans(true);
     try {
       const pans = deductees.map((d) => d.deductee_pan);
-      const res = await fetch(`/api/v1/tds/${tan}/pan/verify-bulk`, {
+      const res = await authFetch(`/api/v1/tds/${tan}/pan/verify-bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pans }),
@@ -66,7 +68,7 @@ export default function DeducteesPage() {
           `Verified ${data.totalChecked} PANs via ITD API: ${data.operativeCount} Operative, ${data.inoperativeCount} Inoperative (Flagged for 20% higher rate).`,
         );
         // Refresh deductees list
-        const refreshRes = await fetch(`/api/v1/tds/${tan}/deductees`);
+        const refreshRes = await authFetch(`/api/v1/tds/${tan}/deductees`);
         const refreshData = await refreshRes.json();
         if (refreshData.deductees) setDeductees(refreshData.deductees);
       }

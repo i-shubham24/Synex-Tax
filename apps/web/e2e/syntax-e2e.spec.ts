@@ -42,16 +42,12 @@ test.describe('SynTax Platform E2E Smoke & Workflow Suite', () => {
     expect(await page.textContent('body')).not.toContain('—');
   });
 
-  test('Flow 2: Practice Control Tower, Suite Switcher & Top Utility Bar', async ({ page }) => {
+  test('Flow 2: Practice Control Tower & Top Utility Bar', async ({ page }) => {
     await page.goto(`${BASE_URL}/dashboard`);
 
-    // Top Utility Bar elements
+    // Top Utility Bar and Control Tower heading
     await expect(page.locator('header')).toBeVisible();
-    await expect(page.locator('text=Portals Live, text=Portals Degraded, text=Portals Slow').first()).toBeVisible({ timeout: 10000 });
-
-    // Suite Switcher Navigation Trigger
-    const suiteButton = page.locator('button[title*="Switch Suite"], button:has-text("Control Tower")').first();
-    await expect(suiteButton).toBeVisible();
+    await expect(page.locator('h1:has-text("Control Tower")')).toBeVisible({ timeout: 10000 });
 
     // Verify zero em dashes on Control Tower
     const dashText = await page.textContent('body');
@@ -86,7 +82,7 @@ test.describe('SynTax Platform E2E Smoke & Workflow Suite', () => {
 
     // 5. Excel / Tally Dirty Import Sanitizer
     await page.goto(`${BASE_URL}/gst/import`);
-    await expect(page.locator('h1')).toContainText('Sanitizer');
+    await expect(page.locator('text=Upload Tally, Busy, or Excel CSV Purchase Register')).toBeVisible();
 
     // Verify zero em dashes across GST workspace
     const gstText = await page.textContent('body');
@@ -139,7 +135,7 @@ test.describe('SynTax Platform E2E Smoke & Workflow Suite', () => {
     await page.goto(`${BASE_URL}/dsc`);
     await expect(page.locator('h1')).toContainText('SynTax Sign Hub');
     await expect(page.locator('text=7-Day Expiry Radar')).toBeVisible();
-    await expect(page.locator('text=FIPS 140-3 Hardware')).toBeVisible();
+    await expect(page.locator('text=FIPS Tier (Estimated)')).toBeVisible();
 
     // 2. Client Master 4-Tier & Masked PAN Reveal
     await page.goto(`${BASE_URL}/clients`);

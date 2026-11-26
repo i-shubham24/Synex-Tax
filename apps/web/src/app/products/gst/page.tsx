@@ -1,79 +1,60 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { SiteNav } from '../../../components/landing/SiteNav';
 import { LandingFooter } from '../../../components/landing/LandingFooter';
-import {
-  ReceiptText,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  ShieldCheck,
-  RefreshCw,
-  FileSpreadsheet,
-  Lock,
-  Layers,
-  Sparkles,
-} from 'lucide-react';
+import { GstHero, SplitCard } from '../../../components/products/gst/GstHero';
+import { MatchDemo } from '../../../components/products/gst/MatchDemo';
+import { PriceClose, RulesPanel, StairSteps, TrySection } from '../../../components/products/ProductSections';
 
 export const metadata: Metadata = {
-  title: 'SynTax GST | 4-Pass 2B Recon, IMS Console & Hard-Locked 3B Set-Off',
+  title: 'SynTax GST | Purchase register and GSTR-2B matching, IMS and GSTR-3B',
   description:
-    'Cloud GST compliance for CA practices: Dirty Excel sanitizer, four-pass fuzzy GSTR-2B reconciliation, native IMS console before 14th recompute lock, and Rule 88A/86B set-off engine.',
+    'Upload the Tally or Busy purchase register as exported, match it with the GSTR-2B download, act on IMS before the 14th and draft GSTR-3B with Rule 88A set-off.',
 };
 
-const STATUTORY_CHECKLIST = [
-  {
-    rule: 'IMS Console (2026 Mandate)',
-    detail: 'Accept, reject, or mark pending every supplier invoice before the 14th cutoff. GSTR-3B remains locked until 2B is recomputed if IMS actions change.',
-    badge: 'Statutory Lock',
-  },
-  {
-    rule: 'Rule 88A / Advisory 643 Hard Set-Off',
-    detail: 'IGST credit is fully exhausted first across IGST, CGST, and SGST liabilities. Never allows cross-utilization between CGST and SGST.',
-    badge: 'Hard Locked',
-  },
-  {
-    rule: 'Rule 86B 1% Cash Guard',
-    detail: 'Automatically detects when taxable turnover exceeds Rs 50 Lakhs in a month and enforces minimum 1% output tax payment through cash ledger.',
-    badge: 'Automated Check',
-  },
-  {
-    rule: '4-Pass Fuzzy GSTR-2B Matching',
-    detail: 'Matches exact document numbers, normalizes slashes and year tokens, applies date and rupee tolerances, and presents discrepancy packs for vendor WhatsApp follow-up.',
-    badge: 'Recon Engine',
-  },
-  {
-    rule: 'GSTR-1, 1A & QRMP PMT-06',
-    detail: 'Supports single-shot GSTR-1A amendments, IFF quarterly uploads, auto HSN summaries, and 35% fixed-sum or self-assessment PMT-06 challans.',
-    badge: 'Complete Returns',
-  },
-  {
-    rule: 'Section 393 Cross-Compliance Tagging',
-    detail: 'High-value purchase register bills automatically tag potential TDS obligations and surface a 1-click review badge for SynTax TDS.',
-    badge: 'Cross-Suite Moat',
-  },
+/** Where every purchase invoice ends up after matching, and what it means for this month's 3B. */
+const OUTCOMES: Array<{ found: string; means: string; tone: 'claim' | 'check' | 'hold' }> = [
+  { found: 'Exact match', means: 'Claim it this month.', tone: 'claim' },
+  { found: 'Same invoice, written differently', means: 'Claim it. Slashes, the year and leading zeros are evened out, and up to ₹1 of rounding is allowed.', tone: 'claim' },
+  { found: '2B says credit not available', means: 'Matched, but kept out of the claim. The 2B reason is shown against it.', tone: 'check' },
+  { found: 'Dated in another month', means: 'Probably the same document. Confirm before claiming.', tone: 'check' },
+  { found: 'Value or tax heads differ', means: 'Held back. The difference is shown so you can take it up with the supplier.', tone: 'hold' },
+  { found: 'Booked as a different document', means: 'An invoice in your books is a debit note in 2B, or the reverse. Fix the booking.', tone: 'hold' },
+  { found: 'In your books, not in 2B', means: 'Held back until the supplier files.', tone: 'hold' },
+  { found: 'In 2B, not in your books', means: 'Credit you may be missing. Book it, or reject it in IMS if it isn’t yours.', tone: 'check' },
 ];
 
-const WORKFLOW_STEPS = [
+const DOT = { claim: 'bg-mint', check: 'bg-sky', hold: 'bg-ink' } as const;
+
+/** Rules the 3B draft follows. Only what the engine actually enforces. */
+const RULES = [
+  { rule: 'Rule 88A', what: 'IGST credit is used first, then CGST and SGST. CGST credit never pays SGST, or the other way round.' },
+  { rule: 'Rule 86B', what: 'When taxable supplies cross ₹50 lakh in a month, at least 1% of the output tax is paid in cash, unless the client is exempt.' },
+  { rule: 'Section 17(5)', what: 'Purchases that look like motor vehicles, food or catering are marked as blocked credit when the register comes in.' },
+  { rule: 'Rules 42 and 43', what: 'Common credit is split between taxable and exempt supplies for inputs and capital goods, with the reversal worked out.' },
+  { rule: 'Filed months', what: 'Once a month’s return is saved on the portal or filed, its purchase register can no longer be changed.' },
+  { rule: 'TDS hand-off', what: 'Contractor, rent and professional bills above the TDS limits are flagged for the TDS desk.' },
+];
+
+const MONTH = [
   {
-    step: '01',
-    title: 'Client Master (SynTax Desk)',
-    desc: 'Entity PAN, multi-state GSTINs, and staff assignments flow into SynTax GST instantly with zero re-entry.',
+    when: '1st to 10th',
+    title: 'Bring in the registers',
+    body: 'Upload the purchase and sales registers exactly as Tally or Busy exports them. Title rows, page breaks, totals and round-off lines are skipped, repeated rows are counted once, and any row that can’t be used is listed with the reason.',
   },
   {
-    step: '02',
-    title: 'Dirty Excel Ingestion & 2B Recon',
-    desc: 'Sanitizes Tally and Busy exports, runs 4-pass fuzzy matching, and locks confirmed ITC into the working ledger.',
+    when: 'By the 11th',
+    title: 'GSTR-1',
+    body: 'B2B, B2CL and B2CS lines are built from the sales register, credit notes netted off. Corrections after filing go through GSTR-1A.',
   },
   {
-    step: '03',
-    title: 'IMS Console Action Freeze',
-    desc: 'Accept or reject high-value vendor claims before the 14th cutoff to prevent default auto-acceptance.',
+    when: 'By the 14th',
+    title: 'Act on IMS',
+    body: 'Accept, reject or keep pending each supplier document, largest first. If you change anything after 2B is generated, SynTax asks for 2B to be recomputed before 3B.',
   },
   {
-    step: '04',
-    title: 'Cross-Suite Hand-off (SynTax TDS & Sign)',
-    desc: 'Flags Section 393 contractor bills for SynTax TDS review, then dispatches GSTR-3B to SynTax Sign for partner DSC signing.',
+    when: 'By the 20th',
+    title: 'GSTR-3B',
+    body: 'Drafted from your books and the matched 2B. Credit is set off in the Rule 88A order, the 1% cash rule is checked, and a partner approves before it goes out.',
   },
 ];
 
@@ -81,196 +62,91 @@ export default function GstProductPage() {
   return (
     <>
       <SiteNav />
-      <main className="min-h-screen bg-white pt-24">
-        {/* Product Hero */}
-        <section className="mx-auto max-w-[1480px] px-4 sm:px-8 py-12 lg:py-16">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-sky-subtle px-3 py-1 text-[12px] font-semibold text-sky-deep">
-                <ReceiptText className="h-4 w-4" />
-                <span>SynTax GST Suite</span>
-              </div>
+      <main className="bg-white">
+        <GstHero />
 
-              <h1 className="mt-4 font-display text-[clamp(36px,4.5vw,62px)] font-semibold leading-[1.05] tracking-tight text-ink">
-                GSTR-2B, IMS &amp; 3B Set-Off. Built For The Way Credit Works Now.
-              </h1>
-
-              <p className="mt-5 text-[16px] text-ink/75 leading-relaxed max-w-xl">
-                Replace manual Excel checking with a 4-pass fuzzy reconciliation engine, native 2026 IMS console before the 14th cutoff, and a mathematically locked Rule 88A set-off engine that keeps client cash outflow lowest.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Link
-                  href="/signup"
-                  className="flex h-12 items-center gap-2 rounded-xl bg-ink px-6 text-[14.5px] font-semibold text-white hover:bg-ink/90 transition-all shadow-md"
-                >
-                  <span>Start 14-day free trial</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/contact"
-                  className="flex h-12 items-center gap-2 rounded-xl border border-ink/15 bg-white px-6 text-[14.5px] font-semibold text-ink hover:bg-slate-50 transition-all"
-                >
-                  <span>Book a live practice demo</span>
-                </Link>
-              </div>
-
-              <div className="mt-8 flex items-center gap-6 text-[12.5px] text-ink/60">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-mint" /> 2026 IMS Advisory 643 Ready
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-mint" /> 1-Click Client Master Sync
-                </span>
-              </div>
-            </div>
-
-            {/* Interactive Live UI Preview Card */}
-            <div className="rounded-2xl border border-ink/10 bg-slate-900 p-6 text-white shadow-2xl relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-3 w-3 rounded-full bg-mint" />
-                  <div>
-                    <p className="font-display text-[14px] font-semibold">IMS Console &amp; Recon Cockpit</p>
-                    <p className="text-[11px] text-white/50">GSTIN: 03AABCA1294F1Z5 | Period: Nov 2026</p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-medium text-amber-300">
-                  Cutoff in 4 days
-                </span>
-              </div>
-
-              {/* Sample Inward Invoices */}
-              <div className="mt-4 space-y-2.5">
-                <div className="rounded-xl bg-white/[0.05] p-3 border border-white/5 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-white">Jalandhar Forgings Ltd</span>
-                      <span className="rounded bg-sky/20 px-1.5 py-0.5 text-[10px] font-mono text-sky">Matched (Pass 2)</span>
-                    </div>
-                    <p className="text-[11px] text-white/50 mt-0.5">INV-26-27/084 | Taxable: Rs 1,50,000 | Tax: Rs 27,000</p>
-                  </div>
-                  <span className="rounded-lg bg-mint/20 px-3 py-1 text-[11.5px] font-semibold text-mint">
-                    Accepted
-                  </span>
-                </div>
-
-                <div className="rounded-xl bg-white/[0.05] p-3 border border-white/5 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-white">Apex Cloud Solutions Delhi</span>
-                      <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-mono text-rose-300">Mismatch Rs 5,400</span>
-                    </div>
-                    <p className="text-[11px] text-white/50 mt-0.5">INV-4512 | GSTR-2B: Rs 45,000 | Books: Rs 39,600</p>
-                  </div>
-                  <span className="rounded-lg bg-amber-500/20 px-3 py-1 text-[11.5px] font-semibold text-amber-300">
-                    Pending 14th
-                  </span>
-                </div>
-
-                {/* Cross-suite Tagging Alert */}
-                <div className="rounded-xl bg-sky/10 border border-sky/30 p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Sparkles className="h-4 w-4 text-sky shrink-0" />
-                    <div>
-                      <p className="text-[12px] font-medium text-white">Section 393 TDS Trigger Detected</p>
-                      <p className="text-[10.5px] text-white/60">Golden Temple Transport bill (Rs 95,000) flagged for SynTax TDS review</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-semibold text-sky">Flagged</span>
-                </div>
-              </div>
-
-              {/* Set-Off Status Footer */}
-              <div className="mt-5 rounded-xl bg-white/[0.03] p-3 border border-white/10 flex items-center justify-between text-[11.5px]">
-                <div className="flex items-center gap-2 text-white/70">
-                  <Lock className="h-3.5 w-3.5 text-mint" />
-                  <span>Rule 88A: IGST ITC fully exhausted first (Rs 42,000)</span>
-                </div>
-                <span className="font-semibold text-mint">Cash Outflow: Rs 0</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Cross-Suite Integration Flow */}
-        <section className="bg-slate-50 border-y border-ink/10 py-16">
-          <div className="mx-auto max-w-[1480px] px-4 sm:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="text-[12px] font-semibold text-sky-deep uppercase tracking-wider">
-                Cross-Suite Integration Moat
-              </span>
-              <h2 className="mt-2 font-display text-[32px] font-semibold tracking-tight text-ink">
-                How SynTax GST Powers Your Whole Practice
-              </h2>
-              <p className="mt-3 text-[15px] text-ink/70">
-                Data entered or reconciled in GST flows automatically into TDS, Sign, and Desk through one shared PostgreSQL Client Master.
-              </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-4">
-              {WORKFLOW_STEPS.map((ws) => (
-                <div key={ws.step} className="rounded-2xl border border-ink/10 bg-white p-6 shadow-sm">
-                  <span className="font-mono text-[13px] font-bold text-sky-deep">{ws.step}</span>
-                  <h3 className="mt-3 font-display text-[17px] font-semibold text-ink">{ws.title}</h3>
-                  <p className="mt-2 text-[13px] text-ink/70 leading-relaxed">{ws.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Detailed Statutory Checklist */}
-        <section className="mx-auto max-w-[1480px] px-4 sm:px-8 py-16">
-          <div className="text-center max-w-xl mx-auto mb-12">
-            <span className="text-[12px] font-semibold text-mint uppercase tracking-wider">
-              Statutory Compliance Rules
-            </span>
-            <h2 className="mt-2 font-display text-[32px] font-semibold tracking-tight text-ink">
-              Hard-Coded Legal Protections
-            </h2>
-            <p className="mt-2 text-[14px] text-ink/60">
-              SynTax GST enforces statutory rules directly in the engine so human error cannot cause penalties.
+        <TrySection
+          titleId="try-title"
+          title="Pick an invoice and see how it is matched."
+          body={
+            <p>
+              Five cases from a November 2B, the kind every register has. The highlighted fields are the ones that differ, and
+              the strip at the bottom says what to do.
             </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {STATUTORY_CHECKLIST.map((sc) => (
-              <div key={sc.rule} className="rounded-2xl border border-ink/10 bg-white p-6 shadow-sm hover:border-ink/20 transition-all">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-ink/70">
-                    {sc.badge}
-                  </span>
-                  <ShieldCheck className="h-4 w-4 text-mint" />
-                </div>
-                <h3 className="mt-4 font-display text-[17px] font-semibold text-ink">{sc.rule}</h3>
-                <p className="mt-2 text-[13px] text-ink/70 leading-relaxed">{sc.detail}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom CTA Banner */}
-          <div className="mt-16 rounded-2xl bg-night text-white p-8 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
+          }
+          aside={
             <div>
-              <span className="text-[12px] font-semibold text-mint uppercase tracking-wider">Phase 1 MVP Ready</span>
-              <h3 className="mt-1 font-display text-[26px] font-semibold tracking-tight">
-                Get SynTax GST with 14 Days of Free Practice Access
-              </h3>
-              <p className="mt-1 text-[14px] text-white/70 max-w-lg">
-                Available as an All-in-One practice suite or as a Standalone GST + Sign entry pack with 1-click in-app upgrade.
+              <SplitCard />
+              <p className="mt-3 max-w-[16rem] text-[12px] leading-[1.5] text-ink-soft">
+                A sample client&rsquo;s November credit after matching: what to claim now, what is held back and what waits for next month.
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-4">
-              <Link
-                href="/signup"
-                className="flex h-11 items-center gap-2 rounded-xl bg-mint px-6 text-[14px] font-semibold text-ink hover:bg-mint/90 transition-all shadow-md"
-              >
-                <span>Start 14-day free trial</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+          }
+          demo={<MatchDemo />}
+        />
+
+        <StairSteps
+          titleId="month-title"
+          title="One GST month, in the order you work it."
+          aside="Dates are for monthly filers. Quarterly (QRMP) clients get IFF by the 13th and a PMT-06 challan by the 25th of the first two months, worked out by the 35% fixed-sum or the self-assessment method."
+          steps={MONTH}
+        />
+
+        {/* Outcomes: a reference list, so a quiet table rather than cards */}
+        <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="outcomes-title">
+          <div className="grid gap-12 lg:grid-cols-12">
+            <div className="lg:col-span-4">
+              <h2 id="outcomes-title" className="max-w-[22rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
+                Every invoice ends up in one of eight places.
+              </h2>
+              <p className="mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">
+                Each register line and each 2B document is counted once, so the totals for claim, check and hold add up to
+                your books.
+              </p>
+              <ul className="mt-8 space-y-2 text-[13px] text-ink">
+                <li className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-mint" /> Goes into this month’s claim</li>
+                <li className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-sky" /> Needs a look before claiming</li>
+                <li className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-ink" /> Held back for now</li>
+              </ul>
+            </div>
+            <div className="lg:col-span-8">
+              <table className="w-full border-collapse text-left">
+                <thead className="sr-only">
+                  <tr>
+                    <th>What the match found</th>
+                    <th>What it means for GSTR-3B</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {OUTCOMES.map((o) => (
+                    <tr key={o.found} className="border-t border-hairline align-top last:border-b">
+                      <th scope="row" className="w-[42%] py-5 pr-6 text-[15px] font-medium tracking-[-0.01em] text-ink">
+                        <span className="flex items-start gap-3">
+                          <span className={`mt-[7px] h-2.5 w-2.5 shrink-0 rounded-[2px] ${DOT[o.tone]}`} aria-hidden />
+                          {o.found}
+                        </span>
+                      </th>
+                      <td className="py-5 text-[14px] leading-[1.55] text-ink-soft">{o.means}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
+
+        <RulesPanel
+          titleId="rules-title"
+          title="The rules your 3B draft already follows."
+          rules={RULES}
+          footnote="Also in SynTax GST: GSTR-9 and 9C annual workings, ITC-04 for job work, and CMP-08 and GSTR-4 for composition clients."
+        />
+
+        <PriceClose
+          titleId="gst-close"
+          title="GST and DSC signing for ₹5,999 a year."
+          body="Up to 50 GSTINs and three people on the team. Add TDS later from inside the app; your clients and their GSTINs are already there."
+        />
       </main>
       <LandingFooter />
     </>

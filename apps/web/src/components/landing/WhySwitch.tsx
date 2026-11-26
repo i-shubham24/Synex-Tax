@@ -11,25 +11,25 @@ const REASONS = [
     before: 'Service packs arrive as zip files the night before a deadline.',
     after: 'Updates ship overnight and nothing gets installed.',
     who: 'Updates',
-    note: 'Regulatory changes behind feature flags',
+    note: 'Nothing to download before a deadline',
   },
   {
     before: 'The licence lives on one office PC.',
     after: 'Partners approve from home, staff work from the branch.',
     who: 'Access',
-    note: 'Role-based logins with TOTP',
+    note: 'Two-step sign-in for every person',
   },
   {
     before: 'emSigner loses its port and the return waits.',
-    after: 'A 15 MB signer talks to the token directly, no Java.',
+    after: 'A small signing app talks to the token directly, no Java.',
     who: 'Signing',
-    note: 'FIPS 140-2 and 140-3 tokens',
+    note: 'ePass2003, ProxKey, mToken and eToken',
   },
   {
     before: 'Each financial year sits in its own database.',
     after: 'One continuous history for every client since onboarding.',
     who: 'Data',
-    note: 'Hosted in Mumbai, backed up in Hyderabad',
+    note: 'Every year in one place',
   },
 ];
 
@@ -76,14 +76,14 @@ export function WhySwitch() {
           <div className="border-b border-hairline p-6 sm:p-9">
             <Eyebrow tone="sky">What changes</Eyebrow>
             <p className="mt-3 max-w-[15rem] text-[11px] leading-[1.5] text-ink-soft">
-              We break down the filing calendar into steps your team already understands.
+              Four things CA offices tell us slow them down, and what each looks like in SynTax.
             </p>
           </div>
           <div className="p-6 sm:p-9">
             <h2 id="why-title" className="max-w-[34rem] text-[clamp(28px,2.9vw,42px)] font-normal leading-[1.18] tracking-[-0.035em] text-ink">
-              We connect clarity and compliance{' '}
+              Desktop software{' '}
               <Toggle on={cloud} onChange={setCloud} />{' '}
-              so your team can breathe easy
+              or SynTax: see the difference in a normal filing week
               <span className="ml-2 inline-flex translate-y-[0.08em] items-center align-middle">
                 <span className="flex h-[0.9em] w-[0.9em] items-center justify-center rounded-full bg-mint">
                   <LogoMark size={14} />
@@ -167,7 +167,7 @@ export function WhySwitch() {
         {/* Right column */}
         <div className="flex flex-col">
           <div className="hidden h-[156px] items-end border-b border-hairline p-9 lg:flex">
-            <p className="text-[18px] font-medium tracking-[-0.03em]">&copy;2026 SynTax</p>
+            <p className="text-[13px] leading-[1.5] text-ink-soft">Not testimonials: the problems firms describe, and what changes.</p>
           </div>
           <div className="border-b border-hairline p-6 sm:p-9">
             <Chips items={['Zero install', 'Partner approvals', 'Local signer', 'Continuous history', 'Punjabi support']} more={3} />
