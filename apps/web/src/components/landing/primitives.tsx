@@ -112,7 +112,15 @@ export function PixelField({
       width={w}
       height={h}
       viewBox={`0 0 ${w} ${h}`}
-      style={{ left: anchor === 'left' ? 0 : 'auto', right: anchor === 'left' ? 'auto' : 0, inset: 'auto', top: 0, width: w, height: h }}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: anchor === 'left' ? 0 : 'auto',
+        right: anchor === 'left' ? 'auto' : 0,
+        width: w,
+        height: h,
+        maxWidth: '100%',
+      }}
       aria-hidden
     >
       {items.map((p, i) => (

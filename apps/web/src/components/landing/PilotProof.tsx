@@ -47,31 +47,33 @@ function PostCard() {
           <div className="absolute bottom-0 left-[12%] h-[34%] w-[34%] bg-mint" />
           <div className="absolute bottom-0 right-0 h-[16%] w-[40%] bg-mint-pale" />
           {/* Filing receipt */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            viewport={{ once: true, amount: 0.6 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-1/2 top-1/2 w-[72%] -translate-x-1/2 -translate-y-1/2 rounded-[8px] bg-white p-3.5 shadow-2xl"
-          >
-            <p className="flex items-center gap-1.5 text-[11px] font-medium text-ink">
-              <CheckCircle2 className="h-3.5 w-3.5 text-[#14b85a]" /> GSTR-3B filed
-            </p>
-            <p className="mt-1 text-[9.5px] text-ink-soft">Oct 2026, signed with partner DSC</p>
-            <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-[8.5px]">
-              {[
-                ['IGST', '41,380'],
-                ['CGST', '22,104'],
-                ['SGST', '22,104'],
-              ].map(([k, v]) => (
-                <div key={k} className="rounded bg-mist px-1.5 py-1">
-                  <p className="text-ink-soft">{k}</p>
-                  <p className="font-medium tabular-nums text-ink">&#8377;{v}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-[8.5px] text-ink-faint">Audit entry #4 of 4: maker, checker, client, signer</p>
-          </motion.div>
+          <div className="absolute left-1/2 top-1/2 w-[72%] -translate-x-1/2 -translate-y-1/2">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true, amount: 0.6 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-[8px] bg-white p-3.5 shadow-2xl"
+            >
+              <p className="flex items-center gap-1.5 text-[11px] font-medium text-ink">
+                <CheckCircle2 className="h-3.5 w-3.5 text-[#14b85a]" /> GSTR-3B filed
+              </p>
+              <p className="mt-1 text-[9.5px] text-ink-soft">Oct 2026, signed with partner DSC</p>
+              <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-[8.5px]">
+                {[
+                  ['IGST', '41,380'],
+                  ['CGST', '22,104'],
+                  ['SGST', '22,104'],
+                ].map(([k, v]) => (
+                  <div key={k} className="rounded bg-mist px-1.5 py-1">
+                    <p className="text-ink-soft">{k}</p>
+                    <p className="font-medium tabular-nums text-ink">&#8377;{v}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[8.5px] text-ink-faint">Audit entry #4 of 4: maker, checker, client, signer</p>
+            </motion.div>
+          </div>
         </div>
         <div className="mt-3 flex items-center justify-between text-white/80">
           <div className="flex items-center gap-3.5">

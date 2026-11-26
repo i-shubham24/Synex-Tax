@@ -31,7 +31,7 @@ export function ClientPill() {
   const id = activeClient?.gstin ?? activeClient?.tan ?? activeEntity?.pan;
 
   return (
-    <div ref={pop.ref} className="relative min-w-0 max-w-[140px] sm:max-w-[260px] md:max-w-[360px]">
+    <div ref={pop.ref} className="relative min-w-0 max-w-[140px] sm:max-w-[190px] lg:max-w-[280px] xl:max-w-[340px]">
       <div
         className={`flex h-10 min-w-0 items-center gap-1.5 rounded-full border pl-3 pr-1.5 text-[13px] transition-colors ${
           activeEntity ? 'border-pos-accent/40 bg-pos-tint text-pos-ink' : 'border-dashed border-pos-line text-pos-ink/60'

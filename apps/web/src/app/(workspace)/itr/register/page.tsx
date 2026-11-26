@@ -63,7 +63,7 @@ export default function AssesseeRegisterPage() {
   const count = (s: Row['status']) => rows.filter((r) => r.status === s).length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 min-w-0 max-w-full">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-pos-ink">Assessee register</h1>
@@ -97,12 +97,13 @@ export default function AssesseeRegisterPage() {
       )}
       {error && <p className="text-[13px] text-[#dc2626]">{error}</p>}
 
-      <div className="pos-card overflow-x-auto p-2">
-        <table className="w-full min-w-[860px] border-collapse">
+      <div className="pos-card relative w-full min-w-0 max-w-full overflow-hidden">
+        <div className="relative overflow-x-auto p-2">
+          <table className="w-full min-w-[860px] border-collapse">
           <thead>
             <tr className="border-b border-pos-line">
               <th className={th}>Client</th><th className={th}>PAN</th><th className={th}>Form</th><th className={th}>Status</th><th className={th}>Acknowledgement</th>
-              <th className={th}>Filed on</th><th className={`${th} text-right`}>Total income</th><th className={`${th} text-right`}>Refund or payable</th><th className={th}><span className="sr-only">Print</span></th>
+              <th className={th}>Filed on</th><th className={`${th} text-right`}>Total income</th><th className={`${th} text-right`}>Refund or payable</th><th className={`${th} relative`}><span className="sr-only">Print</span></th>
             </tr>
           </thead>
           <tbody>
@@ -125,6 +126,7 @@ export default function AssesseeRegisterPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       {!canExport && <p className="text-[12px] text-pos-ink/70">Only a partner can export the register.</p>}
     </div>

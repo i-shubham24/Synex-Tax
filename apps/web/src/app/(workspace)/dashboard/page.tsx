@@ -119,9 +119,9 @@ function Donut({ data }: { data: WorkspaceSnapshot['composition'] }) {
   );
 }
 
-function splinePath(values: number[], w: number, h: number, pad = 6) {
+function splinePath(values: number[], w: number, h: number, padTop = 40, padBottom = 8) {
   const max = Math.max(...values, 1);
-  const pts = values.map((v, i) => [(i / (values.length - 1)) * w, h - pad - (v / max) * (h - pad * 2)] as const);
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * w, h - padBottom - (v / max) * (h - padTop - padBottom)] as const);
   let d = `M ${pts[0][0]} ${pts[0][1]}`;
   for (let i = 0; i < pts.length - 1; i++) {
     const [x0, y0] = pts[Math.max(0, i - 1)];
@@ -142,7 +142,7 @@ function Velocity({ values }: { values: number[] }) {
   const share = Math.round((values.slice(17, 21).reduce((a, b) => a + b, 0) / Math.max(1, values.reduce((a, b) => a + b, 0))) * 100);
   return (
     <div className="w-full min-w-0">
-      <div className="relative h-[170px] w-full min-w-0 overflow-hidden">
+      <div className="relative h-[175px] w-full min-w-0 overflow-hidden">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden>
           <defs>
             <linearGradient id="vel-fill" x1="0" y1="0" x2="0" y2="1">
@@ -156,7 +156,13 @@ function Velocity({ values }: { values: number[] }) {
           <path d={`${d} L ${W} ${H} L 0 ${H} Z`} fill="url(#vel-fill)" />
           <path d={d} fill="none" stroke="#2F8AE0" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
         </svg>
-        <span className="absolute -translate-x-1/2 -translate-y-full rounded-full bg-pos-accent px-2.5 py-0.5 text-[12.5px] font-semibold text-white pointer-events-none" style={{ left: `${(px / W) * 100}%`, top: `${(py / H) * 100}%` }}>
+        <span
+          className="absolute -mt-1 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-pos-accent px-2.5 py-0.5 text-[12px] sm:text-[12.5px] font-semibold text-white pointer-events-none"
+          style={{
+            left: `${Math.min(84, Math.max(16, (px / W) * 100))}%`,
+            top: `${(py / H) * 100}%`,
+          }}
+        >
           {values[peak]} on the {ordinal(peak + 1)}
         </span>
       </div>
@@ -176,12 +182,12 @@ function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
   const max = Math.max(...data.map((d) => d.itc + d.cash), 1);
   return (
     <div className="w-full min-w-0">
-      <div className="flex h-[150px] items-end gap-1 sm:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-[150px] items-end gap-0.5 sm:gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {data.map((m) => (
-          <div key={m.month} className="flex h-full flex-1 min-w-[20px] flex-col items-center justify-end gap-1.5">
-            <div className="flex h-full w-full items-end justify-center gap-[3px]">
+          <div key={m.month} className="flex h-full flex-1 min-w-[14px] sm:min-w-[18px] flex-col items-center justify-end gap-1.5">
+            <div className="flex h-full w-full items-end justify-center gap-[2px] sm:gap-[3px]">
               {[{ v: m.itc, c: 'bg-pos-accent' }, { v: m.cash, c: 'bg-pos-ink/35' }].map((b, i) => (
-                <div key={i} className="relative h-full w-[8px] overflow-hidden rounded-full bg-pos-muted">
+                <div key={i} className="relative h-full w-[6px] sm:w-[8px] overflow-hidden rounded-full bg-pos-muted">
                   {/* ITC in the accent, cash in a neutral; the bar grows with a transform, not its height */}
                   <motion.div
                     className={`absolute inset-x-0 bottom-0 origin-bottom rounded-full ${b.c}`}
@@ -193,11 +199,11 @@ function Outflow({ data }: { data: WorkspaceSnapshot['outflow'] }) {
                 </div>
               ))}
             </div>
-            <span className="text-[11px] text-pos-ink/60">{m.month}</span>
+            <span className="text-[10.5px] sm:text-[11px] text-pos-ink/60">{m.month}</span>
           </div>
         ))}
       </div>
-      <div className="mt-3 flex gap-4 text-[12px] text-pos-ink/65">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-pos-ink/65">
         <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-pos-accent" /> ITC utilised</span>
         <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-pos-ink/35" /> Cash paid</span>
       </div>
@@ -284,14 +290,14 @@ export default function ControlTowerPage() {
   const setF = (patch: Partial<Filters>) => setFilters({ ...filters, ...patch });
 
   return (
-    <div className="mx-auto max-w-[1560px] space-y-5 min-w-0">
+    <div className="mx-auto max-w-[1560px] space-y-5 min-w-0 w-full">
       {/* Title, view toggle, period pills */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
+        <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full">
           <h1 className="flex items-center gap-2.5 text-[22px] sm:text-[24px] font-semibold tracking-[-0.01em] text-pos-ink shrink-0">
             <StepMark tone="sky" /> Control Tower
           </h1>
-          <div className="flex max-w-full min-w-0 overflow-x-auto rounded-full bg-pos-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="View">
+          <div className="flex max-w-full min-w-0 flex-wrap sm:flex-nowrap items-center gap-0.5 rounded-[18px] sm:rounded-full bg-pos-muted p-1" role="tablist" aria-label="View">
             {([['analytics', 'Analytics', LineChart], ['matrix', 'Filing matrix', LayoutGrid], ['heatmap', 'Compliance Heatmap', CalendarClock]] as const).map(([id, label, Icon]) => (
               <button
                 key={id}
@@ -305,7 +311,7 @@ export default function ControlTowerPage() {
             ))}
           </div>
         </div>
-        <div className="flex max-w-full min-w-0 overflow-x-auto gap-2 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Period">
+        <div className="flex flex-wrap gap-2 py-0.5" role="tablist" aria-label="Period">
           {PERIODS.map(([id, label]) => (
             <button
               key={id}
@@ -356,7 +362,7 @@ export default function ControlTowerPage() {
               ]}
             />
           </div>
-          <div className="flex max-w-full min-w-0 overflow-x-auto items-center gap-2 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex flex-wrap items-center gap-2 py-0.5">
             {(['ALL', 'REGULAR_MONTHLY', 'QRMP', 'COMPOSITION', 'TDS'] as const).map((c) => (
               <button
                 key={c}
@@ -444,24 +450,24 @@ export default function ControlTowerPage() {
       {view === 'heatmap' ? (
         <PracticeComplianceHeatmap />
       ) : view === 'analytics' ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_380px]">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(300px,350px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_380px]">
           {/* Card 1: composition donut */}
-          <section className="pos-card p-4 sm:p-5" aria-labelledby="comp-title">
+          <section className="pos-card min-w-0 overflow-hidden p-4 sm:p-5" aria-labelledby="comp-title">
             <h2 id="comp-title" className="text-[15px] font-semibold text-pos-ink">Tax and ITC composition</h2>
-            <div className="mt-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
-              <div className="relative h-[150px] w-[150px] shrink-0">
+            <div className="mt-4 flex flex-col sm:flex-row md:flex-col lg:flex-row xl:flex-col 2xl:flex-row items-center gap-4 2xl:gap-5 min-w-0">
+              <div className="relative h-[140px] w-[140px] 2xl:h-[150px] 2xl:w-[150px] shrink-0">
                 <Donut data={snapshot.composition} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-[12px] text-pos-ink/60">Net tax</span>
-                  <span className="text-[17px] font-semibold tabular-nums text-pos-ink">{inrShort(total)}</span>
+                  <span className="text-[16px] 2xl:text-[17px] font-semibold tabular-nums text-pos-ink">{inrShort(total)}</span>
                 </div>
               </div>
-              <ul className="w-full space-y-2 text-[13px]">
+              <ul className="w-full min-w-0 flex-1 space-y-2 text-[13px]">
                 {snapshot.composition.map((d, i) => (
-                  <li key={d.key} className="flex items-center gap-2.5">
-                    <i className="h-2.5 w-2.5 rounded-full" style={{ background: DONUT[i % DONUT.length] }} />
-                    <span className="text-pos-ink/80">{d.key}</span>
-                    <span className="ml-auto pl-3 tabular-nums text-pos-ink/60">{inrShort(d.value)}</span>
+                  <li key={d.key} className="flex min-w-0 items-center gap-2">
+                    <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: DONUT[i % DONUT.length] }} />
+                    <span className="truncate text-pos-ink/80">{d.key}</span>
+                    <span className="ml-auto shrink-0 pl-2 tabular-nums text-pos-ink/60">{inrShort(d.value)}</span>
                   </li>
                 ))}
               </ul>
@@ -469,30 +475,30 @@ export default function ControlTowerPage() {
           </section>
 
           {/* Card 2: KPIs, each jumps to the filtered work queue */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4">
             {[
               { label: 'Returns due', value: String(k.due), tone: '#2F8AE0', icon: CircleAlert, go: () => { setPeriod('pending'); setView('matrix'); } },
               { label: 'Returns filed', value: String(k.filed), tone: '#14A44D', icon: ClipboardCheck, go: () => setView('matrix') },
               { label: 'ITC reconciled', value: inrShort(k.itcReconciled), tone: '#5A50F2', icon: BadgeIndianRupee, go: () => router.push('/gst/recon-2b') },
               { label: 'Pending mismatches', value: inrShort(k.pendingMismatch), tone: '#D99A17', icon: FileWarning, go: () => router.push('/gst/recon-2b') },
             ].map((c) => (
-              <button key={c.label} onClick={c.go} className="pos-card group flex flex-col p-3 sm:p-4 text-left transition-transform hover:-translate-y-0.5">
-                <span className="flex w-full items-start justify-between">
-                  <span className="text-[13.5px] font-medium text-pos-ink/80">{c.label}</span>
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: `${c.tone}1f`, color: c.tone }}>
+              <button key={c.label} onClick={c.go} className="pos-card group flex min-w-0 overflow-hidden flex-col p-3 sm:p-4 text-left transition-transform hover:-translate-y-0.5">
+                <span className="flex w-full min-w-0 items-start justify-between gap-1.5">
+                  <span className="text-[12.5px] sm:text-[13.5px] leading-snug font-medium text-pos-ink/80">{c.label}</span>
+                  <span className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full" style={{ background: `${c.tone}1f`, color: c.tone }}>
                     <c.icon className="h-4 w-4" />
                   </span>
                 </span>
-                <span className="mt-auto pt-4 text-[26px] font-semibold tabular-nums" style={{ color: c.tone }}>{c.value}</span>
+                <span className="mt-auto max-w-full truncate pt-3 sm:pt-4 text-[21px] sm:text-[24px] 2xl:text-[26px] font-semibold tabular-nums" style={{ color: c.tone }}>{c.value}</span>
                 <span className="mt-1 flex items-center gap-1 text-[12.5px] text-pos-ink/60 group-hover:text-pos-accent">
-                  Open queue <ArrowUpRight className="h-3 w-3" />
+                  Open queue <ArrowUpRight className="h-3 w-3 shrink-0" />
                 </span>
               </button>
             ))}
           </div>
 
           {/* Card 3: ITC vs cash */}
-          <section className="pos-card p-4 sm:p-5" aria-labelledby="out-title">
+          <section className="pos-card min-w-0 overflow-hidden p-4 sm:p-5 lg:col-span-2 xl:col-span-1" aria-labelledby="out-title">
             <h2 id="out-title" className="text-[15px] font-semibold text-pos-ink">Monthly outflow: ITC vs cash (Rs lakh)</h2>
             <div className="mt-4">
               <Outflow data={snapshot.outflow} />
@@ -500,7 +506,7 @@ export default function ControlTowerPage() {
           </section>
 
           {/* Card 4: filing velocity */}
-          <section className="pos-card p-4 sm:p-5 xl:col-span-2" aria-labelledby="vel-title">
+          <section className="pos-card min-w-0 overflow-hidden p-4 sm:p-5 lg:col-span-2 xl:col-span-2" aria-labelledby="vel-title">
             <h2 id="vel-title" className="text-[15px] font-semibold text-pos-ink">Filing velocity this month</h2>
             <div className="mt-4">
               <Velocity values={snapshot.velocity} />
@@ -508,7 +514,7 @@ export default function ControlTowerPage() {
           </section>
 
           {/* Card 5: urgent deadlines */}
-          <section className="pos-card p-4 sm:p-5" aria-labelledby="due-title">
+          <section className="pos-card min-w-0 overflow-hidden p-4 sm:p-5 lg:col-span-2 xl:col-span-1" aria-labelledby="due-title">
             <div className="flex items-center justify-between">
               <h2 id="due-title" className="text-[15px] font-semibold text-pos-ink">Urgent deadlines</h2>
               <button onClick={() => { setPeriod('pending'); setView('matrix'); }} className="text-[12.5px] font-medium text-pos-accent">View all</button>
@@ -525,9 +531,9 @@ export default function ControlTowerPage() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] text-pos-ink">{d.entity.legalName}</span>
-                      <span className="block text-[12px] text-pos-ink/55">{d.label}</span>
+                      <span className="block truncate text-[12px] text-pos-ink/55">{d.label}</span>
                     </span>
-                    <span className="text-right">
+                    <span className="shrink-0 text-right">
                       <span className={`block text-[12.5px] font-semibold ${d.daysLeft < 0 ? 'text-pos-red' : d.daysLeft <= 2 ? 'text-[#b9800f] dark:text-[#f2c66a]' : 'text-pos-ink/70'}`}>
                         {d.daysLeft < 0 ? `${-d.daysLeft}d overdue` : d.daysLeft === 0 ? 'Due today' : `${d.daysLeft}d left`}
                       </span>
@@ -541,9 +547,9 @@ export default function ControlTowerPage() {
           </section>
         </div>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           {/* Filing matrix */}
-          <section className="pos-card overflow-hidden" aria-labelledby="matrix-title">
+          <section className="pos-card min-w-0 overflow-hidden" aria-labelledby="matrix-title">
             <div className="flex items-center justify-between p-4 pb-3">
               <h2 id="matrix-title" className="text-[15px] font-semibold text-pos-ink">Filing matrix</h2>
               <button onClick={() => setApprovalsOpen(true)} className="flex h-9 items-center gap-2 rounded-full bg-pos-head px-4 text-[13px] font-medium text-white">

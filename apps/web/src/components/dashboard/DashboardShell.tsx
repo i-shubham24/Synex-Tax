@@ -186,7 +186,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className={`pos-root min-h-screen ${dark ? 'dark' : ''}`}>
+    <div className={`pos-root min-h-screen overflow-x-clip ${dark ? 'dark' : ''}`}>
       {/* Mobile Drawer Backdrop */}
       {mobileOpen && (
         <div
@@ -264,9 +264,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex min-h-screen flex-col min-w-0 transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
-        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-2 sm:gap-3 border-b px-3 sm:px-5 lg:px-6">
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3 min-w-0">
+      <div className={`flex min-h-screen flex-col min-w-0 overflow-x-clip transition-[margin] duration-300 ease-out-expo ${mainMl}`}>
+        <header className="pos-header sticky top-0 z-40 flex h-16 items-center justify-between gap-2 sm:gap-3 border-b px-3 sm:px-5 lg:px-6 overflow-x-clip">
+          <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
@@ -275,21 +275,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="hidden min-w-0 max-w-[200px] shrink xl:block">
+            <div className="hidden min-w-0 max-w-[160px] 2xl:max-w-[200px] shrink xl:block">
               <p className="truncate text-[14px] font-semibold tracking-[-0.02em] text-pos-ink">{snapshot.firm.name}</p>
             </div>
             <ClientPill />
           </div>
 
-          <div className="hidden min-w-[240px] max-w-[340px] flex-1 px-3 md:block">
+          <div className="hidden min-w-0 max-w-[340px] flex-1 px-1 lg:px-3 md:block">
             <button
               type="button"
               onClick={openCommandPalette}
-              className="flex h-10 w-full items-center gap-2.5 rounded-full border border-pos-line bg-pos-surface pl-4 pr-2 text-left text-[13px] text-pos-ink/60 transition-colors hover:border-pos-accent/60"
+              className="flex h-10 w-full min-w-0 items-center gap-2 rounded-full border border-pos-line bg-pos-surface pl-3.5 pr-2 text-left text-[13px] text-pos-ink/60 transition-colors hover:border-pos-accent/60"
             >
               <Search className="h-4 w-4 shrink-0" />
               <span className="flex-1 truncate">Search or type a command</span>
-              <kbd className="shrink-0 rounded-full border border-pos-line px-2 py-0.5 text-[12px] text-pos-ink/60">Ctrl K</kbd>
+              <kbd className="hidden shrink-0 rounded-full border border-pos-line px-2 py-0.5 text-[12px] text-pos-ink/60 lg:inline-block">Ctrl K</kbd>
             </button>
           </div>
 
@@ -302,7 +302,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 w-full min-w-0 max-w-full px-3 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</main>
+        <main className="flex-1 w-full min-w-0 max-w-full px-3 py-4 sm:px-6 sm:py-6 lg:px-8 overflow-x-clip">{children}</main>
       </div>
 
       <CommandPalette />

@@ -144,7 +144,7 @@ export function WhySwitch() {
                 <motion.div
                   animate={{ height: cloud ? '58%' : '30%' }}
                   transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute bottom-0 right-0 w-[44%] bg-mint"
+                  className="absolute bottom-0 right-0 w-[44%] overflow-hidden bg-mint"
                 >
                   <PixelField seed={61} count={16} cell={12} cols={10} rows={12} color="#ffffff" maxOpacity={0.35} />
                 </motion.div>

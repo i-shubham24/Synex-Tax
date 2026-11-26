@@ -624,7 +624,7 @@ export default function TdsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Column: Live Statutory TDS & Rule 269 Calculator (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 min-w-0 space-y-4">
           <div className="bg-pos-muted border border-pos-line rounded-xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-pos-line pb-3">
               <div className="flex items-center gap-2">
@@ -768,7 +768,7 @@ export default function TdsPage() {
         </div>
 
         {/* Right Column: Multi-Section ITNS 281N Challan Builder (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 min-w-0 space-y-4">
           <div className="bg-pos-muted border border-pos-line rounded-xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-pos-line pb-3">
               <div>
@@ -867,8 +867,8 @@ export default function TdsPage() {
                 )}
               </div>
 
-              <div className="border border-pos-line rounded-lg overflow-hidden">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="border border-pos-line rounded-lg overflow-x-auto">
+                <table className="w-full min-w-[460px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-pos-surface text-pos-ink/60 text-[12px] border-b border-pos-line">
                       <th className="py-2.5 px-3">Section</th>
