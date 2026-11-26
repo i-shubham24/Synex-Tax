@@ -1,0 +1,262 @@
+{
+  "status": "DRAFT_UNVERIFIED",
+  "title": "GST rate slabs and a starter list of HSN chapter/heading rates (goods), effective 22 September 2025",
+  "compiled_on": "2026-11-26",
+  "verified_by": null,
+  "verified_on": null,
+  "scope_warning": "STARTER ONLY. This is not the HSN master and must not be used to assign a rate to an item. GST rates are set by tariff item, sub-heading and heading, often with conditions (price, packaging, use); one chapter usually carries several rates. The official HSN master (about 20,000 rows) is an Excel download the founder must fetch; see README.md.",
+  "legal_basis": {
+    "goods_intra_state": "Notification No. 9/2025-Central Tax (Rate), 17 Sep 2025, effective 22 Sep 2025 (supersedes 1/2017-CT(Rate)); later amended (for example 19/2025 on tobacco products). Full text not read: PDF, founder to fetch.",
+    "goods_exempt": "Notification No. 10/2025-Central Tax (Rate) (named on a West Bengal consolidated chart in search results; not read)."
+  },
+  "slabs": {
+    "schedules_9_2025": [
+      {
+        "schedule": "I",
+        "cgst": 2.5,
+        "total_gst_or_igst": 5
+      },
+      {
+        "schedule": "II",
+        "cgst": 9,
+        "total_gst_or_igst": 18
+      },
+      {
+        "schedule": "III",
+        "cgst": 20,
+        "total_gst_or_igst": 40
+      },
+      {
+        "schedule": "IV",
+        "cgst": 1.5,
+        "total_gst_or_igst": 3
+      },
+      {
+        "schedule": "V",
+        "cgst": 0.125,
+        "total_gst_or_igst": 0.25
+      },
+      {
+        "schedule": "VI",
+        "cgst": 0.75,
+        "total_gst_or_igst": 1.5
+      },
+      {
+        "schedule": "VII",
+        "cgst": 14,
+        "total_gst_or_igst": 28
+      }
+    ],
+    "schedules_source": [
+      "https://www.caclubindia.com/articles/gst-notification-no-92025-complete-hsnwise-rate-schedule-effective-from-september-22-2025-54119.asp (secondary, read 2026-11-26)",
+      "https://blog.saginfotech.com/central-tax-rate-notification-9-2025-new-gst-rates-hsn-codes (secondary, read 2026-11-26)"
+    ],
+    "rates_accepted_by_code": [
+      0,
+      0.1,
+      0.25,
+      1,
+      1.5,
+      3,
+      5,
+      6,
+      7.5,
+      12,
+      18,
+      28,
+      40
+    ],
+    "rates_accepted_by_code_source": "packages/tax-engine/src/gst/salesRegister.ts:45 (GST_RATES, includes rates in use before September 2025)",
+    "notes": "Schedule VII (28%) is kept for goods whose transition was deferred (tobacco and pan masala per secondary sources); confirm what remains in it."
+  },
+  "entries": [
+    {
+      "hsn": "0101 21 00, 0101 29",
+      "level": "TARIFF_ITEM_AND_SUBHEADING",
+      "chapter": "01",
+      "description": "Live horses (as listed under Schedule I Sl. 1)",
+      "gst_rate_percent": 5,
+      "condition": null,
+      "schedule": "I",
+      "serial": "1",
+      "sources": [
+        "https://www.caclubindia.com/articles/gst-notification-no-92025-complete-hsnwise-rate-schedule-effective-from-september-22-2025-54119.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Only the codes as listed on the page; other 0101 items not covered."
+    },
+    {
+      "hsn": "0202 to 0210",
+      "level": "HEADING_RANGE",
+      "chapter": "02",
+      "description": "Meat and edible offal, other than fresh or chilled, pre-packaged and labelled",
+      "gst_rate_percent": 5,
+      "condition": "Pre-packaged and labelled; other than fresh or chilled",
+      "schedule": "I",
+      "serial": "2",
+      "sources": [
+        "https://www.caclubindia.com/articles/gst-notification-no-92025-complete-hsnwise-rate-schedule-effective-from-september-22-2025-54119.asp (secondary, read 2026-11-26)",
+        "https://blog.saginfotech.com/central-tax-rate-notification-9-2025-new-gst-rates-hsn-codes"
+      ],
+      "needs_verification": true,
+      "notes": "Fresh or chilled, or not pre-packaged and labelled: likely exempt under 10/2025; not read."
+    },
+    {
+      "hsn": "0303 to 0309",
+      "level": "HEADING_RANGE",
+      "chapter": "03",
+      "description": "Fish and aquatic products, other than fresh or chilled, pre-packaged and labelled",
+      "gst_rate_percent": 5,
+      "condition": "Pre-packaged and labelled; other than fresh or chilled",
+      "schedule": "I",
+      "serial": "3",
+      "sources": [
+        "https://www.caclubindia.com/articles/gst-notification-no-92025-complete-hsnwise-rate-schedule-effective-from-september-22-2025-54119.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": null
+    },
+    {
+      "hsn": "0402",
+      "level": "HEADING",
+      "chapter": "04",
+      "description": "Milk and cream, concentrated or containing added sugar or other sweetening matter, including condensed milk",
+      "gst_rate_percent": 5,
+      "condition": null,
+      "schedule": "I",
+      "serial": "4",
+      "sources": [
+        "https://www.caclubindia.com/articles/gst-notification-no-92025-complete-hsnwise-rate-schedule-effective-from-september-22-2025-54119.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": null
+    },
+    {
+      "hsn": "0403",
+      "level": "HEADING",
+      "chapter": "04",
+      "description": "Yoghurt, curd, lassi, butter milk, pre-packaged and labelled",
+      "gst_rate_percent": 5,
+      "condition": "Pre-packaged and labelled (per the page summary)",
+      "schedule": "I",
+      "serial": "5",
+      "sources": [
+        "https://www.caclubindia.com/articles/gst-notification-no-92025-complete-hsnwise-rate-schedule-effective-from-september-22-2025-54119.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": null
+    },
+    {
+      "hsn": null,
+      "level": "ITEM_NO_HSN_GIVEN",
+      "chapter": "04",
+      "description": "Butter, ghee, cheese",
+      "gst_rate_percent": 5,
+      "condition": null,
+      "schedule": null,
+      "serial": null,
+      "sources": [
+        "https://www.taxscan.in/top-stories/56th-gst-council-meeting-know-major-gst-rate-changes-proposed-for-goods-and-services-1431908 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Page gives no HSN; chapter 04 is the compiler's placement (headings 0405, 0406 likely). Old rate 12%."
+    },
+    {
+      "hsn": null,
+      "level": "ITEM_NO_HSN_GIVEN",
+      "chapter": null,
+      "description": "Aerated drinks and soft beverages",
+      "gst_rate_percent": 40,
+      "condition": null,
+      "schedule": "III",
+      "serial": null,
+      "sources": [
+        "https://www.taxscan.in/top-stories/56th-gst-council-meeting-know-major-gst-rate-changes-proposed-for-goods-and-services-1431908 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Page gives no HSN (heading 2202 likely). Old rate 28% plus cess."
+    },
+    {
+      "hsn": "64",
+      "level": "CHAPTER",
+      "chapter": "64",
+      "description": "Footwear, sale value not exceeding Rs 2,500 per pair",
+      "gst_rate_percent": 5,
+      "condition": "Sale value per pair up to Rs 2,500",
+      "schedule": null,
+      "serial": null,
+      "sources": [
+        "https://www.caclubindia.com/articles/footwear-gst-rate-51094.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Page gives the rate split but not per heading (6401 to 6405 listed); 6406 parts may differ."
+    },
+    {
+      "hsn": "64",
+      "level": "CHAPTER",
+      "chapter": "64",
+      "description": "Footwear, sale value exceeding Rs 2,500 per pair",
+      "gst_rate_percent": 18,
+      "condition": "Sale value per pair above Rs 2,500",
+      "schedule": null,
+      "serial": null,
+      "sources": [
+        "https://www.caclubindia.com/articles/footwear-gst-rate-51094.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": null
+    },
+    {
+      "hsn": "61, 62",
+      "level": "CHAPTER",
+      "chapter": "61",
+      "description": "Readymade garments and apparel, sale value not exceeding Rs 2,500 per piece",
+      "gst_rate_percent": 5,
+      "condition": "Sale value per piece up to Rs 2,500",
+      "schedule": null,
+      "serial": null,
+      "sources": [
+        "https://www.caclubindia.com/news/gst-rate-on-apparel-rationalised-18-percent-tax-for-garments-above-rs-2500-25945.asp (secondary, last updated 18 Dec 2025, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Page does not name chapters; 61 and 62 is the compiler's placement. \"Sale value\" basis (transaction value vs MRP) not stated."
+    },
+    {
+      "hsn": "61, 62",
+      "level": "CHAPTER",
+      "chapter": "61",
+      "description": "Readymade garments and apparel, sale value exceeding Rs 2,500 per piece",
+      "gst_rate_percent": 18,
+      "condition": "Sale value per piece above Rs 2,500",
+      "schedule": null,
+      "serial": null,
+      "sources": [
+        "https://www.caclubindia.com/news/gst-rate-on-apparel-rationalised-18-percent-tax-for-garments-above-rs-2500-25945.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Was 12% before 22 Sep 2025 per the page."
+    }
+  ],
+  "services_examples": [
+    {
+      "sac": "998314",
+      "description": "IT design and development / SaaS subscription (as used for SynTax's own invoices)",
+      "gst_rate_percent": 18,
+      "sources": [
+        "packages/db/migrations/0008_billing_and_dlt.sql:106 (comment only)"
+      ],
+      "needs_verification": true,
+      "notes": "Taken from a code comment, not a rate notification."
+    },
+    {
+      "sac": "998721",
+      "description": "Repair services of footwear and leather goods",
+      "gst_rate_percent": 18,
+      "sources": [
+        "https://www.caclubindia.com/articles/footwear-gst-rate-51094.asp (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": null
+    }
+  ]
+}

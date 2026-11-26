@@ -7,7 +7,7 @@ export interface DscBridgeClientOptions {
   signTimeoutMs?: number;
 }
 
-const DEFAULT_AGENT_URL = 'http://127.0.0.1:18531';
+const DEFAULT_AGENT_URL = 'http://127.0.0.1:15850';
 
 /** Talks to the SynexTax desktop agent on this computer (apps/dsc-agent). */
 export class DscBridgeClient {

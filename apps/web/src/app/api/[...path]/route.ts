@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { taxAuditApplicability, writeForm3cd } from '@synextax/tax-engine';
+import {
+  taxAuditApplicability,
+  writeForm3cd,
+  parseDelimited,
+  parseConsoFile,
+  maskPan,
+} from '@synextax/tax-engine';
 
 /* Zero-config demo fallback user matching CA Verma */
 const DEMO_USER = {
@@ -27,7 +33,7 @@ async function tryProxy(request: Request, endpoint: string): Promise<Response | 
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 600);
+    const timer = setTimeout(() => controller.abort(), 25000);
     const targetUrl = `${rawApiUrl.replace(/\/+$/, '')}/api/${endpoint}`;
     const reqHeaders = new Headers(request.headers);
     reqHeaders.delete('host');
@@ -43,11 +49,9 @@ async function tryProxy(request: Request, endpoint: string): Promise<Response | 
 
     const res = await fetch(targetUrl, init);
     clearTimeout(timer);
-    /* If upstream fails or returns server error, fall back to mock handler */
-    if (!res.ok) return null;
     return res;
   } catch {
-    /* Backend offline, unconfigured, or timed out. Fall back to internal mock handler */
+    /* Backend offline or network failure. Fall back to internal mock handler */
     return null;
   }
 }
@@ -289,21 +293,125 @@ export async function GET(
     });
   }
 
-  /* 7. Audit Ledger */
+  /* 7. Audit Ledger and Radar */
+  if (endpoint === 'v1/audit/chain') {
+    return NextResponse.json({
+      intact: true,
+      checked: 1842,
+      firstBroken: null,
+      headOk: true,
+    });
+  }
+
+  if (endpoint === 'v1/audit/expiry-radar') {
+    return NextResponse.json({
+      expiryItems: [
+        {
+          id: 'exp-1',
+          taxpayerName: 'Amritsar Silk Mills Pvt Ltd',
+          gstin: '03AABCA1234F1Z8',
+          returnPeriod: '2026-09',
+          formType: 'GSTR-1',
+          correctionWindowCutoff: '2026-11-30',
+          threeYearStatutoryBar: '2029-12-31',
+          daysRemainingCorrection: 4,
+          status: 'WARNING_CORRECTION_NEAR',
+          workflowStatus: 'PENDING_APPROVAL',
+        },
+        {
+          id: 'exp-2',
+          taxpayerName: 'Zenith Logistics Delhi',
+          gstin: '07AAACZ9876M1Z2',
+          returnPeriod: '2026-09',
+          formType: 'GSTR-3B',
+          correctionWindowCutoff: '2026-11-30',
+          threeYearStatutoryBar: '2029-12-31',
+          daysRemainingCorrection: 4,
+          status: 'WARNING_CORRECTION_NEAR',
+          workflowStatus: 'FILED',
+        },
+        {
+          id: 'exp-3',
+          taxpayerName: 'Kaler Weaving Works',
+          gstin: '03AAACK9988D1Z4',
+          returnPeriod: '2026-10',
+          formType: 'GSTR-1',
+          correctionWindowCutoff: '2026-12-31',
+          threeYearStatutoryBar: '2030-01-31',
+          daysRemainingCorrection: 35,
+          status: 'SAFE',
+          workflowStatus: 'DRAFT',
+        },
+      ],
+    });
+  }
+
+  if (endpoint.startsWith('v1/audit/logs') || endpoint === 'v1/audit/logs') {
+    return NextResponse.json({
+      logs: [
+        {
+          id: 'aud-1',
+          eventType: 'GSTR3B_HARD_LOCK_SETOFF',
+          performedBy: 'CA Amrinder Verma',
+          userRole: 'PARTNER',
+          ipAddress: '103.21.244.1',
+          timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+          hmacSignature: 'sha256-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          details: 'Executed Rule 88A/86B statutory set-off lock for 03AABCA1234F1Z8 (Oct 2026). Cash payable: ₹0.00',
+          tableName: 'gst_filings',
+        },
+        {
+          id: 'aud-2',
+          eventType: 'IMS_ACTION_ACCEPTED',
+          performedBy: 'Shubham Kaler',
+          userRole: 'MANAGER',
+          ipAddress: '103.21.244.1',
+          timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+          hmacSignature: 'sha256-c782b21764da563b65ef34d3f3f2d21fa40a7b4f526b72a6b2c8928374d92e10',
+          details: 'Accepted 42 recipient invoices on GSTN IMS. GSTR-2B recompute queued.',
+          tableName: 'ims_actions',
+        },
+        {
+          id: 'aud-3',
+          eventType: 'DSC_BATCH_PADES_SIGN',
+          performedBy: 'CA Amrinder Verma',
+          userRole: 'PARTNER',
+          ipAddress: '103.21.244.1',
+          timestamp: new Date(Date.now() - 1000 * 60 * 110).toISOString(),
+          hmacSignature: 'sha256-a94f6f125c7b658b9ef5e921d7b003a29b4e284a1d4891b9204859a72e90c884',
+          details: 'Hardware DSC batch PAdES signed 12 Form 16A TDS certificates via Go Desktop Bridge :15850.',
+          tableName: 'dsc_signatures',
+        },
+        {
+          id: 'aud-4',
+          eventType: 'CLIENT_MIGRATION_IMPORT',
+          performedBy: 'Rohan Sharma',
+          userRole: 'STAFF',
+          ipAddress: '103.21.244.1',
+          timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+          hmacSignature: 'sha256-88a291b7f0c43981d3f44810a9c4021bb55e712a39281a9420b9e847c102a901',
+          details: 'Migrated 40 clients from legacy Tally XML dump into SynTax 4-tier Client Master.',
+          tableName: 'entities',
+        },
+        {
+          id: 'aud-5',
+          eventType: 'PII_ACCESS_PAN_REVEAL',
+          performedBy: 'CA Amrinder Verma',
+          userRole: 'PARTNER',
+          ipAddress: '103.21.244.1',
+          timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+          hmacSignature: 'sha256-42b781048a91c01e523b19280d941829e701a2b947c901e8284b8109c40281b3',
+          details: 'PII pan reveal justified: "MCA Annual Filing ROC Form MGT-7 verification for director PAN"',
+          tableName: 'audit_logs',
+        },
+      ],
+    });
+  }
+
   if (endpoint.startsWith('v1/audit')) {
     return NextResponse.json({
       success: true,
-      data: [
-        {
-          id: 'aud-1',
-          event: 'LOGIN_SUCCESS',
-          actor: 'CA Amrinder Verma',
-          role: 'PARTNER',
-          timestamp: new Date().toISOString(),
-          ip: '103.21.244.1',
-          sha256Hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-        },
-      ],
+      data: [],
     });
   }
 
@@ -366,11 +474,51 @@ export async function GET(
 
   /* 10. Recon Active Fallback */
   if (endpoint === 'v1/recon/active') {
+    const reqUrl = new URL(request.url);
+    const reqPeriod = reqUrl.searchParams.get('period') || '2026-10';
     return NextResponse.json({
       success: true,
       data: {
         gstin: '03AAAFCP4821K1Z5',
-        period: '2026-10',
+        period: reqPeriod,
+        summary: {
+          exactMatchCount: 2,
+          fuzzyMatchCount: 1,
+          probableMatchCount: 0,
+          valueMismatchCount: 0,
+          docTypeMismatchCount: 0,
+          purchaseNotIn2bCount: 1,
+          vendorNotInPrCount: 1,
+          outOfPeriodCount: 0,
+          totalItcNotAvailable: '0.00',
+          totalDeferredItc: '0.00',
+        },
+      },
+    });
+  }
+
+  /* 10b. TRACES KYC Cheat Sheet Masked Demo Fallback */
+  if (/^v1\/tds\/[^/]+\/traces\/kyc-cheat-sheet\/[^/]+$/.test(endpoint)) {
+    const parts = endpoint.split('/');
+    return NextResponse.json({
+      success: true,
+      tan: parts[2],
+      token: parts[5],
+      taxYear: 2026,
+      quarter: 'Q3',
+      cheatSheet: {
+        prn: parts[5],
+        challan: {
+          bsrCode: '0021489',
+          depositDate: '2026-10-14',
+          challanSerial: '00142',
+          challanAmount: '24150.00',
+        },
+        panCombinations: [
+          { deducteeId: 'demo-1', pan: maskPan('BQRPS4410K'), masked: true, amount: '1500.00' },
+          { deducteeId: 'demo-2', pan: maskPan('AAKFR2290D'), masked: true, amount: '4400.00' },
+          { deducteeId: 'demo-3', pan: maskPan('ACMPK8812B'), masked: true, amount: '6000.00' },
+        ],
       },
     });
   }
@@ -968,6 +1116,158 @@ export async function POST(
     } catch (err) {
       return NextResponse.json({ error: 'Failed', message: String(err) }, { status: 500 });
     }
+  }
+
+  /* 10. GST File Register Import, 2B File Upload, Recon, and TRACES Conso-Diff Fallbacks */
+  if (/^v1\/gst\/[^/]+\/import\/register-file$/.test(endpoint)) {
+    try {
+      const reqUrl = new URL(request.url);
+      const period = reqUrl.searchParams.get('period') || '2026-10';
+      const commit = reqUrl.searchParams.get('commit') === 'true';
+      const body = (await request.json()) as { fileName?: string; content?: string };
+      const rows = parseDelimited(body.content ?? '');
+      const header = rows[0] ?? [];
+      const dataRows = rows.slice(1).filter((r) => r.some((c) => c.trim().length > 0));
+      const col = (nameRe: RegExp) => header.findIndex((h) => nameRe.test(h.toLowerCase()));
+      const idxGstin = col(/gstin/);
+      const idxName = col(/name|party|supplier/);
+      const idxInv = col(/invoice.*(no|num)|doc/);
+      const idxDate = col(/date/);
+      const idxTaxable = col(/taxable/);
+      const idxIgst = col(/igst/);
+      const idxCgst = col(/cgst/);
+      const idxSgst = col(/sgst/);
+
+      const preview = dataRows.slice(0, 50).map((r, i) => ({
+        vendorGstin: (idxGstin >= 0 ? r[idxGstin] : '03AABCP1332L1Z4') || '03AABCP1332L1Z4',
+        vendorName: (idxName >= 0 ? r[idxName] : `Supplier ${i + 1}`) || `Supplier ${i + 1}`,
+        invoiceNum: (idxInv >= 0 ? r[idxInv] : `INV-${i + 1}`) || `INV-${i + 1}`,
+        invoiceDate: (idxDate >= 0 ? r[idxDate] : `${period}-05`) || `${period}-05`,
+        taxableValue: (idxTaxable >= 0 ? r[idxTaxable] : '0.00') || '0.00',
+        igstAmount: (idxIgst >= 0 ? r[idxIgst] : '0.00') || '0.00',
+        cgstAmount: (idxCgst >= 0 ? r[idxCgst] : '0.00') || '0.00',
+        sgstAmount: (idxSgst >= 0 ? r[idxSgst] : '0.00') || '0.00',
+      }));
+      return NextResponse.json(
+        {
+          success: true,
+          committed: commit,
+          fileName: body.fileName ?? 'register.csv',
+          period,
+          headerRow: rows.length > 0 ? 1 : 0,
+          rowsRead: dataRows.length,
+          readyToImport: dataRows.length,
+          duplicates: 0,
+          notImported: [],
+          skippedLines: 0,
+          warnings: [],
+          totals: { taxable: '0.00', igst: '0.00', cgst: '0.00', sgst: '0.00' },
+          preview,
+          insertedCount: commit ? dataRows.length : 0,
+        },
+        { status: commit ? 201 : 200 },
+      );
+    } catch (err) {
+      return NextResponse.json({ error: 'Invalid File', message: String(err) }, { status: 422 });
+    }
+  }
+
+  if (/^v1\/gst\/[^/]+\/recon\/2b-file$/.test(endpoint)) {
+    try {
+      const body = (await request.json()) as { fileName?: string; content?: string };
+      const parsed = JSON.parse(body.content ?? '{}') as { data?: { rtnprd?: string; docdata?: Record<string, unknown[]> } };
+      const rawPeriod = parsed?.data?.rtnprd;
+      const period = rawPeriod && rawPeriod.length === 6 ? `${rawPeriod.slice(2)}-${rawPeriod.slice(0, 2)}` : '2026-10';
+      const b2bCount = Array.isArray(parsed?.data?.docdata?.b2b) ? parsed.data!.docdata!.b2b!.length : 0;
+      return NextResponse.json(
+        {
+          success: true,
+          fileName: body.fileName ?? 'gstr2b.json',
+          period,
+          documentsInFile: b2bCount,
+          saved: b2bCount,
+          itcNotAvailable: 0,
+          rejected: [],
+          unreadSections: [],
+        },
+        { status: 201 },
+      );
+    } catch {
+      return NextResponse.json({ error: 'Not A GSTR-2B File', message: 'Invalid JSON file format.' }, { status: 422 });
+    }
+  }
+
+  if (/^v1\/tds\/[^/]+\/traces\/kyc-cheat-sheet\/[^/]+\/reveal$/.test(endpoint)) {
+    const body = (await request.json().catch(() => ({}))) as { accessReason?: string };
+    if (!body.accessReason || body.accessReason.trim().length < 5) {
+      return NextResponse.json({ error: 'REASON_REQUIRED', message: 'State why full PANs are needed.' }, { status: 400 });
+    }
+    return NextResponse.json({
+      success: true,
+      logged: true,
+      panCombinations: [
+        { deducteeId: 'demo-1', pan: 'BQRPS4410K', masked: false, amount: '1500.00' },
+        { deducteeId: 'demo-2', pan: 'AAKFR2290D', masked: false, amount: '4400.00' },
+        { deducteeId: 'demo-3', pan: 'ACMPK8812B', masked: false, amount: '6000.00' },
+      ],
+    });
+  }
+
+  if (/^v1\/tds\/[^/]+\/traces\/conso-diff$/.test(endpoint)) {
+    const parts = endpoint.split('/');
+    const tan = parts[2];
+    const body = (await request.json().catch(() => ({}))) as { consoContent?: string };
+    const parsed = parseConsoFile(body.consoContent ?? '');
+    if (!parsed.fh?.length && !parsed.bh.length && parsed.challans.length === 0) {
+      return NextResponse.json({ error: 'INVALID_CONSO_FILE', message: 'File does not match Protean caret-delimited .conso layout.', issues: parsed.issues }, { status: 422 });
+    }
+    const consoDeductees = parsed.challans.flatMap((c) => c.deductees);
+    const missingPanCount = consoDeductees.filter((d) => ['PANNOTAVBL', 'PANAPPLIED', 'PANINVALID'].includes(d.pan)).length;
+    return NextResponse.json({
+      success: true,
+      tan,
+      diffs: [
+        { recordType: 'C1', description: 'Deductor Header & TAN Match', systemValue: tan, consoValue: parsed.tan || tan, status: parsed.tan && parsed.tan !== tan ? 'DISCREPANCY' : 'MATCHED' },
+        { recordType: 'C2', description: 'Challan Records (BSR, Serial, Deposit Date)', systemValue: 'Demo Master', consoValue: `${parsed.challans.length} challans parsed`, status: 'MATCHED' },
+        { recordType: 'C3', description: 'Deductee Records & PAN Status', systemValue: 'Demo Master', consoValue: `${consoDeductees.length} deductees (${missingPanCount} PAN placeholders)`, status: missingPanCount > 0 ? 'DISCREPANCY' : 'MATCHED' },
+        { recordType: 'C9', description: 'Challan Addition / Short-Deduction Action', systemValue: 'Books baseline', consoValue: missingPanCount > 0 ? 'C3 PAN correction suggested' : 'No additions needed', status: missingPanCount > 0 ? 'DISCREPANCY' : 'MATCHED' },
+      ],
+      issues: parsed.issues,
+      consoSummary: {
+        form: parsed.form,
+        quarter: parsed.quarter,
+        taxYear: parsed.taxYear,
+        totalChallans: parsed.challans.length,
+        totalDeductees: consoDeductees.length,
+      },
+      batchSigningPayload: { supportedForms: ['130', '131', '133'], requiresPadesSigning: true, padesReady: false },
+    });
+  }
+
+  if (/^v1\/gst\/[^/]+\/recon\/2b\/\d{4}-\d{2}$/.test(endpoint)) {
+    const period = endpoint.split('/').pop() ?? '2026-10';
+    return NextResponse.json({
+      success: true,
+      period,
+      summary: {
+        totalPurchaseCount: 4,
+        total2bCount: 4,
+        exactMatches: 2,
+        fuzzyMatches: 1,
+        probableMatches: 0,
+        valueMismatches: 0,
+        docTypeMismatches: 0,
+        purchaseNotIn2b: 1,
+        datedAfterPeriod: 0,
+        vendorNotInPr: 1,
+        totalItcClaimed: '84840.00',
+        totalItcAvailable: '35640.00',
+        totalItcNotAvailable: '11400.00',
+        totalItcAtRisk: '37800.00',
+        totalUnclaimedItc: '11160.00',
+        totalDeferredItc: '0.00',
+      },
+    });
   }
 
   /* Default POST success */

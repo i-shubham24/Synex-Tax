@@ -6,7 +6,7 @@
   "main": "./dist/server.js",
   "scripts": {
     "build": "npm run build:deps && tsc",
-    "build:deps": "npm run build --prefix ../../packages/shared-schemas && npm run build --prefix ../../packages/tax-engine && npm run build --prefix ../../workers/queue-worker",
+    "build:deps": "npm run build --prefix ../../packages/gsp-adapter && npm run build --prefix ../../packages/shared-schemas && npm run build --prefix ../../packages/tax-engine && npm run build --prefix ../../packages/ingestion && npm run build --prefix ../../workers/queue-worker",
     "start": "node dist/server.js",
     "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
     "test": "node --env-file=test.env --test dist/**/*.test.js",
@@ -20,6 +20,8 @@
     "@fastify/jwt": "^10.2.8",
     "@fastify/rate-limit": "^10.2.2",
     "@node-rs/argon2": "2.2.2",
+    "@synextax/gsp-adapter": "*",
+    "@synextax/ingestion": "*",
     "@synextax/queue-worker": "*",
     "@synextax/shared-schemas": "*",
     "@synextax/tax-engine": "*",

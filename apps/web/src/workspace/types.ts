@@ -120,6 +120,7 @@ export interface FirmProfile {
   id: string;
   name: string;
   frn: string;
+  enabledSuites?: string[];
 }
 
 export interface WorkspaceSnapshot {

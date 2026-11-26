@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	ListenAddress = "127.0.0.1:18531"
+	ListenAddress = "127.0.0.1:15850"
 	AgentVersion  = "0.1.0"
 )
 
@@ -37,22 +37,24 @@ type AppServer struct {
 
 func corsMiddleware(next http.HandlerFunc, verifier *security.NonceVerifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Security: Validate origin BEFORE reflecting CORS headers or answering preflight
+		if err := verifier.ValidateOrigin(r); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			http.Error(w, fmt.Sprintf(`{"error":"UNAUTHORIZED_ORIGIN","message":"%s"}`, err.Error()), http.StatusForbidden)
+			return
+		}
+
 		origin := r.Header.Get("Origin")
 		if origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Idempotency-Key")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Vary", "Origin")
 		}
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Security: Validate origin is authorized
-		if err := verifier.ValidateOrigin(r); err != nil {
-			http.Error(w, fmt.Sprintf(`{"error":"UNAUTHORIZED_ORIGIN","message":"%s"}`, err.Error()), http.StatusForbidden)
 			return
 		}
 
@@ -80,7 +82,7 @@ func main() {
 	}
 	server := &AppServer{
 		tallyPoller:   tally.NewTallyPoller("http://127.0.0.1:9000"),
-		nonceVerifier: security.NewNonceVerifier(),
+		nonceVerifier: security.NewNonceVerifier(false, nil),
 		backups:       backup.Config{Destination: backupHome(), Keep: 30},
 		fvu:           fvu.Config{JarPath: os.Getenv("SYNEXTAX_FVU_JAR"), Java: os.Getenv("SYNEXTAX_JAVA"), Root: filepath.Join(agentHome(), "FVU")},
 	}

@@ -474,6 +474,31 @@ export default function AuditRadarPage() {
               />
               <button
                 type="button"
+                onClick={async () => {
+                  try {
+                    const res = await authFetch('/api/v1/audit/export');
+                    if (res.ok) {
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `mca-rule-3-audit-pack-${new Date().toISOString().slice(0, 10)}.json`;
+                      a.click();
+                    } else {
+                      alert('Only firm partners can export the statutory audit pack.');
+                    }
+                  } catch {
+                    alert('Failed to export MCA audit pack.');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-pos-surface border border-pos-line text-pos-ink text-xs font-semibold hover:bg-pos-line transition-colors"
+                title="Download MCA Rule 3(6) & CGST Rule 56(15) Evidence Pack"
+              >
+                <Download className="w-3.5 h-3.5 text-pos-accent" />
+                <span>MCA Rule 3 Pack</span>
+              </button>
+              <button
+                type="button"
                 onClick={refreshLogs}
                 disabled={isLoadingLogs}
                 className="p-1.5 rounded bg-pos-surface border border-pos-line text-pos-ink/70 hover:text-pos-ink disabled:opacity-50"
@@ -494,8 +519,8 @@ export default function AuditRadarPage() {
             </span>
           </div>
 
-          <div className="overflow-x-auto border border-pos-line rounded-lg">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto w-full min-w-0 border border-pos-line rounded-lg [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.2)_transparent]">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-pos-surface text-pos-ink/60 text-[12px] border-b border-pos-line">
                   <th className="py-2.5 px-3">Event</th>

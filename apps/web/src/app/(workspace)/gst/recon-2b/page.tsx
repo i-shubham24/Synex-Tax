@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   GitCompare,
   AlertTriangle,
@@ -15,16 +15,26 @@ import {
   Send,
   Copy,
   X,
+  FileJson,
+  Play,
 } from 'lucide-react';
+import { GstCommandBar } from '../../../../components/gst/GstCommandBar';
+import { useWorkspace } from '../../../../workspace/WorkspaceContext';
+
+type ReconStatus =
+  | 'EXACT_MATCH'
+  | 'FUZZY_MATCH'
+  | 'PROBABLE_MATCH'
+  | 'MISMATCH_VALUE'
+  | 'MISMATCH_DOCTYPE'
+  | 'PURCHASE_NOT_IN_2B'
+  | 'VENDOR_NOT_IN_2B'
+  | 'VENDOR_NOT_IN_PR'
+  | 'UNRECONCILED';
 
 interface ReconItem {
   id: string;
-  status:
-    | 'EXACT_MATCH'
-    | 'FUZZY_MATCH'
-    | 'VALUE_MISMATCH'
-    | 'PURCHASE_NOT_IN_2B'
-    | 'VENDOR_NOT_IN_PR';
+  status: ReconStatus;
   confidenceScore: number;
   supplierGstin: string;
   supplierName: string;
@@ -42,6 +52,12 @@ interface ReconItem {
   originalTaxableValue?: string;
   originalTotalTax?: string;
   notes?: string;
+}
+
+interface ReconSummaryMetrics {
+  totalItcNotAvailable: string;
+  totalDeferredItc: string;
+  datedAfterPeriod: number;
 }
 
 const INITIAL_RECON_ITEMS: ReconItem[] = [
@@ -139,12 +155,20 @@ const INITIAL_RECON_ITEMS: ReconItem[] = [
 ];
 
 export default function ReconPage() {
+  const { activeEntity, activeClient, activePeriod } = useWorkspace();
   const [items, setItems] = useState<ReconItem[]>(INITIAL_RECON_ITEMS);
   const [filter, setFilter] = useState<string>('ALL');
   const [acknowledgedDeltas, setAcknowledgedDeltas] = useState<Record<string, boolean>>({});
   const [notification, setNotification] = useState<string | null>(null);
-  const [activeGstin, setActiveGstin] = useState<string>('03AAFCP4821K1Z5');
-  const [activePeriod, setActivePeriod] = useState<string>('Nov 2025 (112025)');
+  const [uploadingTwoB, setUploadingTwoB] = useState(false);
+  const [runningRecon, setRunningRecon] = useState(false);
+  const [summaryMetrics, setSummaryMetrics] = useState<ReconSummaryMetrics>({
+    totalItcNotAvailable: '11400.00',
+    totalDeferredItc: '0.00',
+    datedAfterPeriod: 0,
+  });
+  const activeGstin = activeClient?.gstin ?? activeEntity?.gstins[0]?.gstin ?? '03AAFCP4821K1Z5';
+  const activePeriodLabel = activePeriod;
   const [chaserModal, setChaserModal] = useState<{
     open: boolean;
     item?: ReconItem;
@@ -173,7 +197,7 @@ export default function ReconPage() {
           invoiceDate: item.invoiceDate,
           taxableValue: item.taxableValue,
           totalTax: item.totalTax,
-          period: activePeriod,
+          period: activePeriodLabel,
         }),
       });
 
@@ -194,92 +218,141 @@ export default function ReconPage() {
     }
   };
 
+  const mapReconPayloadToItems = useCallback((payload: any): ReconItem[] => {
+    const newItems: ReconItem[] = [];
+    if (payload.pairs && Array.isArray(payload.pairs)) {
+      for (const p of payload.pairs) {
+        const pr = p.purchaseInvoice;
+        const g2b = p.gstr2bRecord;
+        const matchStatus: ReconStatus =
+          p.status && typeof p.status === 'string'
+            ? (p.status as ReconStatus)
+            : p.matchType === 'EXACT'
+            ? 'EXACT_MATCH'
+            : 'FUZZY_MATCH';
+        newItems.push({
+          id: pr?.id || g2b?.id || crypto.randomUUID(),
+          status: matchStatus,
+          confidenceScore: p.confidenceScore || (matchStatus === 'EXACT_MATCH' ? 1.0 : 0.96),
+          supplierGstin: g2b?.supplierGstin || pr?.vendorGstin || '',
+          supplierName: g2b?.supplierName || pr?.vendorName || 'Supplier',
+          prInvoiceNum: pr?.invoiceNum,
+          portalDocNum: g2b?.docNum,
+          invoiceDate: pr?.invoiceDate || g2b?.docDate || '',
+          taxableValue: pr?.taxableValue || g2b?.taxableValue || '0.00',
+          totalTax: pr?.totalTax || g2b?.totalTax || '0.00',
+          cgst: pr?.cgstAmount || g2b?.cgstAmount || '0.00',
+          sgst: pr?.sgstAmount || g2b?.sgstAmount || '0.00',
+          igst: pr?.igstAmount || g2b?.igstAmount || '0.00',
+          itcEligibility:
+            g2b?.itcAvailable === false
+              ? 'INELIGIBLE_17_5'
+              : (pr?.itcEligibility as ReconItem['itcEligibility']) || 'ELIGIBLE',
+          imsAction: (g2b?.imsActionStatus as any) || 'NONE',
+          notes:
+            p.notes ||
+            (matchStatus === 'PROBABLE_MATCH'
+              ? 'Date in different month: review and match manually.'
+              : matchStatus === 'MISMATCH_DOCTYPE'
+              ? 'Document type mismatch between books and GSTR-2B (INV vs CRN/DBN).'
+              : matchStatus === 'MISMATCH_VALUE'
+              ? 'Tax or taxable value differs beyond Section 170 tolerance.'
+              : matchStatus === 'EXACT_MATCH'
+              ? 'Exact Match: Verified identical in Books and GSTR-2B.'
+              : 'Pass 2 Fuzzy Match: Normalized FY tokens and delimiters.'),
+        });
+      }
+    }
+
+    if (payload.unmatchedPurchase && Array.isArray(payload.unmatchedPurchase)) {
+      for (const pr of payload.unmatchedPurchase) {
+        newItems.push({
+          id: pr.id,
+          status: 'VENDOR_NOT_IN_2B',
+          confidenceScore: 0.0,
+          supplierGstin: pr.vendorGstin,
+          supplierName: pr.vendorName || 'Vendor',
+          prInvoiceNum: pr.invoiceNum,
+          invoiceDate: pr.invoiceDate,
+          taxableValue: pr.taxableValue,
+          totalTax: pr.totalTax,
+          cgst: pr.cgstAmount || '0.00',
+          sgst: pr.sgstAmount || '0.00',
+          igst: pr.igstAmount || '0.00',
+          itcEligibility: pr.itcEligibility || 'ELIGIBLE',
+          imsAction: 'NONE',
+          notes: 'Purchase invoice in books, missing from GSTR-2B. Credit at risk for filing period.',
+        });
+      }
+    }
+
+    if (payload.unmatchedPortal2b && Array.isArray(payload.unmatchedPortal2b)) {
+      for (const g2b of payload.unmatchedPortal2b) {
+        newItems.push({
+          id: g2b.id,
+          status: 'VENDOR_NOT_IN_PR',
+          confidenceScore: 0.0,
+          supplierGstin: g2b.supplierGstin,
+          supplierName: g2b.supplierName || 'Portal Supplier',
+          portalDocNum: g2b.docNum,
+          invoiceDate: g2b.docDate,
+          taxableValue: g2b.taxableValue,
+          totalTax: g2b.totalTax,
+          cgst: g2b.cgstAmount || '0.00',
+          sgst: g2b.sgstAmount || '0.00',
+          igst: g2b.igstAmount || '0.00',
+          itcEligibility: g2b.itcAvailable ? 'ELIGIBLE' : 'INELIGIBLE_17_5',
+          imsAction: (g2b.imsActionStatus as any) || 'NONE',
+          notes: 'Invoice in GSTR-2B but unrecorded in books. Unclaimed credit.',
+        });
+      }
+    }
+
+    if (payload.outOfPeriodPurchase && Array.isArray(payload.outOfPeriodPurchase)) {
+      for (const pr of payload.outOfPeriodPurchase) {
+        newItems.push({
+          id: pr.id,
+          status: 'UNRECONCILED',
+          confidenceScore: 0.0,
+          supplierGstin: pr.vendorGstin,
+          supplierName: pr.vendorName || 'Vendor',
+          prInvoiceNum: pr.invoiceNum,
+          invoiceDate: pr.invoiceDate,
+          taxableValue: pr.taxableValue,
+          totalTax: pr.totalTax,
+          cgst: pr.cgstAmount || '0.00',
+          sgst: pr.sgstAmount || '0.00',
+          igst: pr.igstAmount || '0.00',
+          itcEligibility: pr.itcEligibility || 'ELIGIBLE',
+          imsAction: 'NONE',
+          notes: 'Invoice dated after selected period: deferred to subsequent month GSTR-2B.',
+        });
+      }
+    }
+
+    return newItems;
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     async function loadRecon() {
       try {
-        const res = await fetch('/api/v1/recon/active', {
+        const res = await fetch(`/api/v1/recon/active?period=${encodeURIComponent(activePeriodLabel)}`, {
           credentials: 'include',
         });
         if (!res.ok) return;
         const json = await res.json();
         if (!cancelled && json.data) {
-          if (json.data.gstin) setActiveGstin(json.data.gstin);
-          if (json.data.period) setActivePeriod(json.data.period);
-
-          const newItems: ReconItem[] = [];
-
-          if (json.data.pairs && Array.isArray(json.data.pairs)) {
-            for (const p of json.data.pairs) {
-              const pr = p.purchaseInvoice;
-              const g2b = p.gstr2bRecord;
-              newItems.push({
-                id: pr.id || g2b.id,
-                status: p.matchType === 'EXACT' ? 'EXACT_MATCH' : 'FUZZY_MATCH',
-                confidenceScore: p.confidenceScore || (p.matchType === 'EXACT' ? 1.0 : 0.96),
-                supplierGstin: g2b.supplierGstin || pr.vendorGstin,
-                supplierName: g2b.supplierName || pr.vendorName || 'Supplier',
-                prInvoiceNum: pr.invoiceNum,
-                portalDocNum: g2b.docNum,
-                invoiceDate: pr.invoiceDate || g2b.docDate,
-                taxableValue: pr.taxableValue || g2b.taxableValue,
-                totalTax: pr.totalTax || g2b.totalTax,
-                cgst: pr.cgstAmount || g2b.cgstAmount || '0.00',
-                sgst: pr.sgstAmount || g2b.sgstAmount || '0.00',
-                igst: pr.igstAmount || g2b.igstAmount || '0.00',
-                itcEligibility: pr.itcEligibility || 'ELIGIBLE',
-                imsAction: (g2b.imsActionStatus as any) || 'NONE',
-                notes: p.matchType === 'EXACT' ? 'Exact Match: Verified identical in Books and GSTR-2B.' : 'Pass 2 Fuzzy Match: Normalized FY tokens and delimiters.',
-              });
-            }
+          if (json.data.summary) {
+            setSummaryMetrics({
+              totalItcNotAvailable: json.data.summary.totalItcNotAvailable ?? '0.00',
+              totalDeferredItc: json.data.summary.totalDeferredItc ?? '0.00',
+              datedAfterPeriod: Number(json.data.summary.outOfPeriodCount ?? json.data.summary.datedAfterPeriod ?? 0),
+            });
           }
-
-          if (json.data.unmatchedPurchase && Array.isArray(json.data.unmatchedPurchase)) {
-            for (const pr of json.data.unmatchedPurchase) {
-              newItems.push({
-                id: pr.id,
-                status: 'PURCHASE_NOT_IN_2B',
-                confidenceScore: 0.0,
-                supplierGstin: pr.vendorGstin,
-                supplierName: pr.vendorName || 'Vendor',
-                prInvoiceNum: pr.invoiceNum,
-                invoiceDate: pr.invoiceDate,
-                taxableValue: pr.taxableValue,
-                totalTax: pr.totalTax,
-                cgst: pr.cgstAmount || '0.00',
-                sgst: pr.sgstAmount || '0.00',
-                igst: pr.igstAmount || '0.00',
-                itcEligibility: pr.itcEligibility || 'ELIGIBLE',
-                imsAction: 'NONE',
-                notes: 'Purchase invoice in books, missing from GSTR-2B. Credit at risk for filing period.',
-              });
-            }
-          }
-
-          if (json.data.unmatchedPortal2b && Array.isArray(json.data.unmatchedPortal2b)) {
-            for (const g2b of json.data.unmatchedPortal2b) {
-              newItems.push({
-                id: g2b.id,
-                status: 'VENDOR_NOT_IN_PR',
-                confidenceScore: 0.0,
-                supplierGstin: g2b.supplierGstin,
-                supplierName: g2b.supplierName || 'Portal Supplier',
-                portalDocNum: g2b.docNum,
-                invoiceDate: g2b.docDate,
-                taxableValue: g2b.taxableValue,
-                totalTax: g2b.totalTax,
-                cgst: g2b.cgstAmount || '0.00',
-                sgst: g2b.sgstAmount || '0.00',
-                igst: g2b.igstAmount || '0.00',
-                itcEligibility: g2b.itcAvailable ? 'ELIGIBLE' : 'INELIGIBLE_17_5',
-                imsAction: (g2b.imsActionStatus as any) || 'NONE',
-                notes: 'Invoice in GSTR-2B but unrecorded in books. Unclaimed credit.',
-              });
-            }
-          }
-
-          if (newItems.length > 0) {
-            setItems(newItems);
+          const mapped = mapReconPayloadToItems(json.data);
+          if (mapped.length > 0) {
+            setItems(mapped);
           }
         }
       } catch {
@@ -290,7 +363,67 @@ export default function ReconPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activePeriodLabel, mapReconPayloadToItems]);
+
+  const handleRunRecon = async () => {
+    setRunningRecon(true);
+    try {
+      const res = await fetch(`/api/v1/gst/${activeGstin}/recon/2b/${activePeriodLabel}`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setNotification(json.message || 'Could not reconcile this period.');
+        return;
+      }
+      if (json.summary) {
+        setSummaryMetrics({
+          totalItcNotAvailable: json.summary.totalItcNotAvailable ?? '0.00',
+          totalDeferredItc: json.summary.totalDeferredItc ?? '0.00',
+          datedAfterPeriod: Number(json.summary.datedAfterPeriod ?? 0),
+        });
+      }
+      const mapped = mapReconPayloadToItems(json);
+      if (mapped.length > 0) setItems(mapped);
+      setNotification(`Reconciled ${activeGstin} for ${activePeriodLabel}.`);
+      setTimeout(() => setNotification(null), 4000);
+    } catch {
+      setNotification('Network error while running 4-pass reconciliation.');
+    } finally {
+      setRunningRecon(false);
+    }
+  };
+
+  const handleUploadTwoBFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingTwoB(true);
+    try {
+      const content = await file.text();
+      const res = await fetch(`/api/v1/gst/${activeGstin}/recon/2b-file`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': crypto.randomUUID(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ fileName: file.name, content }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setNotification(json.message || 'GSTR-2B file rejected.');
+        return;
+      }
+      setNotification(`Uploaded ${json.saved} GSTR-2B records (${json.period}). Running 4-pass match...`);
+      await handleRunRecon();
+    } catch {
+      setNotification('Failed to upload GSTR-2B file.');
+    } finally {
+      setUploadingTwoB(false);
+    }
+  };
 
   const handleImsAction = async (id: string, action: 'A' | 'R' | 'P' | 'NONE') => {
     const target = items.find((it) => it.id === id);
@@ -338,11 +471,33 @@ export default function ReconPage() {
     if (filter === 'ALL') return true;
     if (filter === 'MATCHED') return it.status === 'EXACT_MATCH' || it.status === 'FUZZY_MATCH';
     if (filter === 'DISCREPANCY')
-      return it.status === 'PURCHASE_NOT_IN_2B' || it.status === 'VENDOR_NOT_IN_PR' || it.status === 'VALUE_MISMATCH';
+      return (
+        it.status === 'PURCHASE_NOT_IN_2B' ||
+        it.status === 'VENDOR_NOT_IN_2B' ||
+        it.status === 'VENDOR_NOT_IN_PR' ||
+        it.status === 'MISMATCH_VALUE' ||
+        it.status === 'MISMATCH_DOCTYPE' ||
+        it.status === 'PROBABLE_MATCH'
+      );
+    if (filter === 'DEFERRED') return it.status === 'UNRECONCILED';
     if (filter === 'AMENDED') return !!it.isAmendedPostAcceptance;
     if (filter === 'BLOCKED_17_5') return it.itcEligibility === 'INELIGIBLE_17_5';
     return true;
   });
+
+  const matchedCount = items.filter((it) => it.status === 'EXACT_MATCH' || it.status === 'FUZZY_MATCH').length;
+  const discrepancyCount = items.filter(
+    (it) =>
+      it.status === 'PURCHASE_NOT_IN_2B' ||
+      it.status === 'VENDOR_NOT_IN_2B' ||
+      it.status === 'VENDOR_NOT_IN_PR' ||
+      it.status === 'MISMATCH_VALUE' ||
+      it.status === 'MISMATCH_DOCTYPE' ||
+      it.status === 'PROBABLE_MATCH',
+  ).length;
+  const deferredCount = items.filter((it) => it.status === 'UNRECONCILED').length;
+  const amendedCount = items.filter((it) => !!it.isAmendedPostAcceptance).length;
+  const blockedCount = items.filter((it) => it.itcEligibility === 'INELIGIBLE_17_5').length;
 
   // Calculate totals
   const totalTax2b = items
@@ -359,6 +514,7 @@ export default function ReconPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      <GstCommandBar currentStep="RECONCILED" />
       {/* Top Breadcrumb & Metadata Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-pos-line pb-4">
         <div>
@@ -367,19 +523,33 @@ export default function ReconPage() {
             <span>GSTR-2B against the purchase register</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-semibold text-pos-ink tracking-tight mt-1">
-            Reconciliation & Invoice Management System
+            Reconciliation &amp; Invoice Management System
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md">
             <span className="text-pos-ink/60">GSTIN: </span>
-            <span className="text-pos-ink font-semibold">{activeGstin}</span>
+            <span className="text-pos-ink font-semibold font-mono">{activeGstin}</span>
           </div>
           <div className="bg-pos-muted border border-pos-line px-3 py-1.5 rounded-md">
             <span className="text-pos-ink/60">Period: </span>
-            <span className="text-pos-accent font-semibold">{activePeriod}</span>
+            <span className="text-pos-accent font-semibold font-mono">{activePeriodLabel}</span>
           </div>
+          <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-md border border-pos-line bg-pos-surface px-3 py-1.5 font-semibold text-pos-ink hover:border-pos-accent">
+            <input type="file" accept=".json" onChange={handleUploadTwoBFile} className="hidden" />
+            <FileJson className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{uploadingTwoB ? 'Uploading...' : 'Upload 2B JSON'}</span>
+          </label>
+          <button
+            type="button"
+            onClick={handleRunRecon}
+            disabled={runningRecon}
+            className="inline-flex items-center gap-1.5 rounded-md bg-pos-accent px-3 py-1.5 font-semibold text-white hover:bg-pos-accent-deep disabled:opacity-50"
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>{runningRecon ? 'Matching...' : 'Run 4-Pass Recon'}</span>
+          </button>
         </div>
       </div>
 
@@ -417,32 +587,44 @@ export default function ReconPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
           <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Pass 1: Exact</span>
-          <p className="text-xl font-semibold text-pos-accent mt-1">2</p>
-          <span className="text-[12px] text-pos-ink/60">100% Tax & Doc Match</span>
+          <p className="text-xl font-semibold text-pos-accent mt-1">
+            {items.filter((it) => it.status === 'EXACT_MATCH').length}
+          </p>
+          <span className="text-[12px] text-pos-ink/60">100% Tax &amp; Doc Match</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
           <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Pass 2: Fuzzy</span>
-          <p className="text-xl font-semibold text-[#3A6FE8] mt-1">1</p>
+          <p className="text-xl font-semibold text-[#3A6FE8] mt-1">
+            {items.filter((it) => it.status === 'FUZZY_MATCH').length}
+          </p>
           <span className="text-[12px] text-pos-ink/60">Normalized FY Tokens</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Pass 3: Mismatch</span>
-          <p className="text-xl font-semibold text-[#C2410C] mt-1">0</p>
-          <span className="text-[12px] text-pos-ink/60">Sec 170 ±₹1 Tolerance</span>
+          <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Pass 3: Value / Doc</span>
+          <p className="text-xl font-semibold text-[#C2410C] mt-1">
+            {items.filter((it) => it.status === 'MISMATCH_VALUE' || it.status === 'MISMATCH_DOCTYPE' || it.status === 'PROBABLE_MATCH').length}
+          </p>
+          <span className="text-[12px] text-pos-ink/60">Value, Date or Doc Diff</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
           <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Missing in 2B</span>
-          <p className="text-xl font-semibold text-pos-red mt-1">1</p>
+          <p className="text-xl font-semibold text-pos-red mt-1">
+            {items.filter((it) => it.status === 'PURCHASE_NOT_IN_2B' || it.status === 'VENDOR_NOT_IN_2B').length}
+          </p>
           <span className="text-[12px] text-pos-ink/60">Supplier Not Uploaded</span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
-          <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Unrecorded in PR</span>
-          <p className="text-xl font-semibold text-[#3A6FE8] mt-1">1</p>
-          <span className="text-[12px] text-pos-ink/60">Missing from Books</span>
+          <span className="text-[12px] font-mono text-pos-ink/60 font-semibold">Blocked / Deferred</span>
+          <p className="text-xl font-semibold text-amber-700 dark:text-amber-400 mt-1 tabular-nums">
+            &#8377;{parseFloat(summaryMetrics.totalItcNotAvailable).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </p>
+          <span className="text-[12px] text-pos-ink/60">
+            Deferred: {summaryMetrics.datedAfterPeriod} (&#8377;{parseFloat(summaryMetrics.totalDeferredItc).toLocaleString('en-IN', { minimumFractionDigits: 2 })})
+          </span>
         </div>
 
         <div className="bg-pos-muted border border-pos-line p-3 rounded-lg">
@@ -450,7 +632,7 @@ export default function ReconPage() {
           <p className="text-xl font-semibold text-pos-ink mt-1">
             ₹{totalAcceptedItc.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </p>
-          <span className="text-[12px] text-pos-accent">Accepted & Eligible</span>
+          <span className="text-[12px] text-pos-accent">Accepted &amp; Eligible</span>
         </div>
       </div>
 
@@ -459,10 +641,11 @@ export default function ReconPage() {
         <div className="flex max-w-full items-center gap-1.5 overflow-x-auto text-xs font-semibold [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: 'ALL', label: 'All Invoices', count: items.length },
-            { id: 'MATCHED', label: 'Matched', count: 3 },
-            { id: 'DISCREPANCY', label: 'Discrepancies', count: 2 },
-            { id: 'AMENDED', label: 'Amended Post-Acceptance', count: 1 },
-            { id: 'BLOCKED_17_5', label: 'Section 17(5) Blocked', count: 1 },
+            { id: 'MATCHED', label: 'Matched', count: matchedCount },
+            { id: 'DISCREPANCY', label: 'Discrepancies', count: discrepancyCount },
+            { id: 'DEFERRED', label: 'Dated After Period', count: deferredCount },
+            { id: 'AMENDED', label: 'Amended Post-Acceptance', count: amendedCount },
+            { id: 'BLOCKED_17_5', label: 'Section 17(5) Blocked', count: blockedCount },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -490,9 +673,9 @@ export default function ReconPage() {
       </div>
 
       {/* Main Recon & IMS Data Grid */}
-      <div className="bg-pos-muted border border-pos-line rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+      <div className="bg-pos-muted border border-pos-line rounded-xl overflow-hidden shadow-sm w-full min-w-0">
+        <div className="overflow-x-auto w-full min-w-0 [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.2)_transparent]">
+          <table className="w-full min-w-[760px] text-left text-xs border-collapse">
             <thead>
               <tr className="bg-pos-muted border-b border-pos-line text-pos-ink/60 text-[12px]">
                 <th className="py-3 px-3">Status</th>
@@ -531,10 +714,34 @@ export default function ReconPage() {
                           <span>Fuzzy (96%)</span>
                         </span>
                       )}
-                      {item.status === 'PURCHASE_NOT_IN_2B' && (
+                      {(item.status === 'PURCHASE_NOT_IN_2B' || item.status === 'VENDOR_NOT_IN_2B') && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-mono font-semibold bg-rose-500/10 text-pos-red border border-pos-red/30">
                           <AlertTriangle className="w-3 h-3" />
                           <span>Missing in 2B</span>
+                        </span>
+                      )}
+                      {item.status === 'MISMATCH_VALUE' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-mono font-semibold bg-amber-500/15 text-[#C2410C] border border-amber-500/30">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Value Mismatch</span>
+                        </span>
+                      )}
+                      {item.status === 'MISMATCH_DOCTYPE' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-mono font-semibold bg-rose-500/10 text-pos-red border border-pos-red/30">
+                          <XCircle className="w-3 h-3" />
+                          <span>Doc Type Clash</span>
+                        </span>
+                      )}
+                      {item.status === 'PROBABLE_MATCH' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-mono font-semibold bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                          <Clock className="w-3 h-3" />
+                          <span>Probable (Date)</span>
+                        </span>
+                      )}
+                      {item.status === 'UNRECONCILED' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-mono font-semibold bg-pos-muted text-pos-ink/70 border border-pos-line">
+                          <Clock className="w-3 h-3" />
+                          <span>Dated After Period</span>
                         </span>
                       )}
                       {item.status === 'VENDOR_NOT_IN_PR' && (
@@ -630,7 +837,7 @@ export default function ReconPage() {
 
                     {/* IMS Action Buttons or Vendor Chaser */}
                     <td className="py-3.5 px-3 text-center">
-                      {item.status === 'PURCHASE_NOT_IN_2B' ? (
+                      {item.status === 'PURCHASE_NOT_IN_2B' || item.status === 'VENDOR_NOT_IN_2B' ? (
                         <button
                           type="button"
                           onClick={() => triggerVendorChaser(item)}

@@ -79,3 +79,30 @@ __pycache__/
 # Client documents stored on local disk in development
 apps/api/.uploads/
 .uploads/
+
+# Local toolchain
+.tools/
+
+# Protean FVU binaries: fetched from Protean's site, not committed (see docs/procurement/protean-fvu.md)
+workers/fvu-v1-2/protean/
+workers/fvu-v9-5/protean/
+
+# Real anonymized golden datasets from client firms: never committed (see tests/golden-fixtures/synthetic/README.md)
+tests/golden-fixtures/real/
+
+# Terraform caches, state files, and sensitive variables
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+
+# Certificates and private keys (zero keys in repo)
+*.pfx
+*.p12
+
+# Playwright test artifacts
+apps/web/playwright-report/
+apps/web/test-results/

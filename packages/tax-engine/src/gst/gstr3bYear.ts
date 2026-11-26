@@ -60,7 +60,7 @@ export function gstr3bYear(input: { fyStart: number; gstin: string; cadence: Gst
     const g3 = D(row?.gstr3bTax);
     const i2 = sum('itc2b');
     const i3 = D(row?.itc3b);
-    const cash = D(row?.cashPaid);
+    const cash = sum('cashPaid');
     const due = gstDueDate('GSTR3B', p, input.cadence, input.gstin.slice(0, 2));
     const filed = FILED.has(row?.status ?? '');
     const end = filed ? row?.filedOn ?? due : input.today;

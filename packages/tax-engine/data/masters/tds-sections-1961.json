@@ -1,0 +1,1886 @@
+{
+  "status": "DRAFT_UNVERIFIED",
+  "title": "Income-tax Act, 1961: TDS/TCS sections, FY 2025-26 rates and thresholds, and Protean 1961 statement codes",
+  "applies_to": "Payments up to 31 March 2026 (FY 2025-26 and earlier); later FYs may differ, earlier FYs certainly differ in places (for example Finance Act 2025 threshold changes from 1 April 2025).",
+  "compiled_on": "2026-11-26",
+  "verified_by": null,
+  "verified_on": null,
+  "field_notes": {
+    "sections": "Rate chart by 1961 section for FY 2025-26. rate_percent is before surcharge and cess.",
+    "protean_codes": "Codes Protean uses in 24Q/26Q/27Q/27EQ (from form1961Codes.ts). mapping_basis says how section_1961 was found."
+  },
+  "sections": [
+    {
+      "section": "192",
+      "nature": "Salary",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "SLAB",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Rate null by design: average rate at slab."
+    },
+    {
+      "section": "192A",
+      "nature": "Accumulated balance of provident fund",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "AGGREGATE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "193",
+      "nature": "Interest on securities",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 10000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "taxguru also shows Rs 5,000 for interest on debentures; caclubindia shows Rs 10,000 for listed debentures. Confirm per security type."
+    },
+    {
+      "section": "194",
+      "nature": "Dividends",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 10000,
+      "threshold_basis": "AGGREGATE_YEAR_INDIVIDUAL_NON_CASH",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194A",
+      "nature": "Interest other than on securities: bank, co-operative bank, post office, senior citizen",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 100000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194A",
+      "nature": "Interest other than on securities: bank, co-operative bank, post office, others",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194A",
+      "nature": "Interest other than on securities: other payers",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 10000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194B",
+      "nature": "Winnings from lottery, crossword puzzle, card game and other games",
+      "rate_percent": 30,
+      "rate_split": null,
+      "threshold_inr": 10000,
+      "threshold_basis": "SINGLE_TRANSACTION",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194BA",
+      "nature": "Winnings from online games",
+      "rate_percent": 30,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194BB",
+      "nature": "Winnings from horse races",
+      "rate_percent": 30,
+      "rate_split": null,
+      "threshold_inr": 10000,
+      "threshold_basis": "SINGLE_TRANSACTION",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "taxguru says aggregate in the year; caclubindia says per single transaction."
+    },
+    {
+      "section": "194C",
+      "nature": "Payments to contractors",
+      "rate_percent": null,
+      "rate_split": {
+        "individual_huf": 1,
+        "others": 2
+      },
+      "threshold_inr": null,
+      "threshold_basis": "SINGLE_30000_OR_AGGREGATE_100000",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Rate turns on the payee (contractor) being an individual or HUF."
+    },
+    {
+      "section": "194D",
+      "nature": "Insurance commission",
+      "rate_percent": null,
+      "rate_split": {
+        "company": 10,
+        "other_than_company": 2
+      },
+      "threshold_inr": 20000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "CONFLICT between secondary sources: caclubindia (24 Feb 2025) shows 5% for non-company payees; taxguru (10 Apr 2025) and the 2025 Act equivalent (code 1005) show 2%."
+    },
+    {
+      "section": "194DA",
+      "nature": "Payment in respect of life insurance policy",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 100000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194E",
+      "nature": "Payments to non-resident sportsmen or sports associations",
+      "rate_percent": 20,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "caclubindia does not list 194E."
+    },
+    {
+      "section": "194EE",
+      "nature": "Payments in respect of deposits under National Savings Scheme",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 2500,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194G",
+      "nature": "Commission on sale of lottery tickets",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 20000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194H",
+      "nature": "Commission or brokerage",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 20000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194I(a)",
+      "nature": "Rent on plant and machinery",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "PER_MONTH_OR_PART",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "caclubindia shows 2% without a threshold for this row."
+    },
+    {
+      "section": "194I(b)",
+      "nature": "Rent on land, building or furniture",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "PER_MONTH_OR_PART",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194IA",
+      "nature": "Transfer of immovable property (other than agricultural land)",
+      "rate_percent": 1,
+      "rate_split": null,
+      "threshold_inr": 5000000,
+      "threshold_basis": "CONSIDERATION",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Reported in Form 26QB, not 26Q."
+    },
+    {
+      "section": "194IB",
+      "nature": "Rent paid by individual or HUF not covered by 194I",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "PER_MONTH",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Reported in Form 26QC."
+    },
+    {
+      "section": "194IC",
+      "nature": "Payment under specified (joint development) agreement",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194J(a)",
+      "nature": "Fees for technical services (not professional), film royalty, call centre",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194J(b)",
+      "nature": "Fees for professional services, royalty and others",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 50000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194K",
+      "nature": "Income from units of mutual funds",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 10000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194LA",
+      "nature": "Compensation on acquisition of certain immovable property",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 500000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194LB",
+      "nature": "Interest from infrastructure debt fund (non-resident)",
+      "rate_percent": 5,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194LBA",
+      "nature": "Business trust income to resident unit holders",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Non-resident rates under 194LBA not read for the 1961 Act."
+    },
+    {
+      "section": "194LBB",
+      "nature": "Income from units of investment fund (residents)",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194LBC",
+      "nature": "Income from investment in securitisation trust (residents)",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194LC",
+      "nature": "Interest from Indian company on specified foreign borrowings",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Not shown on either 1961 chart read; 2025 equivalents (codes 1040, 1042, 1043) show 5%, 4%, 9%."
+    },
+    {
+      "section": "194LD",
+      "nature": "Interest on certain bonds and government securities",
+      "rate_percent": 5,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194M",
+      "nature": "Payments by individual or HUF not liable under 194C, 194H, 194J",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 5000000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Reported in Form 26QD. No 2025 Act Form 140 code seen for this."
+    },
+    {
+      "section": "194N",
+      "nature": "Cash withdrawal: co-operative society",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 30000000,
+      "threshold_basis": "EXCESS_ONLY",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "caclubindia table shows 1 crore with a note giving 3 crore for co-operative societies."
+    },
+    {
+      "section": "194N",
+      "nature": "Cash withdrawal: others",
+      "rate_percent": 2,
+      "rate_split": null,
+      "threshold_inr": 10000000,
+      "threshold_basis": "EXCESS_ONLY",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194N",
+      "nature": "Cash withdrawal: person who has not filed returns (first proviso)",
+      "rate_percent": null,
+      "rate_split": {
+        "from_20_lakh_to_1_crore": 2,
+        "above_1_crore": 5
+      },
+      "threshold_inr": 2000000,
+      "threshold_basis": "EXCESS_ONLY",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194O",
+      "nature": "Payment by e-commerce operator to e-commerce participant",
+      "rate_percent": 0.1,
+      "rate_split": null,
+      "threshold_inr": 500000,
+      "threshold_basis": "AGGREGATE_YEAR_INDIVIDUAL_HUF",
+      "sources": [
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "taxguru shows 10%, which looks like a typo for 0.1%."
+    },
+    {
+      "section": "194P",
+      "nature": "Specified senior citizen aged 75 or more (bank deducts)",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "SLAB",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Rate null by design: slab."
+    },
+    {
+      "section": "194Q",
+      "nature": "Purchase of goods",
+      "rate_percent": 0.1,
+      "rate_split": null,
+      "threshold_inr": 5000000,
+      "threshold_basis": "EXCESS_ONLY",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194R",
+      "nature": "Benefits or perquisites of business or profession",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 20000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "section": "194S",
+      "nature": "Transfer of virtual digital asset",
+      "rate_percent": 1,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "SPECIFIED_PERSON_50000_OTHERS_10000",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Threshold Rs 50,000 where the payer is a specified person, Rs 10,000 otherwise."
+    },
+    {
+      "section": "194T",
+      "nature": "Payments by a firm to its partners",
+      "rate_percent": 10,
+      "rate_split": null,
+      "threshold_inr": 20000,
+      "threshold_basis": "AGGREGATE_YEAR",
+      "sources": [
+        "https://taxguru.in/?p=957899 \"TDS Rate Chart For F.Y. 2025-26\", 10 Apr 2025 (secondary, read 2026-11-26)",
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "From 1 April 2025."
+    },
+    {
+      "section": "195",
+      "nature": "Other sums payable to non-residents",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Rate null by design: rates in force or DTAA."
+    },
+    {
+      "section": "196A",
+      "nature": "Income from units to non-residents",
+      "rate_percent": 20,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://www.caclubindia.com/articles/tds-rate-chart-for-fy-2025-26-ay-2026-27-53169.asp, 24 Feb 2025 (secondary, read 2026-11-26)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "caclubindia note 4 and tdsman (code 1050) give 20%."
+    },
+    {
+      "section": "196B",
+      "nature": "Income and LTCG from units to offshore fund",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Not on either 1961 chart read. 2025 equivalents: 10% income (1051), 12.5% LTCG (1052)."
+    },
+    {
+      "section": "196C",
+      "nature": "Income and LTCG from foreign currency bonds or GDRs",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Not on either 1961 chart read. 2025 equivalents: 10% (1053), 12.5% LTCG (1054)."
+    },
+    {
+      "section": "196D",
+      "nature": "Income of FIIs from securities",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "NONE",
+      "sources": [
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Not on either 1961 chart read. 2025 equivalents: 20% (1055), 10% (1056)."
+    },
+    {
+      "section": "206C",
+      "nature": "Tax collection at source (all sub-sections)",
+      "rate_percent": null,
+      "rate_split": null,
+      "threshold_inr": null,
+      "threshold_basis": "VARIES",
+      "sources": [],
+      "needs_verification": true,
+      "notes": "No 1961 TCS rate chart was read. 2025 Act TCS rates are in tds-sections-2025.json (codes 1068 to 1092)."
+    }
+  ],
+  "protean_codes": [
+    {
+      "code": "92A",
+      "forms": [
+        "24Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2. Salary (s.192) codes in the 24Q list; which employer category each denotes is not confirmed."
+    },
+    {
+      "code": "92B",
+      "forms": [
+        "24Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2. Salary (s.192) codes in the 24Q list; which employer category each denotes is not confirmed."
+    },
+    {
+      "code": "92C",
+      "forms": [
+        "24Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2. Salary (s.192) codes in the 24Q list; which employer category each denotes is not confirmed."
+    },
+    {
+      "code": "94P",
+      "forms": [
+        "24Q"
+      ],
+      "section_1961": "194P",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "193",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "193",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "194",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "94A",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194A",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "94B",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194B",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4BP",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "4BB",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194BB",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94C",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194C",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "94D",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194D",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "4EE",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194EE",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94F",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194F",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94G",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194G",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94H",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194H",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "94I",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194I",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure. Kept for older periods; split into 4IA and 4IB."
+    },
+    {
+      "code": "4IA",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194I(a)",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "4IB",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194I(b)",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "94L",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "4DA",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194DA",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4BA",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "2AA",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "LBB",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194LBB",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "9IA",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194IA",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "LBC",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194LBC",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4IC",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194IC",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94N",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194N",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94K",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194K",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4JA",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194J(a)",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "4JB",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194J(b)",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "BA1",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "BA2",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "4NF",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "94O",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194O",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94Q",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194Q",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "94R",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194R",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "4RP",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "94S",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": "194S",
+      "mapping_basis": "CODE",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "packages/tax-engine/src/tds/dualActRecon.ts:23 (DUAL_ACT_SECTIONS)"
+      ],
+      "needs_verification": false,
+      "notes": "Section from packages/tax-engine/src/tds/dualActRecon.ts:24-38."
+    },
+    {
+      "code": "4SP",
+      "forms": [
+        "26Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "9BA",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194BA",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4AP",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "4NC",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "9FT",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "94T",
+      "forms": [
+        "26Q",
+        "27Q"
+      ],
+      "section_1961": "194T",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "94E",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "194E",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "195",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "195",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "96A",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "196A",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "96B",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "196B",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "96C",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "196C",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "96D",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "196D",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4LB",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "194LB",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "4LC",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "194LC",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "LC1",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "LC2",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "LC3",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "4LD",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": "194LD",
+      "mapping_basis": "NAME",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Section inferred from the spelling of the code only. Confirm against the Protean 1961 annexure."
+    },
+    {
+      "code": "BA3",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "6DA",
+      "forms": [
+        "27Q"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "A",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) alcoholic liquor",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "B",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) timber, forest lease",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "C",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) timber, other mode",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "D",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) other forest produce",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "E",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) scrap",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "F",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1C) parking lot",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "G",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1C) toll plaza",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "H",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1C) mining and quarrying",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "I",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) tendu leaves",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "J",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1) coal, lignite, iron ore",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "K",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "L",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) motor vehicle",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "M",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "N",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "O",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1G) overseas tour package",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "P",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "Q",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1G) LRS, other purposes",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "R",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": null,
+      "mapping_basis": "UNKNOWN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)"
+      ],
+      "needs_verification": true,
+      "notes": "Meaning not confirmed from the code or any page read. Fill from the Protean 1961 file format Annexure 2."
+    },
+    {
+      "code": "T",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1G) LRS, education or medical",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MA",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) wrist watch",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MB",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) art piece",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MC",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) collectibles",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MD",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) yacht, boat, helicopter",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "ME",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) sunglasses",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MF",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) bag",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MG",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) shoes",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MH",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) sportswear and equipment",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MI",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) home theatre",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    },
+    {
+      "code": "MJ",
+      "forms": [
+        "27EQ"
+      ],
+      "section_1961": "206C(1F) horse for racing or polo",
+      "mapping_basis": "TDSMAN",
+      "sources": [
+        "packages/tax-engine/src/tds/form1961Codes.ts:11 (LEGACY_SECTION_CODES, Protean 1961 formats published 27 May 2025)",
+        "https://blog.tdsman.com/2026/03/tds-tcs-rate-chart-fy-2026-27/ (secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Mapping read from tdsman (2025 code to \"206C-<letter>\"); sub-section label is the compiler's reading of the 2025 description."
+    }
+  ]
+}

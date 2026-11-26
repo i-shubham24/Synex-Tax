@@ -3,14 +3,47 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X, ReceiptText, Percent, KeyRound, Building2, Sparkles } from 'lucide-react';
 import { PillButton, Wordmark } from './primitives';
 
-const LINKS: Array<{ label: string; id: string; page?: string }> = [
-  { label: 'Product', id: 'product' },
-  { label: 'Modules', id: 'modules' },
-  { label: 'Pricing', id: 'pricing' },
-  { label: 'Free tools', id: 'tools', page: '/tools' },
+interface ProductItem {
+  name: string;
+  href: string;
+  tagline: string;
+  badge?: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const PRODUCTS: ProductItem[] = [
+  {
+    name: 'SynTax GST',
+    href: '/products/gst',
+    tagline: 'Dirty Excel cleaner, 4-pass 2B recon, IMS console & hard-locked 3B set-off',
+    icon: ReceiptText,
+  },
+  {
+    name: 'SynTax TDS',
+    href: '/products/tds',
+    tagline: 'Dual-Act cutover router, ITNS 281N 20-section challans & isolated FVU farm',
+    icon: Percent,
+  },
+  {
+    name: 'SynTax Sign',
+    href: '/products/sign',
+    tagline: 'Zero-Java Go 1.27 USB DSC agent, FIPS 140-3 detection & batch PAdES signing',
+    icon: KeyRound,
+  },
+  {
+    name: 'SynTax Desk',
+    href: '/products/desk',
+    tagline: 'Unified 4-tier Client Master, 10-min migration wizard, MCA Rule 3(6) & DPDP consent',
+    icon: Building2,
+  },
+];
+
+const ROADMAP_PREVIEWS = [
+  { name: 'SynTax Direct', desc: 'ITR-1 to 6, AIS/TIS & Capital Gains' },
+  { name: 'SynTax Litigate', desc: 'ASMT-10/DRC-01 & AI Reply Drafter' },
 ];
 
 type Theme = 'light' | 'dark';
@@ -21,17 +54,16 @@ type Theme = 'light' | 'dark';
  */
 export function SiteNav() {
   const headerRef = useRef<HTMLElement>(null);
-  // Section links scroll on the home page and navigate back to it from any other page.
   const pathname = usePathname();
   const base = pathname === '/' ? '' : '/';
   const [theme, setTheme] = useState<Theme>('light');
   const [active, setActive] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [productsOpen, setProductsOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const dropdownRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
-    // Theme: observe dark surfaces against a thin band where the bar sits (top 76px).
-    // Fires only when a section edge crosses that band, not on every scroll frame.
     const under = new Set<Element>();
     let themeIO: IntersectionObserver | null = null;
     const buildThemeIO = () => {
@@ -49,7 +81,6 @@ export function SiteNav() {
     };
     buildThemeIO();
 
-    // Hide while scrolling down, reveal on any upward scroll or near the top.
     let lastY = window.scrollY;
     let ticking = false;
     const onScroll = () => {
@@ -59,8 +90,10 @@ export function SiteNav() {
         const y = window.scrollY;
         const delta = y - lastY;
         if (y < 120) setHidden(false);
-        else if (delta > 6) setHidden(true);
-        else if (delta < -6) setHidden(false);
+        else if (delta > 6) {
+          setHidden(true);
+          setProductsOpen(false);
+        } else if (delta < -6) setHidden(false);
         lastY = y;
         ticking = false;
       });
@@ -68,23 +101,26 @@ export function SiteNav() {
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', buildThemeIO);
 
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id)),
-      { rootMargin: '-45% 0px -50% 0px' },
-    );
-    LINKS.forEach((l) => {
-      const el = document.getElementById(l.id);
-      if (el) io.observe(el);
-    });
     return () => {
       themeIO?.disconnect();
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', buildThemeIO);
-      io.disconnect();
     };
   }, []);
 
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setProductsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const dark = theme === 'dark' && !open;
+  const isProductsActive = pathname.startsWith('/products');
 
   return (
     <header
@@ -102,59 +138,167 @@ export function SiteNav() {
           />
         </Link>
 
+        {/* Desktop Navigation */}
         <nav aria-label="Primary" className="hidden md:block">
-          <ul className="flex items-center gap-1 font-display text-[16px] font-medium tracking-[-0.015em]">
-            {LINKS.map((l) => {
-              const current = l.page ? pathname === l.page : active === l.id;
-              return (
-                <li key={l.id}>
-                  <a
-                    href={l.page ?? `${base}#${l.id}`}
-                    aria-current={current ? 'true' : undefined}
-                    className={`relative block rounded-full px-4 py-2 transition-colors duration-500 ${
-                      dark
-                        ? current
-                          ? 'text-white'
-                          : 'text-white/60 hover:text-white'
-                        : current
-                          ? 'text-ink'
-                          : 'text-ink/60 hover:text-ink'
+          <ul className="flex items-center gap-1 font-display text-[15.5px] font-medium tracking-[-0.015em]">
+            {/* Products Interactive Dropdown */}
+            <li className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setProductsOpen((o) => !o)}
+                onMouseEnter={() => setProductsOpen(true)}
+                aria-expanded={productsOpen}
+                className={`relative flex items-center gap-1.5 rounded-full px-4 py-2 transition-colors duration-300 ${
+                  dark
+                    ? isProductsActive
+                      ? 'text-white'
+                      : 'text-white/70 hover:text-white'
+                    : isProductsActive
+                      ? 'text-ink'
+                      : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                <span>Products</span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${productsOpen ? 'rotate-180' : ''}`} />
+                {isProductsActive && (
+                  <span
+                    aria-hidden
+                    className={`absolute bottom-1 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full ${
+                      dark ? 'bg-mint' : 'bg-ink'
                     }`}
-                  >
-                    {l.label}
-                    <span
-                      aria-hidden
-                      className={`absolute bottom-1 left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full transition-colors duration-500 ${
-                        current ? (dark ? 'bg-mint opacity-100' : 'bg-ink opacity-100') : 'opacity-0'
-                      }`}
-                    />
-                  </a>
-                </li>
-              );
-            })}
+                  />
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {productsOpen && (
+                <div
+                  onMouseLeave={() => setProductsOpen(false)}
+                  className="absolute left-0 top-full mt-2 w-[460px] rounded-2xl border border-ink/10 bg-white p-3 shadow-[0_20px_50px_-15px_rgba(14,15,16,0.25)] ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-150 z-50 text-ink"
+                >
+                  <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-ink/40">
+                    Core Product Suites
+                  </div>
+                  <div className="grid gap-1">
+                    {PRODUCTS.map((p) => {
+                      const Icon = p.icon;
+                      return (
+                        <Link
+                          key={p.name}
+                          href={p.href}
+                          onClick={() => setProductsOpen(false)}
+                          className="flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-slate-50 group"
+                        >
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-subtle text-sky-deep group-hover:bg-sky group-hover:text-ink transition-colors">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-display text-[14.5px] font-semibold text-ink group-hover:text-sky-deep transition-colors">
+                                {p.name}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 line-clamp-1 text-[12px] text-ink/65 font-normal">
+                              {p.tagline}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* Roadmap Section */}
+                  <div className="mt-2 border-t border-ink/5 pt-2">
+                    <div className="flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink/40">
+                      <span>Phase 3 Roadmap</span>
+                      <span className="flex items-center gap-1 text-mint font-medium normal-case tracking-normal text-[11px]">
+                        <Sparkles className="h-3 w-3" /> Coming soon
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 px-1">
+                      {ROADMAP_PREVIEWS.map((r) => (
+                        <div key={r.name} className="rounded-lg p-2 bg-slate-50/60">
+                          <p className="text-[12.5px] font-semibold text-ink/80">{r.name}</p>
+                          <p className="text-[11px] text-ink/50 leading-snug mt-0.5">{r.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </li>
+
+            <li>
+              <Link
+                href="/switch"
+                className={`relative block rounded-full px-4 py-2 transition-colors duration-300 ${
+                  dark ? 'text-white/70 hover:text-white' : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                Why Switch
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                href="/pricing"
+                className={`relative block rounded-full px-4 py-2 transition-colors duration-300 ${
+                  dark ? 'text-white/70 hover:text-white' : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                Pricing
+              </Link>
+            </li>
+
+            <li>
+              <a
+                href={`${base}#pilot`}
+                className={`relative block rounded-full px-4 py-2 transition-colors duration-300 ${
+                  dark ? 'text-white/70 hover:text-white' : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                Pilot
+              </a>
+            </li>
+
+            <li>
+              <Link
+                href="/tools"
+                className={`relative block rounded-full px-4 py-2 transition-colors duration-300 ${
+                  dark ? 'text-white/70 hover:text-white' : 'text-ink/70 hover:text-ink'
+                }`}
+              >
+                Free tools
+              </Link>
+            </li>
           </ul>
         </nav>
 
-        <div className="hidden items-center gap-5 md:flex">
+        {/* Action CTAs */}
+        <div className="hidden items-center gap-4 md:flex">
           <Link
             href="/login"
-            className={`font-display text-[16px] font-medium tracking-[-0.015em] transition-colors duration-500 ${
+            className={`font-display text-[15.5px] font-medium tracking-[-0.015em] transition-colors duration-300 ${
               dark ? 'text-white/75 hover:text-white' : 'text-ink/70 hover:text-ink'
             }`}
           >
             Sign in
           </Link>
-          <PillButton href="/signup" size="sm" tone={dark ? 'light' : 'dark'}>
+          <PillButton href="/contact" size="sm" tone={dark ? 'light' : 'dark'}>
             Book a demo
+          </PillButton>
+          <PillButton href="/signup" size="sm" tone="mint">
+            Start 14-day free trial
           </PillButton>
         </div>
 
+        {/* Mobile menu trigger */}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-label={open ? 'Close menu' : 'Open menu'}
-          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-500 md:hidden ${
+          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-300 md:hidden ${
             dark ? 'bg-white text-ink' : 'bg-ink text-white'
           }`}
         >
@@ -162,25 +306,60 @@ export function SiteNav() {
         </button>
       </div>
 
-      {/* Mobile menu sheet (the only place the header carries a surface) */}
+      {/* Mobile menu sheet */}
       {open && (
-        <div className="mx-3 rounded-[24px] bg-white p-4 shadow-[0_24px_60px_-24px_rgba(20,20,22,0.45)] md:hidden">
-          <ul className="space-y-1 font-display text-[18px] font-medium tracking-[-0.02em]">
-            {LINKS.map((l) => (
-              <li key={l.id}>
-                <a href={l.page ?? `${base}#${l.id}`} onClick={() => setOpen(false)} className="block rounded-2xl px-3 py-2.5 text-ink/80 hover:bg-ink/[0.04]">
-                  {l.label}
-                </a>
+        <div className="mx-3 rounded-[24px] bg-white p-5 shadow-[0_24px_60px_-24px_rgba(20,20,22,0.45)] md:hidden max-h-[85vh] overflow-y-auto">
+          <div className="text-[12px] font-semibold text-ink/40 uppercase tracking-wider mb-2">
+            Product Suites
+          </div>
+          <ul className="space-y-1 font-display text-[16px] font-medium tracking-[-0.02em] border-b border-ink/10 pb-4 mb-4">
+            {PRODUCTS.map((p) => (
+              <li key={p.name}>
+                <Link
+                  href={p.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between rounded-xl px-3 py-2 text-ink hover:bg-slate-50"
+                >
+                  <span>{p.name}</span>
+                  <span className="text-[11px] text-ink/45">Explore</span>
+                </Link>
               </li>
             ))}
+          </ul>
+
+          <ul className="space-y-1 font-display text-[16px] font-medium tracking-[-0.02em]">
             <li>
-              <Link href="/login" className="block rounded-2xl px-3 py-2.5 text-ink/80 hover:bg-ink/[0.04]">
+              <Link href="/switch" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+                Why Switch
+              </Link>
+            </li>
+            <li>
+              <Link href="/pricing" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+                Pricing
+              </Link>
+            </li>
+            <li>
+              <a href={`${base}#pilot`} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+                Pilot
+              </a>
+            </li>
+            <li>
+              <Link href="/tools" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+                Free tools
+              </Link>
+            </li>
+            <li>
+              <Link href="/login" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
                 Sign in
               </Link>
             </li>
           </ul>
-          <div className="mt-3">
-            <PillButton href="/signup" full>
+
+          <div className="mt-5 space-y-2">
+            <PillButton href="/signup" full tone="mint">
+              Start 14-day free trial
+            </PillButton>
+            <PillButton href="/contact" full tone="light">
               Book a demo
             </PillButton>
           </div>

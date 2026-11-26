@@ -267,21 +267,39 @@ export function computeGstr9AnnualReconciliation(input: Gstr9EngineInput): Gstr9
     totalTurnoverTable4And5: fmt(totalTurnoverDec),
   };
 
-  /* Table 6: ITC Availed */
+  /* Table 6: ITC Availed (6B..6H decompose 6A rather than adding on top of 6A) */
   const itcIn = input.itc;
   const tot3b = itcIn.gstr3bTotalItcAvailed;
   const fInputs = itcIn.inputsFraction ?? 0.70;
   const fCap = itcIn.capitalGoodsFraction ?? 0.15;
   const fServ = itcIn.inputServicesFraction ?? 0.15;
 
-  const inputsItc = scaleSplit(tot3b, fInputs);
-  const capGoodsItc = scaleSplit(tot3b, fCap);
-  const servicesItc = scaleSplit(tot3b, fServ);
   const rcmReg = itcIn.rcmRegistered ?? emptySplit();
   const rcmUnreg = itcIn.rcmUnregistered ?? emptySplit();
   const impGoods = itcIn.importOfGoods ?? emptySplit();
   const impServ = itcIn.importOfServices ?? emptySplit();
   const isd = itcIn.isdCredit ?? emptySplit();
+
+  let separatelyReported = addSplits(rcmReg, rcmUnreg);
+  separatelyReported = addSplits(separatelyReported, impGoods);
+  separatelyReported = addSplits(separatelyReported, impServ);
+  separatelyReported = addSplits(separatelyReported, isd);
+
+  const clampZero = (v: Decimal) => (v.lt(0) ? new Decimal(0) : v);
+  const base6B: TaxSplit = {
+    taxableValue: fmt(clampZero(D(tot3b.taxableValue).sub(D(separatelyReported.taxableValue)))),
+    igst: fmt(clampZero(D(tot3b.igst).sub(D(separatelyReported.igst)))),
+    cgst: fmt(clampZero(D(tot3b.cgst).sub(D(separatelyReported.cgst)))),
+    sgst: fmt(clampZero(D(tot3b.sgst).sub(D(separatelyReported.sgst)))),
+    cess: fmt(clampZero(D(tot3b.cess).sub(D(separatelyReported.cess)))),
+  };
+
+  const inputsItc = scaleSplit(base6B, fInputs);
+  const capGoodsItc = scaleSplit(base6B, fCap);
+  const servicesItc =
+    Math.abs(fInputs + fCap + fServ - 1) < 1e-6
+      ? subSplits(base6B, addSplits(inputsItc, capGoodsItc))
+      : scaleSplit(base6B, fServ);
 
   let tot6 = addSplits(inputsItc, capGoodsItc);
   tot6 = addSplits(tot6, servicesItc);

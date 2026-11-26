@@ -1,0 +1,45 @@
+{
+  "_synthetic": "SYNTHETIC FIXTURE. Hand-computed expectations, not generated. Contains no real taxpayer data.",
+  "engines": [
+    "packages/tax-engine/src/compliance/calendar.ts gstDueDate",
+    "packages/tax-engine/src/gst/itc-set-off-engine.ts GstItcSetOffEngine.compute",
+    "packages/tax-engine/src/gst/gstr3bYear.ts gstr3bYear"
+  ],
+  "today": "2026-02-15",
+  "dueDates": {
+    "IFF 2025-10": "2025-11-13",
+    "IFF 2025-11": "2025-12-13",
+    "GSTR1 2025-12 (quarter)": "2026-01-13",
+    "GSTR3B 2025-12 (quarter, Punjab)": "2026-01-24",
+    "PMT06 2025-10": "2025-11-25",
+    "PMT06 2025-11": "2025-12-25"
+  },
+  "pmt06SelfAssessment": {
+    "method": "Tax for the month less ITC for the month, set off in Rule 88A order (IGST credit first), paid by head",
+    "2025-10": { "igst": "11600.00", "cgst": "20300.00", "sgst": "20300.00", "total": "52200.00" },
+    "2025-11": { "igst": "0.00", "cgst": "11200.00", "sgst": "16700.00", "total": "27900.00" }
+  },
+  "pmt06FixedSumReference": {
+    "method": "35 percent of tax paid in cash in the previous quarter's GSTR-3B (not used by this client, shown for comparison)",
+    "perMonth": { "igst": "2800.00", "cgst": "14350.00", "sgst": "14350.00", "total": "31500.00" }
+  },
+  "quarter": {
+    "setOffCash": { "igst": "12100.00", "cgst": "56900.00", "sgst": "56900.00", "total": "125900.00" },
+    "pmt06PaidByHead": { "igst": "11600.00", "cgst": "31500.00", "sgst": "37000.00", "total": "80100.00" },
+    "cashPaidWithReturn": { "igst": "500.00", "cgst": "25400.00", "sgst": "19900.00", "total": "45800.00" },
+    "gstr3bYearRow": {
+      "period": "2025-12",
+      "dueDate": "2026-01-24",
+      "gstr1Tax": "401400.00",
+      "gstr3bTax": "401400.00",
+      "outputDifference": "0.00",
+      "itc2b": "275500.00",
+      "itc3b": "275500.00",
+      "itcDifference": "0.00",
+      "state": "FILED",
+      "daysLate": 0,
+      "cashPaidIncludingPmt06": "125900.00"
+    },
+    "otherQuarterStates": { "2025-06": "NOT_RECORDED", "2025-09": "NOT_RECORDED", "2026-03": "NOT_DUE" }
+  }
+}

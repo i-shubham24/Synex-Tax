@@ -27,15 +27,17 @@ const XIcon = ({ className }: IconProps) => (
 
 // Social handles are not confirmed yet. Replace these placeholders with the real URLs before launch.
 const SOCIAL = [
-  { label: 'SynTax on Instagram', href: '#contact', icon: InstagramIcon },
-  { label: 'SynTax on LinkedIn', href: '#contact', icon: LinkedinIcon },
-  { label: 'SynTax on X', href: '#contact', icon: XIcon },
+  { label: 'SynTax on Instagram', href: '/contact', icon: InstagramIcon },
+  { label: 'SynTax on LinkedIn', href: '/contact', icon: LinkedinIcon },
+  { label: 'SynTax on X', href: '/contact', icon: XIcon },
 ];
 
 const PRODUCT: Array<[string, string]> = [
-  ['GST and IMS', '/features/gst'],
-  ['Dual-Act TDS', '/features/tds'],
-  ['Pricing', '/#pricing'],
+  ['SynTax GST', '/products/gst'],
+  ['SynTax TDS', '/products/tds'],
+  ['SynTax Sign', '/products/sign'],
+  ['SynTax Desk', '/products/desk'],
+  ['Pricing', '/pricing'],
   ['Free tools', '/tools'],
   ["What's new", '/whats-new'],
 ];
@@ -121,7 +123,7 @@ export function LandingFooter() {
             </div>
             <div className="mt-8">
               <div className="h-px bg-ink/10" />
-              <p className="mt-4 font-display text-[14px] text-ink/50">&copy; 2026 Synex Labs</p>
+              <p className="mt-4 font-display text-[14px] text-ink/50">&copy; 2026 SynTax by Synex Labs</p>
               <p className="mt-1.5 max-w-[30rem] font-display text-[12.5px] leading-[1.5] text-ink/40">
                 Not affiliated with GSTN, CBIC, the Income Tax Department, Protean or NIC. Not tax advice.
               </p>

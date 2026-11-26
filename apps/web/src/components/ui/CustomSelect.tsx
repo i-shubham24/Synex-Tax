@@ -123,7 +123,7 @@ export function CustomDropdown({
       {isOpen && (
         <div
           role="listbox"
-          className={`absolute left-0 top-full z-50 mt-1 min-w-[200px] max-h-60 overflow-y-auto rounded-xl border border-pos-line bg-[#0E0F10] p-1.5 shadow-2xl text-white ${menuClassName}`}
+          className={`absolute right-0 sm:left-0 sm:right-auto top-full z-50 mt-1 min-w-[200px] max-w-[calc(100vw-2rem)] max-h-60 overflow-y-auto rounded-xl border border-pos-line bg-[#0E0F10] p-1.5 shadow-2xl text-white ${menuClassName}`}
         >
           {options.map((opt) => {
             const isSelected = opt.value === value;

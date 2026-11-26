@@ -6,6 +6,7 @@ import { db } from '../db/pool.js';
 import { AgentKeyMissingError, issueAgentChallenge } from '../security/agentChallenge.js';
 import { checkDscSignature, trustedRoots, type DscCertInfo } from '../security/dscSignature.js';
 import { isLocalEnv } from '../security/env.js';
+import { sharedRedis } from '../infra/redis.js';
 
 const getCtx = (req: FastifyRequest) => {
   const user = req.user as { firmId: string; userId: string; role: string };
@@ -50,6 +51,45 @@ interface ChallengeRecord {
 }
 
 const activeChallenges = new Map<string, ChallengeRecord>();
+const CHALLENGE_REDIS_PREFIX = 'dsc:challenge:';
+
+async function saveDscChallenge(record: ChallengeRecord): Promise<void> {
+  const redis = sharedRedis();
+  if (redis) {
+    try {
+      await redis.set(`${CHALLENGE_REDIS_PREFIX}${record.challengeNonce}`, JSON.stringify(record), 'EX', 120);
+      return;
+    } catch {
+      // Fall back to in-memory map if Redis is temporarily unavailable
+    }
+  }
+  activeChallenges.set(record.challengeNonce, record);
+}
+
+async function getDscChallenge(nonce: string): Promise<ChallengeRecord | undefined> {
+  const redis = sharedRedis();
+  if (redis) {
+    try {
+      const raw = await redis.get(`${CHALLENGE_REDIS_PREFIX}${nonce}`);
+      if (raw) return JSON.parse(raw) as ChallengeRecord;
+    } catch {
+      // Fall back to in-memory map
+    }
+  }
+  return activeChallenges.get(nonce);
+}
+
+async function deleteDscChallenge(nonce: string): Promise<void> {
+  activeChallenges.delete(nonce);
+  const redis = sharedRedis();
+  if (redis) {
+    try {
+      await redis.del(`${CHALLENGE_REDIS_PREFIX}${nonce}`);
+    } catch {
+      // Ignore cleanup error
+    }
+  }
+}
 
 const maskPan = (pan: string | null) => (pan ? `XXXXX${pan.slice(5)}` : null);
 const operationFor = (form: string) =>
@@ -161,7 +201,7 @@ export async function dscRoutes(app: FastifyInstance) {
       issuedAt: new Date().toISOString(),
     });
     const digestSha256 = crypto.createHash('sha256').update(payload, 'utf8').digest('hex');
-    activeChallenges.set(challengeNonce, {
+    await saveDscChallenge({
       challengeNonce,
       filingId: row.id,
       firmId,
@@ -198,7 +238,7 @@ export async function dscRoutes(app: FastifyInstance) {
     }
     const { challengeNonce, filingId, signature, algorithm, certificate, chain } = parsed.data;
 
-    const challenge = activeChallenges.get(challengeNonce);
+    const challenge = await getDscChallenge(challengeNonce);
     if (!challenge) {
       return reply.status(403).send({
         error: 'CHALLENGE_NOT_FOUND_OR_EXPIRED',
@@ -210,7 +250,7 @@ export async function dscRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'FORBIDDEN', message: 'This signing request belongs to another firm.' });
     }
     // Single use, whatever the outcome.
-    activeChallenges.delete(challengeNonce);
+    await deleteDscChallenge(challengeNonce);
     if (Date.now() > challenge.expiresAt) {
       return reply.status(403).send({ error: 'CHALLENGE_EXPIRED', message: 'The two minutes to sign have passed. Start again.' });
     }

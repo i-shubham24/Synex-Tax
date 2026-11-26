@@ -1319,3 +1319,68 @@ test('Corrections, ITR-1, agent tokens and connections over the API', async () =
   assert.equal(status.statusCode, 200);
   assert.equal(JSON.parse(status.body).email, false);
 });
+
+test('GST: a raw Tally purchase register and the GSTR-2B download are uploaded and reconciled in the database', async () => {
+  const { readFileSync } = await import('node:fs');
+  const fixtures = new URL('../../../tests/golden-fixtures/synthetic/a-messy-purchase-register/', import.meta.url);
+  const csv = readFileSync(new URL('purchase-register-nov-2025.csv', fixtures), 'utf8');
+  const twoB = JSON.parse(readFileSync(new URL('gstr2b-112025.json', fixtures), 'utf8'));
+  const expected = JSON.parse(readFileSync(new URL('expected-results.json', fixtures), 'utf8'));
+
+  const app = buildApp();
+  const csrf = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/auth/csrf' })).body).csrfToken;
+  const demo = await app.inject({ method: 'POST', url: '/api/v1/auth/demo', headers: { 'x-csrf-token': csrf } });
+  const auth = { authorization: `Bearer ${JSON.parse(demo.body).accessToken}` };
+  const regs = JSON.parse((await app.inject({ method: 'GET', url: '/api/v1/gst/registrations', headers: auth })).body).registrations;
+  const gstin: string = regs.find((r: { gstin: string }) => r.gstin.startsWith('03')).gstin;
+  const period = expected.period;
+
+  // Register: preview reads every data line; duplicates are named and left out.
+  const file = { fileName: 'Purchase Register Nov.csv', content: csv };
+  const preview = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/import/register-file?period=${period}`, headers: auth, payload: file });
+  assert.equal(preview.statusCode, 200, preview.body);
+  const p = JSON.parse(preview.body);
+  assert.equal(p.committed, false);
+  assert.equal(p.headerRow, expected.register.firstHeaderLine);
+  assert.equal(p.rowsRead, expected.register.dataLines);
+  assert.equal(p.duplicates, expected.register.duplicates.length);
+  assert.equal(p.readyToImport, expected.register.uniqueInvoices);
+
+  const committed = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/import/register-file?period=${period}&commit=true`, headers: auth, payload: file });
+  assert.equal(committed.statusCode, 201, committed.body);
+  assert.equal(JSON.parse(committed.body).insertedCount, expected.register.uniqueInvoices);
+  const again = JSON.parse((await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/import/register-file?period=${period}&commit=true`, headers: auth, payload: file })).body);
+  assert.equal(again.insertedCount, 0);
+  assert.equal(again.alreadyPresent, expected.register.uniqueInvoices);
+
+  const notCsv = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/import/register-file?period=${period}`, headers: auth, payload: { fileName: 'register.exe', content: csv } });
+  assert.equal(notCsv.statusCode, 422);
+
+  // 2B: a file for another GSTIN is refused; the client's own is saved.
+  const foreign = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/recon/2b-file`, headers: auth, payload: { fileName: '2b.json', content: JSON.stringify(twoB) } });
+  assert.equal(foreign.statusCode, 422);
+  twoB.data.gstin = gstin;
+  const saved = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/recon/2b-file`, headers: auth, payload: { fileName: '2b.json', content: JSON.stringify(twoB) } });
+  assert.equal(saved.statusCode, 201, saved.body);
+  const s = JSON.parse(saved.body);
+  assert.equal(s.period, period);
+  assert.equal(s.saved, expected.twoB.documents);
+  assert.deepEqual(s.rejected, []);
+  const notTwoB = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/recon/2b-file`, headers: auth, payload: { fileName: '2b.json', content: '{"data":{}}' } });
+  assert.equal(notTwoB.statusCode, 422);
+
+  // The database recon uses the shared matcher and lands on the golden numbers.
+  const recon = await app.inject({ method: 'POST', url: `/api/v1/gst/${gstin}/recon/2b/${period}`, headers: auth });
+  assert.equal(recon.statusCode, 200, recon.body);
+  const r = JSON.parse(recon.body).summary;
+  const e = expected.summary;
+  assert.deepEqual(
+    [r.exactMatches, r.fuzzyMatches, r.probableMatches, r.valueMismatches, r.docTypeMismatches, r.vendorNotInPr, r.totalItcAvailable, r.totalItcNotAvailable, r.totalUnclaimedItc],
+    [e.exactMatchesCount, e.fuzzyMatchesCount, e.probableMatchesCount, e.valueMismatchesCount, e.docTypeMismatchesCount, e.vendorNotInPrCount, e.totalMatchedItc, e.totalItcNotAvailable, e.totalUnclaimedItc],
+  );
+  assert.equal(r.purchaseNotIn2b, e.purchaseNotIn2bCount);
+  assert.equal(r.datedAfterPeriod, e.outOfPeriodCount);
+  assert.equal(r.totalItcAtRisk, e.totalAtRiskItc);
+  assert.equal(r.totalDeferredItc, e.totalDeferredItc);
+  await app.close();
+});

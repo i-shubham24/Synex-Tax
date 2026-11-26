@@ -57,7 +57,8 @@ export const RATES_2025: Record<string, RateRule> = Object.fromEntries(
     r('1024', '393(1) Table 6(i)(b)', 'Contractor, others', 2, { kind: 'SINGLE_OR_AGGREGATE', single: 30000, aggregate: 100000 }),
     r('1026', '393(1) Table 6(iii)(a)', 'Technical services, film royalty, call centre', 2, { kind: 'AGGREGATE', amount: 50000 }),
     r('1027', '393(1) Table 6(iii)(b)', 'Professional services, royalty and others', 10, { kind: 'AGGREGATE', amount: 50000 }),
-    r('1028', '393(1) Table 6(iii)(c)', 'Director’s fees or commission', 10, { kind: 'NONE' }),
+    // Protean's code list puts 1028 at Sl. No. 6(iii), column D (b), together with 1027.
+    r('1028', '393(1) Table 6(iii)(b)', 'Director’s fees or commission', 10, { kind: 'NONE' }),
     r('1029', '393(1) Table 7', 'Dividend', 10, { kind: 'NOT_CHECKED', reason: 'No threshold, except non-cash dividends to an individual up to Rs 10,000 a year (393(4) Table 10(f)).' }),
     r('1030', '393(1) Table 8(i)', 'Life insurance payout', 2, { kind: 'AGGREGATE', amount: 100000 }),
     r('1031', '393(1) Table 8(ii)', 'Purchase of goods', 0.1, { kind: 'EXCESS_ONLY', amount: 5000000 }),

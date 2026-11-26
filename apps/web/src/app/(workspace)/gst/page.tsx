@@ -193,7 +193,7 @@ export default function MasterInvoicesPage() {
 
 
   return (
-    <div className="space-y-4 max-w-[1600px] mx-auto font-sans">
+    <div className="w-full min-w-0 max-w-full space-y-4 font-sans">
       
       {/* 1. Filter Toolbar Row */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-[#17191C] p-3 sm:p-4 rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm">
@@ -256,13 +256,13 @@ export default function MasterInvoicesPage() {
       )}
 
       {/* 2. Main Split Area: 72% Left Master Table + 28% Right Floating Inspector Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full min-w-0">
         
-        {/* Left Master Table (8.5 cols ~ 72%) */}
-        <div className="lg:col-span-8 min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
+        {/* Left Master Table (8 cols on XL, full width below XL) */}
+        <div className="xl:col-span-8 w-full min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] overflow-hidden shadow-sm flex flex-col">
           
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left text-xs border-collapse font-sans">
+          <div className="w-full min-w-0 overflow-x-auto flex-1 [scrollbar-width:thin] [scrollbar-color:rgba(120,120,120,0.2)_transparent]">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse font-sans">
               
               {/* Solid Obsidian Header Bar (#141619) with Crisp White Bold Text */}
               <thead>
@@ -374,8 +374,8 @@ export default function MasterInvoicesPage() {
 
         </div>
 
-        {/* Right Elevated Floating Inspector Card (4 cols ~ 28%) */}
-        <div className="lg:col-span-4 min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
+        {/* Right Elevated Floating Inspector Card (4 cols on XL, full width below XL) */}
+        <div className="xl:col-span-4 w-full min-w-0 bg-white dark:bg-[#17191C] rounded-2xl border border-[#E5E7EB] dark:border-[#24272B] shadow-sm overflow-hidden space-y-4">
           
           {/* Solid Sky Cobalt Header Bar with Doc Ref & Expand Arrow */}
           <div className="bg-[#2F8AE0] text-white p-4 flex items-center justify-between">
@@ -399,32 +399,32 @@ export default function MasterInvoicesPage() {
               <div className="text-[12px] text-[#646A73] dark:text-[#9BA1AA]">
                 Customer / Vendor Context
               </div>
-              <div className="font-semibold text-xs text-[#0E0F10] dark:text-white">{selectedRow.counterparty}</div>
+              <div className="font-semibold text-xs text-[#0E0F10] dark:text-white truncate">{selectedRow.counterparty}</div>
               <div className="text-[12px] text-[#2F8AE0] font-semibold">{selectedRow.gstin}</div>
             </div>
 
             {/* Mini Solid Obsidian Breakdown Table */}
             <div className="rounded-xl overflow-hidden border border-[#24272B] text-xs">
-              <div className="bg-[#141619] text-white p-2.5 flex justify-between font-semibold text-[12px]">
-                <span>Tax Head</span>
-                <span>Rate</span>
-                <span>Amount (₹)</span>
+              <div className="bg-[#141619] text-white p-2.5 grid grid-cols-12 font-semibold text-[12px] gap-2">
+                <span className="col-span-6">Tax Head</span>
+                <span className="col-span-2 text-center">Rate</span>
+                <span className="col-span-4 text-right">Amount (₹)</span>
               </div>
-              <div className="p-3 bg-white dark:bg-[#17191C] space-y-1.5 text-slate-700 dark:text-slate-300">
-                <div className="flex justify-between">
-                  <span>Central Tax (CGST):</span>
-                  <span>9%</span>
-                  <span className="font-semibold tabular-nums">₹ {selectedRow.cgst.toFixed(2)}</span>
+              <div className="p-3 bg-white dark:bg-[#17191C] space-y-2 text-slate-700 dark:text-slate-300">
+                <div className="grid grid-cols-12 items-center gap-2">
+                  <span className="col-span-6 truncate text-xs">Central Tax (CGST):</span>
+                  <span className="col-span-2 text-center text-xs">9%</span>
+                  <span className="col-span-4 text-right font-semibold tabular-nums text-xs">₹ {selectedRow.cgst.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>State Tax (SGST):</span>
-                  <span>9%</span>
-                  <span className="font-semibold tabular-nums">₹ {selectedRow.sgst.toFixed(2)}</span>
+                <div className="grid grid-cols-12 items-center gap-2">
+                  <span className="col-span-6 truncate text-xs">State Tax (SGST):</span>
+                  <span className="col-span-2 text-center text-xs">9%</span>
+                  <span className="col-span-4 text-right font-semibold tabular-nums text-xs">₹ {selectedRow.sgst.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Integrated Tax (IGST):</span>
-                  <span>18%</span>
-                  <span className="font-semibold tabular-nums">₹ {selectedRow.igst.toFixed(2)}</span>
+                <div className="grid grid-cols-12 items-center gap-2">
+                  <span className="col-span-6 truncate text-xs">Integrated Tax (IGST):</span>
+                  <span className="col-span-2 text-center text-xs">18%</span>
+                  <span className="col-span-4 text-right font-semibold tabular-nums text-xs">₹ {selectedRow.igst.toFixed(2)}</span>
                 </div>
               </div>
             </div>

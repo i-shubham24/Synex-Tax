@@ -12,7 +12,7 @@ The SynexTax Local Desktop Agent is a lightweight native daemon designed for CA 
 
 ## Security Architecture
 
-- **Loopback Pinning:** Binds strictly to `127.0.0.1:18531`. Never exposes ports on external network interfaces (`0.0.0.0`).
+- **Loopback Pinning:** Binds strictly to `127.0.0.1:15850`. Never exposes ports on external network interfaces (`0.0.0.0`).
 - **Origin Header Verification:** Requests are strictly restricted to authorized domains:
   - `http://localhost:3000` (Local Development)
   - `http://127.0.0.1:3000` (Local Development)

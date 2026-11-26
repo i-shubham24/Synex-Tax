@@ -30,7 +30,7 @@ const ReconRunInputSchema = z.object({
         cgstAmount: z.string(),
         sgstAmount: z.string(),
         totalTax: z.string(),
-        itcEligibility: z.enum(['ELIGIBLE', 'INELIGIBLE_17_5', 'INELIGIBLE_OTHER']),
+        itcEligibility: z.enum(['ELIGIBLE', 'INELIGIBLE_17_5', 'INELIGIBLE_RULE_42_43', 'INELIGIBLE_OTHER']),
       })
     )
     .optional(),
@@ -240,10 +240,16 @@ export async function reconRoutes(app: FastifyInstance) {
             totalMatchedItc: reconResult.totalMatchedItc,
             totalAtRiskItc: reconResult.totalAtRiskItc,
             totalUnclaimedItc: reconResult.totalUnclaimedItc,
+            probableMatchCount: reconResult.probableMatchesCount,
+            docTypeMismatchCount: reconResult.docTypeMismatchesCount,
+            outOfPeriodCount: reconResult.outOfPeriodCount,
+            totalItcNotAvailable: reconResult.totalItcNotAvailable,
+            totalDeferredItc: reconResult.totalDeferredItc,
           },
           pairs: reconResult.matchedPairs,
           unmatchedPurchase: reconResult.unmatchedPurchase,
           unmatchedPortal2b: reconResult.unmatchedPortal2b,
+          outOfPeriodPurchase: reconResult.outOfPeriodPurchase,
         },
       });
     }
@@ -341,10 +347,16 @@ export async function reconRoutes(app: FastifyInstance) {
             totalMatchedItc: reconResult.totalMatchedItc,
             totalAtRiskItc: reconResult.totalAtRiskItc,
             totalUnclaimedItc: reconResult.totalUnclaimedItc,
+            probableMatchCount: reconResult.probableMatchesCount,
+            docTypeMismatchCount: reconResult.docTypeMismatchesCount,
+            outOfPeriodCount: reconResult.outOfPeriodCount,
+            totalItcNotAvailable: reconResult.totalItcNotAvailable,
+            totalDeferredItc: reconResult.totalDeferredItc,
           },
           pairs: reconResult.matchedPairs,
           unmatchedPurchase: reconResult.unmatchedPurchase,
           unmatchedPortal2b: reconResult.unmatchedPortal2b,
+          outOfPeriodPurchase: reconResult.outOfPeriodPurchase,
         };
       });
 
@@ -391,10 +403,16 @@ export async function reconRoutes(app: FastifyInstance) {
           totalMatchedItc: reconResult.totalMatchedItc,
           totalAtRiskItc: reconResult.totalAtRiskItc,
           totalUnclaimedItc: reconResult.totalUnclaimedItc,
+          probableMatchCount: reconResult.probableMatchesCount,
+          docTypeMismatchCount: reconResult.docTypeMismatchesCount,
+          outOfPeriodCount: reconResult.outOfPeriodCount,
+          totalItcNotAvailable: reconResult.totalItcNotAvailable,
+          totalDeferredItc: reconResult.totalDeferredItc,
         },
         pairs: reconResult.matchedPairs,
         unmatchedPurchase: reconResult.unmatchedPurchase,
         unmatchedPortal2b: reconResult.unmatchedPortal2b,
+        outOfPeriodPurchase: reconResult.outOfPeriodPurchase,
       },
     });
   });

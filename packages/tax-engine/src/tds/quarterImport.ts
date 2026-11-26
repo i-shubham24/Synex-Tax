@@ -202,3 +202,175 @@ export function parseQuarterSheet(text: string, opts: { form: StatementForm; tax
   }
   return { challans: [...groups.values()], errors, missing };
 }
+
+export interface CsiRecord {
+  bsrCode: string;
+  challanDate: string; // YYYY-MM-DD
+  challanNo: string; // 5-digit padded serial
+  amount: string;
+  majorHead: '0020' | '0021';
+  minorHead?: string;
+  tan?: string;
+  bankName?: string;
+}
+
+/**
+ * Parse a Protean / NSDL OLTAS .csi (Challan Status Inquiry) caret-delimited file.
+ * Format: DDMMYYYY^BSR^CHALLAN_SERIAL^AMOUNT^MAJOR_HEAD[^MINOR_HEAD^TAN^BANK]
+ */
+export function parseCsiFile(text: string): {
+  records: CsiRecord[];
+  errors: Array<{ line: number; message: string }>;
+} {
+  const records: CsiRecord[] = [];
+  const errors: Array<{ line: number; message: string }> = [];
+  const lines = text.split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i].trim();
+    if (!rawLine) continue;
+    // Skip OLTAS header/trailer markers if present
+    if (/^(FH|BH|CH)\^/i.test(rawLine) && !/^\d{8}\^/.test(rawLine)) continue;
+
+    const parts = rawLine.includes('^') ? rawLine.split('^') : rawLine.split(',');
+    if (parts.length < 4) {
+      errors.push({ line: i + 1, message: 'CSI line has fewer than 4 fields (expected Date^BSR^Serial^Amount).' });
+      continue;
+    }
+
+    const rawDate = parts[0].trim();
+    const ddmmyyyy = /^(\d{2})(\d{2})(\d{4})$/.exec(rawDate);
+    const challanDate = ddmmyyyy ? `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}` : isoDate(rawDate);
+    if (!challanDate || new Date(`${challanDate}T00:00:00Z`).toISOString().slice(0, 10) !== challanDate) {
+      errors.push({ line: i + 1, message: `Invalid CSI deposit date "${rawDate}".` });
+      continue;
+    }
+
+    const bsrCode = parts[1].trim().replace(/\D/g, '');
+    if (!/^\d{7}$/.test(bsrCode)) {
+      errors.push({ line: i + 1, message: `Invalid 7-digit BSR code "${parts[1].trim()}".` });
+      continue;
+    }
+
+    const serialDigits = parts[2].trim().replace(/\D/g, '');
+    if (!/^\d{1,5}$/.test(serialDigits)) {
+      errors.push({ line: i + 1, message: `Invalid challan serial "${parts[2].trim()}".` });
+      continue;
+    }
+    const challanNo = serialDigits.padStart(5, '0');
+
+    const amtParsed = parseIndianAmount(parts[3].trim());
+    if (amtParsed === null) {
+      errors.push({ line: i + 1, message: `Invalid CSI amount "${parts[3].trim()}".` });
+      continue;
+    }
+    const amount = new Decimal(amtParsed).toFixed(2);
+    const rawMajor = (parts[4] ?? '0021').trim();
+    const majorHead: '0020' | '0021' = rawMajor === '0020' ? '0020' : '0021';
+
+    records.push({
+      bsrCode,
+      challanDate,
+      challanNo,
+      amount,
+      majorHead,
+      minorHead: parts[5]?.trim() || undefined,
+      tan: parts[6]?.trim().toUpperCase() || undefined,
+      bankName: parts[7]?.trim() || undefined,
+    });
+  }
+
+  return { records, errors };
+}
+
+export interface BookChallanForCsiMatch {
+  id: string;
+  bsrCode: string;
+  challanNo: string;
+  challanDate: string;
+  totalAmount: string;
+}
+
+export interface CsiMatchInputRecord {
+  bsrCode: string;
+  challanNo: string;
+  challanDate: string;
+  amount: string;
+  majorHead?: '0020' | '0021';
+}
+
+export interface CsiMatchedItem {
+  challanId: string;
+  bsrCode: string;
+  challanNo: string;
+  challanDate: string;
+  amount: string;
+  cin: string;
+}
+
+/**
+ * Match book challans with Protean CSI records by (BSR, 5-digit padded Serial, Deposit Date)
+ * within the Rs 0.05 rounding tolerance. Amount is never dropped from comparison, and date is
+ * always part of the key because serial numbers reset per BSR branch per day.
+ */
+export function matchChallansWithCsi(
+  challans: BookChallanForCsiMatch[],
+  csiRecords: CsiMatchInputRecord[],
+): {
+  matched: CsiMatchedItem[];
+  unmatchedBook: string[];
+  unmatchedCsi: Array<{ bsrCode: string; challanNo: string; challanDate: string; amount: string }>;
+} {
+  const normBsr = (s: string) => s.trim().replace(/\D/g, '').padStart(7, '0');
+  const normSerial = (s: string) => s.trim().replace(/\D/g, '').padStart(5, '0');
+  const normDate = (s: string) => isoDate(s) ?? s.trim().slice(0, 10);
+  const keyOf = (bsr: string, serial: string, date: string) => `${normBsr(bsr)}-${normSerial(serial)}-${normDate(date)}`;
+
+  const pool = new Map<string, Array<CsiMatchInputRecord & { used?: boolean }>>();
+  for (const rec of csiRecords) {
+    const key = keyOf(rec.bsrCode, rec.challanNo, rec.challanDate);
+    const list = pool.get(key) ?? [];
+    list.push({ ...rec, used: false });
+    pool.set(key, list);
+  }
+
+  const matched: CsiMatchedItem[] = [];
+  const unmatchedBook: string[] = [];
+
+  for (const ch of challans) {
+    const key = keyOf(ch.bsrCode, ch.challanNo, ch.challanDate);
+    const candidates = pool.get(key) ?? [];
+    const bookAmt = new Decimal(ch.totalAmount || 0);
+    const hit = candidates.find((c) => !c.used && bookAmt.sub(new Decimal(c.amount || 0)).abs().lte(0.05));
+    if (hit) {
+      hit.used = true;
+      const d = normDate(hit.challanDate).replace(/-/g, '');
+      matched.push({
+        challanId: ch.id,
+        bsrCode: normBsr(ch.bsrCode),
+        challanNo: normSerial(ch.challanNo),
+        challanDate: normDate(ch.challanDate),
+        amount: bookAmt.toFixed(2),
+        cin: `${normBsr(ch.bsrCode)}${d}${normSerial(ch.challanNo)}`,
+      });
+    } else {
+      unmatchedBook.push(ch.id);
+    }
+  }
+
+  const unmatchedCsi: Array<{ bsrCode: string; challanNo: string; challanDate: string; amount: string }> = [];
+  for (const list of pool.values()) {
+    for (const item of list) {
+      if (!item.used) {
+        unmatchedCsi.push({
+          bsrCode: normBsr(item.bsrCode),
+          challanNo: normSerial(item.challanNo),
+          challanDate: normDate(item.challanDate),
+          amount: new Decimal(item.amount || 0).toFixed(2),
+        });
+      }
+    }
+  }
+
+  return { matched, unmatchedBook, unmatchedCsi };
+}

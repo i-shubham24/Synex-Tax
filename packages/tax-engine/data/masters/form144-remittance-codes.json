@@ -1,0 +1,370 @@
+{
+  "status": "DRAFT_UNVERIFIED",
+  "title": "Form 144 (27Q equivalent, Income-tax Act 2025) nature of remittance codes, Annexure 9",
+  "compiled_on": "2026-11-26",
+  "verified_by": null,
+  "verified_on": null,
+  "applies_to": "Form 144 deductee records, tax year 2026-27 on. Field stored in tds_deductees.remittance_nature (packages/db/migrations/0017_payee_fields_144_143.sql:13).",
+  "entries": [
+    {
+      "code": "16",
+      "description": "Dividend income referred to in the section 207(1) [Table: Sl. No.2]",
+      "allowed_with_section_codes": [
+        "1046",
+        "1048",
+        "1049",
+        "1050",
+        "1051",
+        "1053",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:80 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "21",
+      "description": "Fees for Technical Services/ Fees for included services where the agreement is made after the 31st March, 1976",
+      "allowed_with_section_codes": [
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:81 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "27",
+      "description": "Interest income",
+      "allowed_with_section_codes": [
+        "1040",
+        "1041",
+        "1042",
+        "1043",
+        "1044",
+        "1045",
+        "1048",
+        "1049",
+        "1050",
+        "1051",
+        "1053",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:82 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "28",
+      "description": "Investment income",
+      "allowed_with_section_codes": [
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:83 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "49",
+      "description": "Royalty where the agreement is made after the 31st March, 1976",
+      "allowed_with_section_codes": [
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:84 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "66",
+      "description": "Long term capital gains referred to in section 214 [Table: Sl. No. 2]",
+      "allowed_with_section_codes": [
+        "1048",
+        "1049",
+        "1050",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:85 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "67",
+      "description": "Long term capital gains referred to in section 197(1)",
+      "allowed_with_section_codes": [
+        "1048",
+        "1049",
+        "1050",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:86 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "68",
+      "description": "LTCG other than those specifically listed under Schedule II, Sl. No. 14 and Sl. No. 17 [related to section 10(36) of IT ACT-1961]",
+      "allowed_with_section_codes": [
+        "1048",
+        "1049",
+        "1050",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:87 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "69",
+      "description": "Long term capital gains referred to in section 198 exceeding one lakh twenty-five thousand rupees,",
+      "allowed_with_section_codes": [
+        "1048",
+        "1049",
+        "1050",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:88 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "70",
+      "description": "Short term capital gains referred to in section 196",
+      "allowed_with_section_codes": [
+        "1048",
+        "1049",
+        "1050",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:89 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "71",
+      "description": "Long Term Capital Gains arising from transfer of Units referred to in Section 208",
+      "allowed_with_section_codes": [
+        "1052"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:90 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "72",
+      "description": "Long-term capital gains arising from the transfer of bonds or Global Depository Receipts referred to in section 209",
+      "allowed_with_section_codes": [
+        "1054"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:91 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "73",
+      "description": "Dividend income referred to in the in the section 207(1) [Table: Sl. No.1]",
+      "allowed_with_section_codes": [
+        "1046",
+        "1048",
+        "1049",
+        "1050",
+        "1051",
+        "1053",
+        "1055",
+        "1056",
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:92 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "74",
+      "description": "Fees for Technical Services/ Fees for included services where the agreement is made after the 29th February, 1964 but before the 1st April, 1976",
+      "allowed_with_section_codes": [
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:93 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "75",
+      "description": "Royalty where the agreement is made after the 31st March, 1961 but before the 1st April, 1976",
+      "allowed_with_section_codes": [
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:94 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "99",
+      "description": "Other income",
+      "allowed_with_section_codes": [
+        "1057"
+      ],
+      "sources": [
+        "packages/tax-engine/src/tds/form144and143Annexures.ts:95 (Protean Form 144 file format v1.1 Annexure 9, read 21 Nov 2026, verbatim)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    }
+  ],
+  "section_code_rule": {
+    "source": "packages/tax-engine/src/tds/form144and143Annexures.ts:100 (REMITTANCE_BY_SECTION)",
+    "rule": "Section codes not listed take no nature code.",
+    "by_section": {
+      "1040": [
+        "27"
+      ],
+      "1041": [
+        "27"
+      ],
+      "1042": [
+        "27"
+      ],
+      "1043": [
+        "27"
+      ],
+      "1044": [
+        "27"
+      ],
+      "1045": [
+        "27"
+      ],
+      "1046": [
+        "16",
+        "73"
+      ],
+      "1048": [
+        "27",
+        "16",
+        "73",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70"
+      ],
+      "1049": [
+        "27",
+        "16",
+        "73",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70"
+      ],
+      "1050": [
+        "27",
+        "16",
+        "73",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70"
+      ],
+      "1051": [
+        "27",
+        "16",
+        "73"
+      ],
+      "1052": [
+        "71"
+      ],
+      "1053": [
+        "27",
+        "16",
+        "73"
+      ],
+      "1054": [
+        "72"
+      ],
+      "1055": [
+        "27",
+        "16",
+        "73",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70"
+      ],
+      "1056": [
+        "27",
+        "16",
+        "73",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70"
+      ],
+      "1057": [
+        "27",
+        "73",
+        "16",
+        "28",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70",
+        "21",
+        "74",
+        "49",
+        "75",
+        "99"
+      ]
+    }
+  },
+  "gaps": [
+    "The 1961 Act 27Q nature-of-remittance list (Protean 27Q file format v7.5 Annexure) is not in the code and was not read: founder to fetch from tinpan.proteantech.in/downloads/e-tds (xlsx/pdf).",
+    "Form 15CA/15CB purpose codes (RBI purpose codes) are a different list and are not included."
+  ]
+}

@@ -7,9 +7,9 @@ import { motion } from 'framer-motion';
 import { Eyebrow, LogoMark, PixelField, SplitButton, Stat } from './primitives';
 
 const SECTIONS = [
-  { label: 'About', href: '#about' },
-  { label: 'Modules', href: '#modules' },
-  { label: 'Why switch', href: '#why' },
+  { label: 'Products', href: '/products/gst' },
+  { label: 'Why switch', href: '/switch' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Pilot', href: '#pilot' },
 ];
 
@@ -185,9 +185,9 @@ export function ProductGlance() {
                 </li>
               ))}
               <li>
-                <a href="#contact" className="inline-flex items-center gap-1 border-b border-ink pb-0.5 text-ink">
+                <Link href="/contact" className="inline-flex items-center gap-1 border-b border-ink pb-0.5 text-ink">
                   Contact us <ArrowUpRight className="h-3 w-3" />
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -210,13 +210,13 @@ export function ProductGlance() {
             <RoleStack />
           </div>
           <div className="hidden border-b border-hairline p-6 lg:block lg:p-7">
-            <a
-              href="#contact"
-              aria-label="Jump to site navigation"
-              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition-transform"
+            <Link
+              href="/contact"
+              aria-label="Contact SynTax team"
+              className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white transition-transform hover:scale-105"
             >
               <Menu className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
 
           {/* Bottom row */}
@@ -261,7 +261,7 @@ export function ProductGlance() {
                 change is logged for the auditors.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-5">
-                <SplitButton href="/signup">Get started now</SplitButton>
+                <SplitButton href="/signup">Start 14-day free trial</SplitButton>
                 <Link href="#pilot" className="text-[12.5px] font-medium text-ink hover:underline">
                   Start your free pilot
                 </Link>

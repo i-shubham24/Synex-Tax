@@ -83,7 +83,7 @@ export default function BillingPage() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="block text-[12px] font-medium text-pos-ink/70">
           Client GSTIN
-          <select value={gstin} onChange={(e) => setGstin(e.target.value)} className={`${inputCls} mt-1 min-w-[320px]`}>
+          <select value={gstin} onChange={(e) => setGstin(e.target.value)} className={`${inputCls} mt-1 w-full sm:min-w-[320px] max-w-md`}>
             {regs.map((r) => <option key={r.gstin} value={r.gstin}>{r.name} ({r.gstin})</option>)}
           </select>
         </label>

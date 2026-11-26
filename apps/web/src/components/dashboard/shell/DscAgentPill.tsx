@@ -6,7 +6,7 @@ import { RefreshCw, Usb } from 'lucide-react';
 import { panelClass, usePopover } from './usePopover';
 
 /** The Go agent listens on loopback only (apps/dsc-agent). The CSP allows exactly this origin. */
-const AGENT = process.env.NEXT_PUBLIC_DSC_AGENT_URL || 'http://127.0.0.1:18531';
+const AGENT = process.env.NEXT_PUBLIC_DSC_AGENT_URL || 'http://127.0.0.1:15850';
 const POLL_MS = 15_000;
 
 type AgentState =

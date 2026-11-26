@@ -30,6 +30,8 @@ interface WorkspaceValue {
   activeClient: ActiveClient | null;
   activeEntity: Entity | null;
   setActiveClient: (c: ActiveClient | null) => void;
+  activePeriod: string;
+  setActivePeriod: (period: string) => void;
   filters: Filters;
   setFilters: (f: Filters) => void;
   errors: CapturedError[];
@@ -44,6 +46,8 @@ const RAW_API_BASE =
 const API_BASE = RAW_API_BASE.replace(/\/+$/, '');
 const WANT_API = process.env.NEXT_PUBLIC_DATA_SOURCE === 'api';
 const ACTIVE_KEY = 'synextax_active_client';
+const PERIOD_KEY = 'synextax_active_period';
+const DEFAULT_PERIOD = '2026-10';
 
 /**
  * Live adapter: maps /api/v1/client-master/tree onto the snapshot. Only entities, GSTINs and
@@ -92,6 +96,14 @@ export function WorkspaceProvider({ token, children }: { token: string | null; c
       return null;
     }
   });
+  const [activePeriod, setActivePeriodState] = useState<string>(() => {
+    try {
+      const saved = sessionStorage.getItem(PERIOD_KEY);
+      return saved && /^\d{4}-(0[1-9]|1[0-2])$/.test(saved) ? saved : DEFAULT_PERIOD;
+    } catch {
+      return DEFAULT_PERIOD;
+    }
+  });
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [errors, setErrors] = useState<CapturedError[]>([]);
 
@@ -132,14 +144,24 @@ export function WorkspaceProvider({ token, children }: { token: string | null; c
     }
   }, []);
 
+  const setActivePeriod = useCallback((period: string) => {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(period)) return;
+    setActivePeriodState(period);
+    try {
+      sessionStorage.setItem(PERIOD_KEY, period);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
   const activeEntity = useMemo(
     () => (activeClient ? snapshot.entities.find((e) => e.id === activeClient.entityId) ?? null : null),
     [activeClient, snapshot.entities],
   );
 
   const value = useMemo<WorkspaceValue>(
-    () => ({ snapshot, source, sourceNote, activeClient, activeEntity, setActiveClient, filters, setFilters, errors, captureError }),
-    [snapshot, source, sourceNote, activeClient, activeEntity, setActiveClient, filters, errors, captureError],
+    () => ({ snapshot, source, sourceNote, activeClient, activeEntity, setActiveClient, activePeriod, setActivePeriod, filters, setFilters, errors, captureError }),
+    [snapshot, source, sourceNote, activeClient, activeEntity, setActiveClient, activePeriod, setActivePeriod, filters, errors, captureError],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

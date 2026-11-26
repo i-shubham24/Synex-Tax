@@ -147,7 +147,7 @@ function buildFilings(): FilingCell[] {
 }
 
 export const SAMPLE_SNAPSHOT: WorkspaceSnapshot = {
-  firm: { id: 'f-verma', name: 'Verma & Associates CA (Amritsar)', frn: '014289N' },
+  firm: { id: 'f-verma', name: 'Verma & Associates CA (Amritsar)', frn: '014289N', enabledSuites: ['GST', 'TDS', 'SIGN', 'DESK', 'DIRECT'] },
   staff: STAFF,
   groups: GROUPS,
   entities: ENTITIES,

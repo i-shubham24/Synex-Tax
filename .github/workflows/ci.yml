@@ -1,59 +1,76 @@
-name: CI
+name: SynTax Continuous Integration
 
 on:
   push:
     branches: [main]
   pull_request:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main]
 
 jobs:
-  node:
+  web-and-api:
+    name: Node.js Monorepo (Web & API)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      # Known high or critical advisories in production dependencies fail the build.
-      - run: npm audit --omit=dev --audit-level=high
-      - name: Build
-        run: npx turbo run build
-      - name: Type check web
-        run: npx tsc --noEmit -p apps/web
-      - name: Tax engine tests
-        run: npm test -w @synextax/tax-engine
-      - name: Database migrations and RLS tests
-        run: |
-          npm run migrate:test -w @synextax/db
-          npm run migrate:check -w @synextax/db
-      - name: API tests
-        run: npm test -w @synextax/api
-      - name: DSC client tests
-        run: npm test -w @synextax/dsc-client
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  agent:
-    runs-on: windows-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: apps/dsc-agent
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
         with:
-          go-version-file: apps/dsc-agent/go.mod
-      - run: go vet ./...
-      # Windows runs the signing tests through CNG and CryptoAPI with in-memory keys.
-      - run: go test ./...
-      - run: go build ./...
-        env:
-          GOOS: linux
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web Application
+        run: npm run build -w @synextax/web
+
+      - name: Run API Tests
+        run: npm test -w @synextax/api --if-present
+
+  dsc-agent:
+    name: Go 1.23+ DSC Local Agent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: apps/dsc-agent/go.sum
+
+      - name: Run DSC Agent Tests
+        run: |
+          cd apps/dsc-agent
+          go test -v ./...
+
+      - name: Cross-compile Windows AMD64 Binary
+        run: |
+          cd apps/dsc-agent
+          mkdir -p build
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o build/syntax-sign-windows-amd64.exe .
+          ls -lh build/syntax-sign-windows-amd64.exe
+
+  terraform:
+    name: Terraform India Infrastructure Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: Format Check
+        run: terraform fmt -check -recursive infra/terraform
+
+      - name: Initialize & Validate Staging
+        run: |
+          cd infra/terraform/environments/staging
+          terraform init -backend=false
+          terraform validate

@@ -6,14 +6,14 @@ import React, { useMemo } from 'react';
 import { SynTaxMark } from '../brand/SynTaxLogo';
 
 /* ------------------------------------------------------------------ Logo */
-export function LogoMark({ size = 30, tone = 'ink' }: { size?: number; tone?: 'ink' | 'paper' }) {
+export function LogoMark({ size = 36, tone = 'ink' }: { size?: number; tone?: 'ink' | 'paper' }) {
   return <SynTaxMark size={size} />;
 }
 
 export function Wordmark({ tone = 'ink', className = '' }: { tone?: 'ink' | 'paper'; className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <LogoMark size={32} tone={tone} />
+      <LogoMark size={36} tone={tone} />
       <span className={`text-[22px] font-semibold tracking-[-0.03em] ${tone === 'ink' ? 'text-ink' : 'text-white'}`}>
         SynTax
       </span>

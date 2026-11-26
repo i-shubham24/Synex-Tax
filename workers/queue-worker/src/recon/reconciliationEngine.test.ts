@@ -135,7 +135,9 @@ test('GstReconciliationEngine: 4-Pass Full Reconciliation Workflow', () => {
 
   // Verify Total ITC Buckets
   assert.equal(report.totalMatchedItc, '27000.00'); // 18000 + 9000
-  assert.equal(report.totalAtRiskItc, '5400.00');   // pr-004
+  assert.equal(report.totalAtRiskItc, '9000.00');   // pr-004 not in 2B (5400) + pr-003 value mismatch (3600)
+  assert.equal(report.totalItcNotAvailable, '0.00');
+  assert.equal(report.outOfPeriodCount, 0);
   assert.equal(report.totalUnclaimedItc, '13500.00'); // 2b-004
 
   // Verify Fuzzy match pair details

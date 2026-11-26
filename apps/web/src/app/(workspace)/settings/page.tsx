@@ -69,7 +69,7 @@ export default function SettingsPage() {
     setBridgeStatus(null);
     try {
       // Asks the agent on this computer directly; the server cannot see local tokens.
-      const res = await fetch(`${process.env.NEXT_PUBLIC_DSC_AGENT_URL || 'http://127.0.0.1:18531'}/health`, { cache: 'no-store' });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_DSC_AGENT_URL || 'http://127.0.0.1:15850'}/health`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const n = Number(data.tokensDetected ?? 0);
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                   <span>Local Desktop DSC Bridge Daemon Setup</span>
                 </div>
                 <p className="text-pos-ink/70 leading-relaxed text-[12px]">
-                  No Java applet or browser extension. The SynTax agent (apps/dsc-agent) runs on the computer at 127.0.0.1:18531 and
+                  No Java applet or browser extension. The SynTax agent (apps/dsc-agent) runs on the computer at 127.0.0.1:15850 and
                   signs through the token driver installed with the DSC; the token's own window asks for the PIN.
                 </p>
                 <div className="text-[12px] text-pos-accent pt-1">

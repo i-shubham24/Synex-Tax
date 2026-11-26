@@ -1,0 +1,9 @@
+# Example terraform.tfvars for SynTax Staging
+# Never commit real passwords or private keys to git repository.
+
+aws_region         = "ap-south-1"
+aws_dr_region      = "ap-south-2"
+aws_account_id     = "REPLACE_WITH_YOUR_AWS_ACCOUNT_ID"
+db_master_password = "REPLACE_WITH_SECURE_PASSWORD_32_CHARS"
+redis_auth_token   = "REPLACE_WITH_SECURE_REDIS_AUTH_TOKEN"
+alert_email        = "ops@synextax.in"

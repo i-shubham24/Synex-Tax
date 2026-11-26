@@ -20,23 +20,47 @@ export interface DualActSection {
   thresholdKind: string;
 }
 
-export const DUAL_ACT_SECTIONS: DualActSection[] = [
-  { legacy1961Code: '94C', act2025Code: '1023', section1961: '194C', section2025: '393(1) Table 6(i)(a)', nature: 'Contractor (Individual or HUF)', standardRate: 1, thresholdKind: 'SINGLE_OR_AGGREGATE' },
-  { legacy1961Code: '94C', act2025Code: '1024', section1961: '194C', section2025: '393(1) Table 6(i)(b)', nature: 'Contractor (Company or Firm)', standardRate: 2, thresholdKind: 'SINGLE_OR_AGGREGATE' },
-  { legacy1961Code: '4JA', act2025Code: '1026', section1961: '194J(1)(a)', section2025: '393(1) Table 6(iii)(a)', nature: 'Technical Services or Royalty', standardRate: 2, thresholdKind: 'AGGREGATE' },
-  { legacy1961Code: '4JB', act2025Code: '1027', section1961: '194J(1)(b)', section2025: '393(1) Table 6(iii)(b)', nature: 'Professional Services', standardRate: 10, thresholdKind: 'AGGREGATE' },
-  { legacy1961Code: '94J', act2025Code: '1028', section1961: '194J(1)(c)', section2025: '393(1) Table 6(iii)(c)', nature: 'Director Remuneration or Fees', standardRate: 10, thresholdKind: 'NONE' },
-  { legacy1961Code: '4IA', act2025Code: '1008', section1961: '194I(a)', section2025: '393(1) Table 2(ii)(a)', nature: 'Rent: Plant, Machinery or Equipment', standardRate: 2, thresholdKind: 'MONTHLY' },
-  { legacy1961Code: '4IB', act2025Code: '1009', section1961: '194I(b)', section2025: '393(1) Table 2(ii)(b)', nature: 'Rent: Land, Building or Furniture', standardRate: 10, thresholdKind: 'MONTHLY' },
-  { legacy1961Code: '94H', act2025Code: '1006', section1961: '194H', section2025: '393(1) Table 1(ii)', nature: 'Commission or Brokerage', standardRate: 2, thresholdKind: 'AGGREGATE' },
-  { legacy1961Code: '94D', act2025Code: '1005', section1961: '194D', section2025: '393(1) Table 1(i)', nature: 'Insurance Commission', standardRate: 2, companyRate: 10, thresholdKind: 'AGGREGATE' },
-  { legacy1961Code: '94A', act2025Code: '1022', section1961: '194A', section2025: '393(1) Table 5(iii)', nature: 'Interest other than on Securities', standardRate: 10, thresholdKind: 'AGGREGATE' },
-  { legacy1961Code: '94Q', act2025Code: '1031', section1961: '194Q', section2025: '393(1) Table 8(ii)', nature: 'Purchase of Goods', standardRate: 0.1, thresholdKind: 'EXCESS_ONLY' },
-  { legacy1961Code: '94R', act2025Code: '1033', section1961: '194R', section2025: '393(1) Table 8(iv)', nature: 'Business Perquisites or Benefits', standardRate: 10, thresholdKind: 'NONE' },
-  { legacy1961Code: '94S', act2025Code: '1037', section1961: '194S', section2025: '393(1) Table 8(vi)', nature: 'Virtual Digital Assets Transfer', standardRate: 1, thresholdKind: 'NONE' },
-  { legacy1961Code: '194', act2025Code: '1029', section1961: '194', section2025: '393(1) Table 7', nature: 'Dividends', standardRate: 10, thresholdKind: 'NONE' },
-  { legacy1961Code: '193', act2025Code: '1019', section1961: '193', section2025: '393(1) Table 5(i)', nature: 'Interest on Securities', standardRate: 10, thresholdKind: 'AGGREGATE' },
+/**
+ * 1961 Act code, 2025 Act code, 1961 section and a short nature for each pair this reconciler
+ * maps. The 2025 section, rate and threshold are NOT kept here: they come from RATES_2025
+ * (rates2025.ts), the single source, so the two cannot disagree.
+ */
+const DUAL_ACT_PAIRS: ReadonlyArray<readonly [legacy1961Code: string, act2025Code: string, section1961: string, nature: string]> = [
+  ['94C', '1023', '194C', 'Contractor (Individual or HUF)'],
+  ['94C', '1024', '194C', 'Contractor (Company or Firm)'],
+  ['4JA', '1026', '194J(1)(a)', 'Technical Services or Royalty'],
+  ['4JB', '1027', '194J(1)(b)', 'Professional Services'],
+  ['4JB', '1028', '194J(1)(ba)', 'Director Remuneration or Fees'],
+  ['4IA', '1008', '194I(a)', 'Rent: Plant, Machinery or Equipment'],
+  ['4IB', '1009', '194I(b)', 'Rent: Land, Building or Furniture'],
+  ['94H', '1006', '194H', 'Commission or Brokerage'],
+  ['94D', '1005', '194D', 'Insurance Commission'],
+  ['94A', '1022', '194A', 'Interest other than on Securities'],
+  ['94Q', '1031', '194Q', 'Purchase of Goods'],
+  ['94R', '1033', '194R', 'Business Perquisites or Benefits'],
+  ['94S', '1037', '194S', 'Virtual Digital Assets Transfer'],
+  ['194', '1029', '194', 'Dividends'],
+  ['193', '1019', '193', 'Interest on Securities'],
 ];
+
+function toDualActSection([legacy1961Code, act2025Code, section1961, nature]: (typeof DUAL_ACT_PAIRS)[number]): DualActSection {
+  const rule = RATES_2025[act2025Code];
+  if (!rule) throw new Error(`dualActRecon: code ${act2025Code} is not in RATES_2025`);
+  const standardRate = typeof rule.rate === 'function' ? rule.rate(false) : rule.rate;
+  const companyRate = typeof rule.rate === 'function' ? rule.rate(true) : undefined;
+  return {
+    legacy1961Code,
+    act2025Code,
+    section1961,
+    section2025: rule.section,
+    nature,
+    standardRate,
+    ...(companyRate !== undefined && companyRate !== standardRate ? { companyRate } : {}),
+    thresholdKind: rule.threshold.kind,
+  };
+}
+
+export const DUAL_ACT_SECTIONS: DualActSection[] = DUAL_ACT_PAIRS.map(toDualActSection);
 
 export function resolveDualActSection(rawCode: string, pan?: string, ratePercent?: number): DualActSection | null {
   const code = (rawCode || '').trim().toUpperCase();

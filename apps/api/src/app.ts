@@ -44,6 +44,8 @@ import { tdsCertificatesRoutes } from './routes/tdsCertificates.routes.js';
 import { backupsRoutes } from './routes/backups.routes.js';
 import { assistantRoutes } from './routes/assistant.routes.js';
 import { gstRoutes } from './routes/gst.routes.js';
+import { gstModuleRoutes } from './modules/gst/index.js';
+import { tdsModuleRoutes } from './modules/tds/index.js';
 import { isLocalEnv, secrets, JWT_AUDIENCE, JWT_ISSUER } from './security/env.js';
 import { sharedRedis } from './infra/redis.js';
 import { registerMetrics } from './plugins/metrics.js';
@@ -227,6 +229,8 @@ export function buildApp(): FastifyInstance {
   app.register(assistantRoutes, { prefix: '/api/v1/assistant' });
   app.register(gstRoutes, { prefix: '/api/v1/gst' });
   app.register(gstReturnsRoutes, { prefix: '/api/v1/gst' });
+  app.register(gstModuleRoutes, { prefix: '/api/v1/gst' });
+  app.register(tdsModuleRoutes, { prefix: '/api/v1/tds' });
 
   return app;
 }

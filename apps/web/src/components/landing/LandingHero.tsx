@@ -113,10 +113,13 @@ export function LandingHero() {
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 w-full sm:w-auto">
               <PillButton href="/signup" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
-                Book a free demo
+                Start 14-day free trial
+              </PillButton>
+              <PillButton href="/contact" tone="light" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
+                Book a demo
               </PillButton>
               <Link href="/switch" className="text-center sm:text-left font-display text-[15px] sm:text-[16px] font-medium tracking-[-0.015em] text-ink/70 transition-colors hover:text-ink">
-                Switching from desktop software?
+                Switching from desktop?
               </Link>
             </div>
           </div>

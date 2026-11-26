@@ -6,6 +6,8 @@ import {
   roundItActSection516,
   roundInterestBaseRule269,
   getMajorHeadForPan,
+  parseCsiFile,
+  matchChallansWithCsi,
 } from '@synextax/tax-engine';
 import {
   TdsChallanCreateSchema,
@@ -34,15 +36,20 @@ const CsiMatchInputSchema = z.object({
       totalAmount: z.string(),
     })
   ),
-  csiFileRecords: z.array(
-    z.object({
-      bsrCode: z.string().length(7),
-      challanDate: z.string(),
-      challanNo: z.string().min(1).max(16),
-      amount: z.string(),
-      majorHead: z.enum(['0020', '0021']),
-    })
-  ),
+  csiFileRecords: z
+    .array(
+      z.object({
+        bsrCode: z.string().length(7),
+        challanDate: z.string(),
+        challanNo: z.string().min(1).max(16),
+        amount: z.string(),
+        majorHead: z.enum(['0020', '0021']),
+      })
+    )
+    .optional(),
+  csiContent: z.string().min(10).optional(),
+}).refine((d) => Boolean(d.csiFileRecords || d.csiContent), {
+  message: 'Provide either parsed csiFileRecords or raw .csi file content.',
 });
 
 export async function tdsRoutes(app: FastifyInstance) {
@@ -465,48 +472,16 @@ export async function tdsRoutes(app: FastifyInstance) {
       });
     }
 
-    const { challans, csiFileRecords } = parsed.data;
-
-    const matched: Array<{ challanId: string; bsrCode: string; challanNo: string; amount: string }> = [];
-    const unmatchedBook: string[] = [];
-    const unmatchedCsi: Array<{ bsrCode: string; challanNo: string; amount: string }> = [];
-
-    // Map CSI records by composite key: BSR-ChallanNo-Amount
-    const csiMap = new Map<string, (typeof csiFileRecords)[0]>();
-    for (const csi of csiFileRecords) {
-      const key = `${csi.bsrCode}-${csi.challanNo.padStart(5, '0')}-${new Decimal(csi.amount).toFixed(2)}`;
-      csiMap.set(key, csi);
-    }
-
-    for (const ch of challans) {
-      const key = `${ch.bsrCode}-${ch.challanNo.padStart(5, '0')}-${new Decimal(ch.totalAmount).toFixed(2)}`;
-      if (csiMap.has(key)) {
-        matched.push({
-          challanId: ch.id,
-          bsrCode: ch.bsrCode,
-          challanNo: ch.challanNo,
-          amount: ch.totalAmount,
-        });
-        csiMap.delete(key);
-      } else {
-        unmatchedBook.push(ch.id);
-      }
-    }
-
-    for (const csi of csiMap.values()) {
-      unmatchedCsi.push({
-        bsrCode: csi.bsrCode,
-        challanNo: csi.challanNo,
-        amount: csi.amount,
-      });
-    }
+    const { challans, csiFileRecords, csiContent } = parsed.data;
+    const records = csiFileRecords ?? parseCsiFile(csiContent ?? '').records;
+    const { matched, unmatchedBook, unmatchedCsi } = matchChallansWithCsi(challans, records);
 
     return reply.status(200).send({
       success: true,
       data: {
         tan: parsed.data.tan,
         totalBookChallans: challans.length,
-        totalCsiRecords: csiFileRecords.length,
+        totalCsiRecords: records.length,
         matchedCount: matched.length,
         unmatchedBookCount: unmatchedBook.length,
         unmatchedCsiCount: unmatchedCsi.length,

@@ -1,0 +1,231 @@
+{
+  "status": "DRAFT_UNVERIFIED",
+  "title": "Protean deductor/collector category codes (batch header field \"deductor type\")",
+  "compiled_on": "2026-11-26",
+  "verified_by": null,
+  "verified_on": null,
+  "applies_to": "Forms 138, 140, 143, 144 (2025 Act) and 24Q, 26Q, 27Q, 27EQ (1961 Act)",
+  "entries": [
+    {
+      "code": "A",
+      "name": "Central Government",
+      "government": true,
+      "state_required": false,
+      "ministry": "REQUIRED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:65 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "S",
+      "name": "State Government",
+      "government": true,
+      "state_required": true,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:66 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "D",
+      "name": "Statutory body (Central Govt.)",
+      "government": true,
+      "state_required": false,
+      "ministry": "REQUIRED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:67 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "E",
+      "name": "Statutory body (State Govt.)",
+      "government": true,
+      "state_required": true,
+      "ministry": "OPTIONAL",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:68 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": "Oracle page calls E \"State Government (E)\" in one field description and \"Statutory body - State Government\" elsewhere; the code and Microsoft agree on statutory body."
+    },
+    {
+      "code": "G",
+      "name": "Autonomous body (Central Govt.)",
+      "government": true,
+      "state_required": false,
+      "ministry": "REQUIRED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:69 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "H",
+      "name": "Autonomous body (State Govt.)",
+      "government": true,
+      "state_required": true,
+      "ministry": "OPTIONAL",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:70 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "L",
+      "name": "Local Authority (Central Govt.)",
+      "government": true,
+      "state_required": false,
+      "ministry": "OPTIONAL",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:71 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "N",
+      "name": "Local Authority (State Govt.)",
+      "government": true,
+      "state_required": true,
+      "ministry": "OPTIONAL",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:72 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)",
+        "https://docs.oracle.com/cd/E16582_01/doc.91/e23355/txt_file_field_26q.htm (JD Edwards 26Q text file fields; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "K",
+      "name": "Company",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:73 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "M",
+      "name": "Branch / Division of Company",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:74 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "P",
+      "name": "Association of Person (AOP)",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:75 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "T",
+      "name": "Association of Person (Trust)",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:76 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": true,
+      "notes": "Name differs: code says \"Association of Person (Trust)\"; the Microsoft enumeration says \"Association of Trust (AOT)\". Confirm Protean wording."
+    },
+    {
+      "code": "J",
+      "name": "Artificial Juridical Person",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:77 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "B",
+      "name": "Body of Individuals",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:78 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "Q",
+      "name": "Individual/HUF",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:79 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    },
+    {
+      "code": "F",
+      "name": "Firm",
+      "government": false,
+      "state_required": false,
+      "ministry": "NOT_ALLOWED",
+      "sources": [
+        "packages/tax-engine/src/tds/form140Annexures.ts:80 (Protean Form 140 Annexure 4)",
+        "https://learn.microsoft.com/en-us/previous-versions/dynamics/ax-2012/reference/jj795822(v=ax.60) (TypeOfDeductor_IN enumeration, 2014; secondary, read 2026-11-26)"
+      ],
+      "needs_verification": false,
+      "notes": null
+    }
+  ],
+  "related": {
+    "state_required": "packages/tax-engine/src/tds/form140Annexures.ts:148 (STATE_GOVERNMENT_TYPES)",
+    "ministry_rules": "packages/tax-engine/src/tds/form140Annexures.ts:150-151",
+    "ministry_codes": "packages/tax-engine/src/tds/form140Annexures.ts:86 (Annexure 3, not copied here)"
+  }
+}

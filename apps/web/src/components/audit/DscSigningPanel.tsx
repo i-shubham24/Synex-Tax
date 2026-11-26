@@ -5,8 +5,8 @@ import { CheckCircle2, KeyRound, RefreshCw, Usb, AlertTriangle } from 'lucide-re
 import { useAuth } from '../../context/AuthContext';
 import { CustomDropdown } from '../ui/CustomSelect';
 
-/** The agent listens on loopback only (apps/dsc-agent). */
-const AGENT = process.env.NEXT_PUBLIC_DSC_AGENT_URL || 'http://127.0.0.1:18531';
+/** The agent listens on loopback only (apps/dsc-agent, port 15850). */
+const AGENT = process.env.NEXT_PUBLIC_DSC_AGENT_URL || 'http://127.0.0.1:15850';
 
 interface AgentCertificate {
   id: string;

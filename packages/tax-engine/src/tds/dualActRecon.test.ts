@@ -4,7 +4,9 @@ import {
   resolveDualActSection,
   reconcileConsoDualAct,
   generateAutoCorrectionEdits,
+  DUAL_ACT_SECTIONS,
 } from './dualActRecon.js';
+import { RATES_2025 } from './rates2025.js';
 import type { ConsoStatement } from './correction.js';
 
 test('resolves dual-act section mapping accurately between 1961 Act and 2025 Act', () => {
@@ -172,4 +174,20 @@ test('reconciles TRACES consolidated file with unconsumed challan surplus and Se
   /* Auto correction edits generation check */
   const edits = generateAutoCorrectionEdits(report);
   assert.ok(edits.deductees && edits.deductees.length >= 1);
+});
+
+test('dual-act table takes section, rate and threshold from RATES_2025', () => {
+  for (const s of DUAL_ACT_SECTIONS) {
+    const rule = RATES_2025[s.act2025Code];
+    assert.ok(rule, `${s.act2025Code} missing from RATES_2025`);
+    assert.equal(s.section2025, rule.section);
+    assert.equal(s.thresholdKind, rule.threshold.kind);
+  }
+  const byCode = (c: string) => DUAL_ACT_SECTIONS.find((s) => s.act2025Code === c)!;
+  assert.equal(byCode('1033').thresholdKind, 'AGGREGATE'); // Rs 20,000 a year, not "no threshold"
+  assert.equal(byCode('1037').thresholdKind, 'NOT_CHECKED'); // turns on who pays
+  assert.equal(byCode('1028').section2025, '393(1) Table 6(iii)(b)'); // Protean's code list
+  assert.equal(byCode('1028').legacy1961Code, '4JB'); // 94J is not a 1961 26Q code
+  assert.equal(byCode('1005').standardRate, 2);
+  assert.equal(byCode('1005').companyRate, 10);
 });

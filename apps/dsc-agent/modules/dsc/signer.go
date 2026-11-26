@@ -35,19 +35,20 @@ var (
 // Certificate describes a signing certificate whose private key this computer can use.
 type Certificate struct {
 	// ID is the SHA-1 thumbprint, as Windows shows it. It only identifies the certificate.
-	ID           string    `json:"id"`
-	Subject      string    `json:"subject"`
-	CommonName   string    `json:"commonName"`
-	Issuer       string    `json:"issuer"`
-	SerialNumber string    `json:"serialNumber"`
-	Pan          string    `json:"pan,omitempty"`
-	ValidFrom    time.Time `json:"validFrom"`
-	ValidTo      time.Time `json:"validTo"`
-	KeyAlgorithm string    `json:"keyAlgorithm"`
-	Provider     string    `json:"provider"`
-	// Token is true when the key is held by a smart card or USB token driver rather than a
-	// Microsoft software provider.
-	Token bool `json:"token"`
+	ID                         string    `json:"id"`
+	Subject                    string    `json:"subject"`
+	CommonName                 string    `json:"commonName"`
+	Issuer                     string    `json:"issuer"`
+	SerialNumber               string    `json:"serialNumber"`
+	Pan                        string    `json:"pan,omitempty"`
+	ValidFrom                  time.Time `json:"validFrom"`
+	ValidTo                    time.Time `json:"validTo"`
+	KeyAlgorithm               string    `json:"keyAlgorithm"`
+	Provider                   string    `json:"provider"`
+	Token                      bool      `json:"token"`
+	TokenLabel                 string    `json:"tokenLabel,omitempty"`
+	FipsProfile                string    `json:"fipsProfile"`
+	RenewalRequiresNewHardware bool      `json:"renewalRequiresNewHardware"`
 }
 
 // SignRequest asks the agent to sign one digest with one certificate.
@@ -77,17 +78,21 @@ func Describe(der []byte, provider string) (Certificate, *x509.Certificate, erro
 		return Certificate{}, nil, err
 	}
 	sum := sha1.Sum(der)
+	fipsProfile, renewalReq := DetectFipsTier(provider, x.NotBefore.UTC())
 	c := Certificate{
-		ID:           strings.ToUpper(hex.EncodeToString(sum[:])),
-		Subject:      x.Subject.String(),
-		CommonName:   x.Subject.CommonName,
-		Issuer:       x.Issuer.String(),
-		SerialNumber: strings.ToUpper(x.SerialNumber.Text(16)),
-		ValidFrom:    x.NotBefore.UTC(),
-		ValidTo:      x.NotAfter.UTC(),
-		KeyAlgorithm: keyAlgorithm(x),
-		Provider:     provider,
-		Token:        isTokenProvider(provider),
+		ID:                         strings.ToUpper(hex.EncodeToString(sum[:])),
+		Subject:                    x.Subject.String(),
+		CommonName:                 x.Subject.CommonName,
+		Issuer:                     x.Issuer.String(),
+		SerialNumber:               strings.ToUpper(x.SerialNumber.Text(16)),
+		ValidFrom:                  x.NotBefore.UTC(),
+		ValidTo:                    x.NotAfter.UTC(),
+		KeyAlgorithm:               keyAlgorithm(x),
+		Provider:                   provider,
+		Token:                      isTokenProvider(provider),
+		TokenLabel:                 provider,
+		FipsProfile:                fipsProfile,
+		RenewalRequiresNewHardware: renewalReq,
 	}
 	for _, n := range x.Subject.Names {
 		if s, ok := n.Value.(string); ok && panRE.MatchString(strings.ToUpper(strings.TrimSpace(s))) {

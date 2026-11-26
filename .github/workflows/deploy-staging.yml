@@ -1,0 +1,46 @@
+name: Deploy Staging to AWS Mumbai
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy (api, workers, or all)'
+        required: true
+        default: 'all'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-staging:
+    name: Deploy Staging (ap-south-1)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC Role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_STAGING_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push SynTax API Image
+        if: ${{ github.event.inputs.service == 'all' || github.event.inputs.service == 'api' }}
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/staging-syntax-api:$IMAGE_TAG -t $ECR_REGISTRY/staging-syntax-api:latest -f apps/api/Dockerfile .
+          docker push $ECR_REGISTRY/staging-syntax-api:$IMAGE_TAG
+          docker push $ECR_REGISTRY/staging-syntax-api:latest
+
+      - name: Update ECS Staging Service
+        if: ${{ github.event.inputs.service == 'all' || github.event.inputs.service == 'api' }}
+        run: |
+          aws ecs update-service --cluster staging-syntax-cluster --service staging-syntax-api --force-new-deployment --region ap-south-1

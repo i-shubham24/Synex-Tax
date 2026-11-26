@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /** First path segments of the pages that render per request (app/(workspace) and app/client). */
 const SIGNED_IN = new Set([
   'dashboard', 'clients', 'gst', 'tds', 'itr', 'tax-audit', 'practice', 'documents', 'bank', 'audit',
-  'settings', 'messages', 'assistant', 'client', 'billing',
+  'settings', 'messages', 'assistant', 'client', 'billing', 'dsc',
 ]);
 
 export function proxy(request: NextRequest) {
@@ -36,8 +36,8 @@ export function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    // The desktop agent on this computer; the local API and dev-server sockets only in development.
-    `connect-src 'self' http://127.0.0.1:18531 https://127.0.0.1:18531 http://localhost:18531${isDev ? ' http://localhost:4000 http://127.0.0.1:4000 ws://localhost:3000 ws://127.0.0.1:3000' : ''}`,
+    // The desktop agent on this computer (port 15850 and legacy 18531); the local API and dev-server sockets only in development.
+    `connect-src 'self' http://127.0.0.1:15850 https://127.0.0.1:15850 http://localhost:15850 https://localhost:15850 http://127.0.0.1:18531 https://127.0.0.1:18531 http://localhost:18531${isDev ? ' http://localhost:4000 http://127.0.0.1:4000 ws://localhost:3000 ws://127.0.0.1:3000' : ''}`,
     "object-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",

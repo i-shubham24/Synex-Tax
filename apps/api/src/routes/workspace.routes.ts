@@ -31,7 +31,7 @@ export async function workspaceRoutes(fastify: FastifyInstance, _opts: FastifyPl
       const snapshot = await db.withTenantTransaction(getCtx(request), async (client) => {
         // 1. Firm details
         const firmRes = await client.query(
-          `SELECT id, legal_name, trade_name, pan, gstin, state_code, plan_code, trial_ends_at
+          `SELECT id, legal_name, trade_name, pan, gstin, state_code, plan_code, trial_ends_at, enabled_suites
            FROM public.firms
            WHERE id = app.current_firm_id()`,
         );
@@ -170,6 +170,7 @@ export async function workspaceRoutes(fastify: FastifyInstance, _opts: FastifyPl
             frn: '014289N',
             tier: f.plan_code === 'PILOT' ? 'Trial' : f.plan_code,
             trialDaysRemaining: trialDays,
+            enabledSuites: f.enabled_suites || ['GST', 'TDS', 'SIGN', 'DESK', 'DIRECT'],
           },
           staff,
           groups: groupsRes.rows,

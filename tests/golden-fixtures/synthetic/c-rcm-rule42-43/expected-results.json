@@ -1,0 +1,71 @@
+{
+  "_synthetic": "SYNTHETIC FIXTURE. Hand-computed expectations, not generated. Contains no real taxpayer data.",
+  "period": "2025-11",
+  "turnover": { "exemptE": "8400000.00", "totalF": "12000000.00", "ratioEoverF": "0.7" },
+  "rcm": {
+    "liability": { "igst": "4000.00", "cgst": "18600.00", "sgst": "18600.00" },
+    "registeredSuppliers": { "igst": "4000.00", "cgst": "6000.00", "sgst": "6000.00" },
+    "unregisteredSuppliers": { "igst": "0.00", "cgst": "12600.00", "sgst": "12600.00" },
+    "selfInvoices": ["RCM/25-26/001", "RCM/25-26/002", "RCM/25-26/003", "RCM/25-26/004", "RCM/25-26/005", "RCM/25-26/006"]
+  },
+  "rule42": {
+    "note": "Inputs and input services only (capital goods go to Rule 43). D2 is 0: no common credit is used for non-business purposes.",
+    "T":  { "igst": "4000.00", "cgst": "56150.00", "sgst": "56150.00" },
+    "T1": { "igst": "0.00", "cgst": "900.00", "sgst": "900.00" },
+    "T2": { "igst": "0.00", "cgst": "3750.00", "sgst": "3750.00" },
+    "T3": { "igst": "0.00", "cgst": "500.00", "sgst": "500.00" },
+    "C1": { "igst": "4000.00", "cgst": "51000.00", "sgst": "51000.00" },
+    "T4": { "igst": "0.00", "cgst": "18000.00", "sgst": "18000.00" },
+    "C2": { "igst": "4000.00", "cgst": "33000.00", "sgst": "33000.00" },
+    "D1": { "igst": "2800.00", "cgst": "23100.00", "sgst": "23100.00" },
+    "D2": { "igst": "0.00", "cgst": "0.00", "sgst": "0.00" },
+    "C3": { "igst": "1200.00", "cgst": "9900.00", "sgst": "9900.00" },
+    "eligibleFromInputs": { "igst": "1200.00", "cgst": "27900.00", "sgst": "27900.00" }
+  },
+  "rule43": {
+    "note": "Common capital goods: full ITC is credited, Te reversed each month over 60 months. The motor car is blocked under 17(5)(a) and is not credited at all.",
+    "Tm": { "Paddy dryer": { "igst": "0.00", "cgst": "750.00", "sgst": "750.00" }, "Optical colour sorter": { "igst": "3000.00", "cgst": "0.00", "sgst": "0.00" } },
+    "Tr": { "igst": "3000.00", "cgst": "750.00", "sgst": "750.00" },
+    "Te": { "igst": "2100.00", "cgst": "525.00", "sgst": "525.00" }
+  },
+  "gstr3b": {
+    "4A3_rcm": { "igst": "4000.00", "cgst": "18600.00", "sgst": "18600.00" },
+    "4A5_allOther": { "igst": "180000.00", "cgst": "109550.00", "sgst": "109550.00" },
+    "4A_total": { "igst": "184000.00", "cgst": "128150.00", "sgst": "128150.00" },
+    "4B1_reversals": {
+      "rule42": { "igst": "2800.00", "cgst": "27750.00", "sgst": "27750.00", "note": "D1 + D2 + T1 + T2" },
+      "rule43": { "igst": "2100.00", "cgst": "525.00", "sgst": "525.00" },
+      "section17_5": { "igst": "0.00", "cgst": "72500.00", "sgst": "72500.00", "note": "T3 (canteen) + motor car" }
+    },
+    "4C_net": { "igst": "179100.00", "cgst": "27375.00", "sgst": "27375.00" },
+    "outward": { "igst": "0.00", "cgst": "90000.00", "sgst": "90000.00" }
+  },
+  "setOff": {
+    "engine": "packages/tax-engine/src/gst/itc-set-off-engine.ts GstItcSetOffEngine.compute",
+    "igstAgainstCgst": "89550.00",
+    "igstAgainstSgst": "89550.00",
+    "cgstAgainstCgst": "450.00",
+    "sgstAgainstSgst": "450.00",
+    "cashOutward": { "igst": "0.00", "cgst": "0.00", "sgst": "0.00" },
+    "cashRcm": { "igst": "4000.00", "cgst": "18600.00", "sgst": "18600.00" },
+    "totalCashPayable": "41200.00",
+    "remainingItc": { "igst": "0.00", "cgst": "26925.00", "sgst": "26925.00" },
+    "rule86bApplied": false
+  },
+  "gstr9": {
+    "engine": "packages/tax-engine/src/gst/gstr9Engine.ts computeGstr9AnnualReconciliation (fed this one month as the year)",
+    "table7": {
+      "rule42": { "igst": "2800.00", "cgst": "27750.00", "sgst": "27750.00" },
+      "rule43": { "igst": "2100.00", "cgst": "525.00", "sgst": "525.00" },
+      "section17_5": { "igst": "0.00", "cgst": "72500.00", "sgst": "72500.00" },
+      "totalReversed": { "igst": "4900.00", "cgst": "100775.00", "sgst": "100775.00" },
+      "netItcAvailable": { "igst": "179100.00", "cgst": "27375.00", "sgst": "27375.00" }
+    },
+    "table6": {
+      "rcmRegistered": { "igst": "4000.00", "cgst": "6000.00", "sgst": "6000.00" },
+      "rcmUnregistered": { "igst": "0.00", "cgst": "12600.00", "sgst": "12600.00" },
+      "totalAvailedTable6_equals_6A": { "igst": "184000.00", "cgst": "128150.00", "sgst": "128150.00" }
+    }
+  },
+  "section17_5Blocked": ["SC/219", "SM/INV/3310"]
+}

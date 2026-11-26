@@ -21,6 +21,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:golden": "tsx --test tests/golden-fixtures/synthetic/*.test.ts",
     "db:migrate": "turbo run db:migrate",
     "clean": "turbo run clean"
   },

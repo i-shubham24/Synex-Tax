@@ -13,8 +13,12 @@ function normalizeFyTokens(input: string): string {
     .replace(/\b(2[4-9])-?(2[5-9])\b/g, '$1$2');  // e.g. 25-26 -> 2526
 }
 
-export function normalizeInvoiceNumber(rawInvoiceNum: string): string {
-  if (!rawInvoiceNum) return '';
+/**
+ * The parts of an invoice number once case, financial-year tokens and leading zeros are evened
+ * out: 'SALES/25-26/0001' -> ['SALES', '2526', '1'].
+ */
+export function invoiceNumberSegments(rawInvoiceNum: string): string[] {
+  if (!rawInvoiceNum) return [];
 
   let normalized = rawInvoiceNum.trim().toUpperCase();
 
@@ -26,7 +30,7 @@ export function normalizeInvoiceNumber(rawInvoiceNum: string): string {
 
   // 3. Normalize each segment: strip leading zeros from pure numeric segments (e.g. '0042' -> '42'),
   // preserving 4-digit FY tokens (e.g. '2526', '2627')
-  const cleanSegments = segments.map((seg) => {
+  return segments.map((seg) => {
     // If it's a 4-digit FY token (e.g. 2526), keep it intact
     if (/^2[4-9]2[5-9]$/.test(seg)) {
       return seg;
@@ -38,8 +42,23 @@ export function normalizeInvoiceNumber(rawInvoiceNum: string): string {
     // If segment has prefix like 'INV0042', strip zeros between letters and digits
     return seg.replace(/([A-Z])0+([1-9][0-9]*)/g, '$1$2');
   });
+}
 
-  return cleanSegments.join('');
+/**
+ * Loose key: the segments joined with nothing, so 'SALES/25-26/1' and 'SALES25261' meet. Two
+ * different numbers can share it ('A/1/12' and 'A/11/2' are both 'A112'); see
+ * strictInvoiceKey for the tie-break.
+ */
+export function normalizeInvoiceNumber(rawInvoiceNum: string): string {
+  return invoiceNumberSegments(rawInvoiceNum).join('');
+}
+
+/**
+ * Strict key: the same segments with their boundaries kept, so 'A/1/12' and 'A-1-12' meet but
+ * 'A/1/12' and 'A/11/2' do not. The matcher tries this before the loose key.
+ */
+export function strictInvoiceKey(rawInvoiceNum: string): string {
+  return invoiceNumberSegments(rawInvoiceNum).join('|');
 }
 
 export interface InvoiceMatchResult {

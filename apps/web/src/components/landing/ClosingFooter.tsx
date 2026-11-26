@@ -50,7 +50,7 @@ export function ClosingCta() {
             </p>
             <div className="mt-7">
               <SplitButton href="/signup" tone="light">
-                Book a free demo
+                Start 14-day free trial
               </SplitButton>
             </div>
           </div>

@@ -45,7 +45,7 @@ export function taxYearEnd(d: IsoDate): IsoDate {
 /* ---------------------------------------------------------------- GST */
 
 export type GstCadence = 'MONTHLY' | 'QRMP';
-export type GstReturnType = 'GSTR1' | 'IFF' | 'GSTR3B';
+export type GstReturnType = 'GSTR1' | 'IFF' | 'GSTR3B' | 'PMT06';
 
 // QRMP GSTR-3B: 22nd for these states/UTs, 24th for all others (Punjab, 03, files on the 24th).
 const QRMP_3B_22ND = new Set(['22', '23', '24', '26', '27', '29', '30', '31', '32', '33', '34', '35', '36', '37']);
@@ -58,6 +58,7 @@ export function gstDueDate(type: GstReturnType, period: string, cadence: GstCade
   const y = Number(period.slice(0, 4));
   const m = Number(period.slice(5, 7));
   if (type === 'IFF') return makeDate(y, m + 1, 13);
+  if (type === 'PMT06') return makeDate(y, m + 1, 25);
   if (type === 'GSTR1') return makeDate(y, m + 1, cadence === 'QRMP' ? 13 : 11);
   if (cadence === 'MONTHLY') return makeDate(y, m + 1, 20);
   return makeDate(y, m + 1, QRMP_3B_22ND.has(stateCode) ? 22 : 24);
