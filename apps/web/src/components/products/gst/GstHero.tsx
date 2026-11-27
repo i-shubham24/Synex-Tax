@@ -48,7 +48,7 @@ const SPLIT = [
 export function SplitCard() {
   const reduce = useReducedMotion();
   return (
-    <div className="w-[260px] rounded-[12px] bg-white p-4 shadow-[0_24px_50px_-24px_rgba(20,40,80,0.45)] ring-1 ring-black/[0.06]">
+    <div className="w-full max-w-[280px] rounded-[12px] bg-white p-4 shadow-[0_24px_50px_-24px_rgba(20,40,80,0.45)] ring-1 ring-black/[0.06]">
       <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-ink">
         <LogoMark size={14} /> Sample client, November
       </p>
@@ -73,7 +73,7 @@ export function SplitCard() {
               <span className={`h-2 w-2 rounded-[2px] ${s.color}`} aria-hidden />
               {s.label}
             </dt>
-            <dd className="mt-0.5 text-[13px] font-medium tabular-nums text-ink">&#8377;{s.amount} L</dd>
+            <dd className="mt-0.5 text-[12px] sm:text-[13px] font-medium tabular-nums text-ink">&#8377;{s.amount} L</dd>
           </div>
         ))}
       </dl>
@@ -121,7 +121,7 @@ function MonthStrip() {
                     animate={{ scaleY: 1 }}
                     transition={{ duration: 0.9, delay: 0.25 + PILLARS.indexOf(pillar) * 0.12, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <span className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] font-medium tracking-[-0.01em] text-ink">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] lg:text-[13px] font-medium tracking-[-0.01em] text-ink">
                       {pillar.label}
                     </span>
                   </motion.div>
@@ -130,7 +130,7 @@ function MonthStrip() {
                   <span className="absolute bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11.5px] text-ink">Today</span>
                 )}
                 <span
-                  className={`flex h-9 items-center justify-center rounded-[4px] text-[11px] tabular-nums ${
+                  className={`flex h-9 items-center justify-center rounded-[4px] text-[10px] lg:text-[11px] tabular-nums ${
                     isToday ? 'bg-ink text-white' : pillar ? 'bg-white font-medium text-ink ring-1 ring-ink/15' : 'bg-white/70 text-ink-faint ring-1 ring-ink/[0.06]'
                   }`}
                 >
@@ -142,13 +142,15 @@ function MonthStrip() {
         </div>
       </div>
 
-      {/* Phones: the same dates as a short list */}
-      <ul className="space-y-2 pb-6 sm:hidden">
+      {/* Phones: bounded proportional bar track */}
+      <ul className="space-y-2.5 pb-6 sm:hidden">
         {PILLARS.map((p) => (
-          <li key={p.day} className="flex items-center gap-3">
-            <span className="w-9 shrink-0 text-[13px] tabular-nums text-ink">{p.day}th</span>
-            <span className={`h-3 rounded-r-[3px] ${p.tone === 'mint' ? 'bg-mint' : 'bg-sky'}`} style={{ width: p.height }} aria-hidden />
-            <span className="text-[13px] text-ink">{p.label}</span>
+          <li key={p.day} className="flex items-center gap-2.5">
+            <span className="w-8 shrink-0 text-[12.5px] tabular-nums text-ink">{p.day}th</span>
+            <div className="min-w-0 flex-1 h-3 overflow-hidden rounded-[4px] bg-white/80">
+              <span className={`block h-full rounded-[4px] ${p.tone === 'mint' ? 'bg-mint' : 'bg-sky'}`} style={{ width: p.height }} aria-hidden />
+            </div>
+            <span className="w-16 shrink-0 text-right text-[12.5px] font-medium text-ink">{p.label}</span>
           </li>
         ))}
       </ul>

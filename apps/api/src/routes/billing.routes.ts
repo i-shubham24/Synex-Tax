@@ -43,7 +43,8 @@ const GSTIN = z.string().trim().toUpperCase().regex(/^[0-9]{2}[0-9A-Z]{13}$/);
 const ISO_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const PERIOD = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const UUID = z.string().uuid();
-const QTY = z.string().trim().max(20).regex(/^\d+(\.\d{1,3})?$/);
+const NON_NEG_QTY = z.string().trim().max(20).regex(/^\d+(\.\d{1,3})?$/);
+const QTY = NON_NEG_QTY.refine((v) => Number(v) > 0, { message: 'Quantity must be greater than zero' });
 const MONEY = z.string().trim().max(20).regex(/^\d+(\.\d{1,2})?$/);
 const PRICE = z.string().trim().max(20).regex(/^\d+(\.\d{1,3})?$/);
 const blankToNull = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? null : v);
@@ -62,7 +63,7 @@ const ItemBody = z.object({
   gstRate: GST_RATE,
   cessRate: z.number().min(0).max(999).default(0),
   salePrice: PRICE.default('0'),
-  openingQty: QTY.default('0'),
+  openingQty: NON_NEG_QTY.default('0'),
   openingValue: MONEY.default('0'),
   active: z.boolean().default(true),
 });

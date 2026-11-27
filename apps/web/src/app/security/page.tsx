@@ -1,15 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FeatureGroups, MarketingPage } from '../../components/marketing/MarketingPage';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Security | SynTax',
-  description: 'How SynTax keeps each firm’s client data apart, who can file what, what is logged, and what we never store.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.security);
 
 export default function SecurityPage() {
   return (
-    <MarketingPage
+    <>
+      <JsonLd data={buildBreadcrumbSchema([{ name: 'Security', path: '/security' }])} />
+      <MarketingPage
       eyebrow="Security"
       title="Your clients’ data, walled off and logged."
       summary={
@@ -82,6 +84,7 @@ export default function SecurityPage() {
         <Link href="/contact" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">contact page</Link> and choose
         Privacy. Reports are answered before anything else.
       </p>
-    </MarketingPage>
+      </MarketingPage>
+    </>
   );
 }

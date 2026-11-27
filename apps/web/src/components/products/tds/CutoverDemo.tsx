@@ -42,7 +42,7 @@ export function CutoverDemo() {
         </p>
       </div>
 
-      <div role="tablist" aria-label="Choose a payment" className="flex gap-1.5 overflow-x-auto border-b border-hairline px-4 py-2.5 sm:px-5 [scrollbar-width:none]">
+      <div role="tablist" aria-label="Choose a payment" className="flex flex-wrap gap-1.5 border-b border-hairline px-3.5 py-2.5 sm:px-5">
         {PAYMENTS.map((x, i) => (
           <button
             key={x.key}
@@ -50,7 +50,7 @@ export function CutoverDemo() {
             type="button"
             aria-selected={i === active}
             onClick={() => setActive(i)}
-            className={`shrink-0 rounded-full border px-3 py-1 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
+            className={`rounded-full border px-2.5 py-1 text-[11.5px] sm:px-3 sm:text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
               i === active ? 'border-ink bg-ink text-white' : 'border-ink/20 text-ink hover:border-ink/50'
             }`}
           >
@@ -68,25 +68,43 @@ export function CutoverDemo() {
           exit={reduce ? undefined : { opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
-          <table className="w-full table-fixed border-collapse text-left text-[12.5px]">
+          {/* Mobile stacked 2-column comparison so detail labels never collide */}
+          <div className="divide-y divide-hairline px-3.5 py-2 sm:hidden">
+            <div className="grid grid-cols-2 gap-3 pb-2 pt-1 text-[11px] font-medium text-ink-soft">
+              <span>Paid 28 Mar 2026</span>
+              <span>Paid 6 Apr 2026</span>
+            </div>
+            {ROWS.map((r) => (
+              <div key={r.label} className="py-2">
+                <p className="text-[11px] font-medium text-ink-soft">{r.label}</p>
+                <div className="mt-1 grid grid-cols-2 gap-3 text-[12px] leading-snug tabular-nums">
+                  <span className="text-ink/85">{r.old(p)}</span>
+                  <span className="font-medium text-ink">{r.next(p)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tablet/Desktop 3-column lookup table */}
+          <table className="hidden w-full table-fixed border-collapse text-left text-[12.5px] sm:table">
             <thead>
               <tr className="text-[11px] text-ink-soft">
-                <th className="w-[28%] px-4 pb-1.5 pt-3 font-normal sm:px-5"><span className="sr-only">Detail</span></th>
-                <th className="px-2 pb-1.5 pt-3 font-normal">Paid 28 Mar 2026</th>
-                <th className="px-2 pb-1.5 pt-3 pr-4 font-normal sm:pr-5">Paid 6 Apr 2026</th>
+                <th className="w-[26%] px-5 pb-1.5 pt-3 font-normal"><span className="sr-only">Detail</span></th>
+                <th className="px-3 pb-1.5 pt-3 font-normal">Paid 28 Mar 2026</th>
+                <th className="px-3 pb-1.5 pt-3 pr-5 font-normal">Paid 6 Apr 2026</th>
               </tr>
             </thead>
             <tbody>
               {ROWS.map((r) => (
                 <tr key={r.label} className="border-t border-hairline align-top">
-                  <th scope="row" className="px-4 py-1.5 font-normal text-ink-soft sm:px-5">{r.label}</th>
-                  <td className="px-2 py-1.5 tabular-nums text-ink [overflow-wrap:anywhere]">{r.old(p)}</td>
-                  <td className="px-2 py-1.5 pr-4 font-medium tabular-nums text-ink [overflow-wrap:anywhere] sm:pr-5">{r.next(p)}</td>
+                  <th scope="row" className="px-5 py-1.5 font-normal text-ink-soft">{r.label}</th>
+                  <td className="px-3 py-1.5 tabular-nums text-ink [overflow-wrap:anywhere]">{r.old(p)}</td>
+                  <td className="px-3 py-1.5 pr-5 font-medium tabular-nums text-ink [overflow-wrap:anywhere]">{r.next(p)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="mt-1.5 bg-mint px-4 py-3.5 text-ink sm:px-5">
+          <div className="mt-1.5 bg-mint px-3.5 py-3.5 text-ink sm:px-5">
             <p className="text-[14px] font-medium tracking-[-0.01em]">Rate {p.rate} on both sides</p>
             <p className="mt-0.5 text-[12px] leading-[1.5] text-ink/75">
               Deducted once {p.threshold} is crossed. Nine days apart, it belongs to a different statement, so SynTax routes

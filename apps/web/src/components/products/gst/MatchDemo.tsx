@@ -129,7 +129,7 @@ export function MatchDemo() {
         <p className="hidden text-[11px] text-ink-soft sm:block">03ZZZCS0010Z1ZG</p>
       </div>
 
-      <div role="tablist" aria-label="Choose an invoice" className="flex gap-1.5 overflow-x-auto border-b border-hairline px-4 py-2.5 sm:px-5 [scrollbar-width:none]">
+      <div role="tablist" aria-label="Choose an invoice" className="flex flex-wrap gap-1.5 border-b border-hairline px-3.5 py-2.5 sm:px-5">
         {CASES.map((x, i) => (
           <button
             key={x.key}
@@ -137,7 +137,7 @@ export function MatchDemo() {
             type="button"
             aria-selected={i === active}
             onClick={() => setActive(i)}
-            className={`shrink-0 rounded-full border px-3 py-1 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
+            className={`rounded-full border px-2.5 py-1 text-[11.5px] sm:px-3 sm:text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
               i === active ? 'border-ink bg-ink text-white' : 'border-ink/20 text-ink hover:border-ink/50'
             }`}
           >
@@ -155,7 +155,7 @@ export function MatchDemo() {
           exit={reduce ? undefined : { opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="grid grid-cols-2 divide-x divide-hairline">
+          <div className="grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 divide-hairline">
             <Side label="Your purchase register" line={c.books} c={c} field="books" />
             <Side label="GSTR-2B" line={c.twoB} c={c} field="2b" />
           </div>

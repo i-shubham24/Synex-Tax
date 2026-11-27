@@ -20,15 +20,19 @@ export function SynTaxMark({ size = 36, className = '', priority = true }: SynTa
       className={`inline-flex shrink-0 items-center justify-center ${className}`}
       style={{ width: w, height: h }}
     >
-      <img
-        src="/syntax-logo.png"
-        alt="SynTax Mark"
-        width={w}
-        height={h}
-        loading={priority ? 'eager' : 'lazy'}
-        decoding="async"
-        className="h-full w-full object-contain select-none"
-      />
+      <picture className="h-full w-full">
+        <source srcSet="/syntax-logo.webp" type="image/webp" />
+        <img
+          src="/syntax-logo.png"
+          alt="SynTax Mark"
+          width={w}
+          height={h}
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
+          decoding="async"
+          className="h-full w-full object-contain select-none"
+        />
+      </picture>
     </span>
   );
 }

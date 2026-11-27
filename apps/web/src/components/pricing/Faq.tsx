@@ -17,7 +17,7 @@ export function Faq({ items }: { items: Array<{ q: string; a: string }> }) {
                 type="button"
                 aria-expanded={isOpen}
                 onClick={() => setOpen(isOpen ? null : i)}
-                className="flex w-full items-start justify-between gap-6 py-5 text-left text-[16px] font-medium tracking-[-0.015em] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
+                className="flex w-full items-start justify-between gap-4 py-3.5 sm:py-4 text-left text-[15px] sm:text-[16px] font-medium tracking-[-0.015em] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky"
               >
                 {f.q}
                 <Plus className={`mt-1 h-4 w-4 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`} aria-hidden />

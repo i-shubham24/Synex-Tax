@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Bullets, LegalPage, type LegalSection } from '../../components/legal/LegalPage';
 import { LEGAL } from '../../lib/legal';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Privacy notice | SynTax',
-  description: 'How SynTax collects, uses, stores and protects personal data under the Digital Personal Data Protection Act, 2023.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.privacy);
 
 const mail = (address: string) => (
   <a className="text-sky-deep underline-offset-4 hover:underline" href={`mailto:${address}`}>
@@ -224,16 +224,19 @@ const SECTIONS: LegalSection[] = [
 
 export default function PrivacyPage() {
   return (
-    <LegalPage
-      eyebrow="Privacy notice"
-      title="Your clients’ data stays in India, and in your control."
-      summary={
-        <p>
-          What we collect, why, where it is stored and the rights you have under the Digital Personal Data Protection Act,
-          2023. We never ask for portal passwords, Aadhaar numbers or DSC PINs.
-        </p>
-      }
-      sections={SECTIONS}
-    />
+    <>
+      <JsonLd data={buildBreadcrumbSchema([{ name: 'Privacy notice', path: '/privacy' }])} />
+      <LegalPage
+        eyebrow="Privacy notice"
+        title="Your clients’ data stays in India, and in your control."
+        summary={
+          <p>
+            What we collect, why, where it is stored and the rights you have under the Digital Personal Data Protection Act,
+            2023. We never ask for portal passwords, Aadhaar numbers or DSC PINs.
+          </p>
+        }
+        sections={SECTIONS}
+      />
+    </>
   );
 }

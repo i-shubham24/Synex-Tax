@@ -206,6 +206,10 @@ export class AuthService {
   ): Promise<AuthTokens> {
     const { identityId, userId, firmId } = verifyChallengeToken(challengeToken, 'MFA_ENROLL');
 
+    if (await this.isLocked(identityId)) {
+      throw this.lockedError();
+    }
+
     // Retrieve unconfirmed TOTP factor
     const factor = await db.withAuthTransaction(async (client) => {
       const res = await client.query(
@@ -227,12 +231,16 @@ export class AuthService {
     const secret = decryptSecret(factor.totp_secret_ciphertext);
     const step = matchTotpStep(totpCode, secret);
     if (step === null) {
+      await this.countFailure(identityId);
+      if (await this.isLocked(identityId)) {
+        throw this.lockedError();
+      }
       const error: any = new Error('Invalid 6-digit TOTP code. Please check your authenticator clock.');
       error.statusCode = 401;
       throw error;
     }
 
-    // Confirm factor
+    // Confirm factor and reset failed attempt counter
     await db.withAuthTransaction(async (client) => {
       await client.query(
         `UPDATE auth.mfa_factors
@@ -240,6 +248,7 @@ export class AuthService {
          WHERE id = $1`,
         [factor.id, step],
       );
+      await client.query('UPDATE auth.identities SET failed_attempts = 0, locked_until = NULL WHERE id = $1', [identityId]);
     });
 
     // Create session and issue tokens

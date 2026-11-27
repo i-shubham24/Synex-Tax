@@ -147,9 +147,21 @@ const PILL_CHIP: Record<PillTone, string> = {
 };
 
 /** The arrow chip: on hover the arrow exits top-right while a fresh one slides in from bottom-left. */
-export function ArrowChip({ tone = 'dark', size = 'md' }: { tone?: PillTone; size?: 'sm' | 'md' | 'lg' }) {
-  const box = size === 'lg' ? 'h-11 w-11' : size === 'sm' ? 'h-7 w-7' : 'h-9 w-9';
-  const icon = size === 'lg' ? 'h-[18px] w-[18px]' : size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
+export function ArrowChip({ tone = 'dark', size = 'md', compactMobile = false }: { tone?: PillTone; size?: 'sm' | 'md' | 'lg'; compactMobile?: boolean }) {
+  const box = compactMobile
+    ? 'h-6 w-6 sm:h-11 sm:w-11'
+    : size === 'lg'
+      ? 'h-11 w-11'
+      : size === 'sm'
+        ? 'h-7 w-7'
+        : 'h-9 w-9';
+  const icon = compactMobile
+    ? 'h-3 w-3 sm:h-[18px] sm:w-[18px]'
+    : size === 'lg'
+      ? 'h-[18px] w-[18px]'
+      : size === 'sm'
+        ? 'h-3.5 w-3.5'
+        : 'h-4 w-4';
   return (
     <span
       aria-hidden
@@ -175,6 +187,7 @@ export function PillButton({
   onClick,
   type = 'button',
   full = false,
+  compactMobile = false,
   disabled,
   className = '',
 }: {
@@ -185,18 +198,24 @@ export function PillButton({
   onClick?: () => void;
   type?: 'button' | 'submit';
   full?: boolean;
+  compactMobile?: boolean;
   disabled?: boolean;
   className?: string;
 }) {
-  const pad =
-    size === 'lg' ? 'h-14 gap-4 pl-7 pr-1.5 text-[16.5px]' : size === 'sm' ? 'h-10 gap-3 pl-4 pr-1.5 text-[13.5px]' : 'h-12 gap-3.5 pl-5 pr-1.5 text-[14.5px]';
+  const pad = compactMobile
+    ? 'h-9 gap-1.5 pl-3 pr-1.5 text-[11.5px] sm:h-14 sm:gap-4 sm:pl-7 sm:pr-1.5 sm:text-[16.5px]'
+    : size === 'lg'
+      ? 'h-14 gap-4 pl-7 pr-1.5 text-[16.5px]'
+      : size === 'sm'
+        ? 'h-10 gap-3 pl-4 pr-1.5 text-[13.5px]'
+        : 'h-12 gap-3.5 pl-5 pr-1.5 text-[14.5px]';
   const cls = `group inline-flex items-center rounded-full font-display font-medium tracking-[-0.015em] transition-[background-color,transform,box-shadow] duration-300 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60 ${
     full ? 'w-full justify-between' : ''
   } ${pad} ${PILL_BODY[tone]} ${className}`;
   const inner = (
     <>
       <span className="whitespace-nowrap">{children}</span>
-      <ArrowChip tone={tone} size={size} />
+      <ArrowChip tone={tone} size={size} compactMobile={compactMobile} />
     </>
   );
   if (href) {

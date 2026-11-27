@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BadgeCheck, Brain, FileText, Check, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
-import { PixelField } from './primitives';
+import { Check, ArrowRight, ChevronDown, ShieldCheck } from 'lucide-react';
 
 export interface PlanTier {
   id: string;
@@ -22,34 +21,30 @@ export const ALL_IN_ONE_PLANS: PlanTier[] = [
     id: 'solo',
     name: 'Solo Practitioner',
     price: '8,999',
-    period: '/ year',
-    blurb: 'For a CA working alone or with one or two staff.',
-    quota: '50 GSTINs, 25 TANs, 3 seats',
+    period: '/ yr',
+    blurb: 'For a CA working alone or with 1-2 staff.',
+    quota: '50 GSTINs · 25 TANs · 3 seats',
     suites: ['SynTax GST', 'SynTax TDS', 'SynTax Sign', 'SynTax Desk'],
     features: [
-      'GST, TDS, signing and Desk',
-      'Purchase register and GSTR-2B matching',
-      'IMS actions before the 14th',
-      'TDS under both Acts, Forms 138 to 144',
-      'Signing with your USB token, no Java',
-      'Client master and audit trail',
+      'GSTR-1, 2B recon, IMS & Rule 88A 3B',
+      'Dual-Act TDS (1961 & 2025) + Protean FVU',
+      'USB token DSC signing without Java',
+      'Unified Client Master & audit trail',
     ],
   },
   {
     id: 'growth',
     name: 'Growth Firm',
     price: '15,999',
-    period: '/ year',
-    blurb: 'For a firm with a team handling a few hundred clients.',
-    quota: '200 GSTINs, 100 TANs, unlimited seats',
+    period: '/ yr',
+    blurb: 'For firms managing a few hundred clients.',
+    quota: '200 GSTINs · 100 TANs · Unlimited seats',
     suites: ['SynTax GST', 'SynTax TDS', 'SynTax Sign', 'SynTax Desk'],
     features: [
-      'Everything in Solo',
-      '200 GSTINs and 100 TANs',
-      'As many people as you need',
-      'Screens and clients set per staff member',
-      'Consent records in English, Punjabi and Hindi',
-      'Support until 10 PM in filing weeks',
+      'Everything in Solo, scaled to 200 GSTINs',
+      'Unlimited staff & partner logins',
+      'Role & client-level access controls',
+      'Priority support until 10 PM in filing week',
     ],
     popular: true,
   },
@@ -57,17 +52,15 @@ export const ALL_IN_ONE_PLANS: PlanTier[] = [
     id: 'scale',
     name: 'Scale Practice',
     price: '29,999',
-    period: '/ year',
-    blurb: 'For multi-partner firms and firms with branches.',
-    quota: '600 GSTINs, 300 TANs, unlimited seats',
+    period: '/ yr',
+    blurb: 'For multi-partner and multi-branch firms.',
+    quota: '600 GSTINs · 300 TANs · Unlimited seats',
     suites: ['SynTax GST', 'SynTax TDS', 'SynTax Sign', 'SynTax Desk'],
     features: [
-      'Everything in Growth',
-      '600 GSTINs and 300 TANs',
-      'A named account manager',
-      'Priority support',
-      'We move your Tally and Busy data for you',
-      'Early access to the client WhatsApp portal',
+      'Everything in Growth, scaled to 600 GSTINs',
+      'Named account manager & priority SLA',
+      'Assisted Tally & Busy data migration',
+      'Early access to Client WhatsApp Portal',
     ],
   },
 ];
@@ -77,50 +70,47 @@ export const STANDALONE_PLANS: PlanTier[] = [
     id: 'gst-sign',
     name: 'SynTax GST + Sign',
     price: '5,999',
-    period: '/ year',
-    blurb: 'GST returns and signing, with Desk Lite.',
-    quota: '50 GSTINs, unlimited DSC signing, 3 seats',
+    period: '/ yr',
+    blurb: 'GST returns & DSC signing, with Desk Lite.',
+    quota: '50 GSTINs · Unlimited DSC · 3 seats',
     suites: ['SynTax GST', 'SynTax Sign', 'SynTax Desk Lite'],
     features: [
-      'GSTR-1, 1A and IFF from the sales register',
-      'Purchase register and GSTR-2B matching',
-      'IMS actions before the 14th',
-      'GSTR-3B set-off in the Rule 88A order',
-      'Signing with your USB token, no Java',
-      'Add TDS later without re-entering clients',
+      'GSTR-1, 1A, IFF & 4-pass 2B matching',
+      'IMS actions & Rule 88A GSTR-3B',
+      'USB token DSC signing without Java',
+      'Upgrade to add TDS later in 1 click',
     ],
   },
   {
     id: 'tds-sign',
     name: 'SynTax TDS + Sign',
     price: '4,999',
-    period: '/ year',
-    blurb: 'TDS and TCS statements and signing, with Desk Lite.',
-    quota: '25 TANs, unlimited DSC signing, 3 seats',
+    period: '/ yr',
+    blurb: 'Dual-Act TDS & signing, with Desk Lite.',
+    quota: '25 TANs · Unlimited DSC · 3 seats',
     suites: ['SynTax TDS', 'SynTax Sign', 'SynTax Desk Lite'],
     features: [
-      'Rows routed to the 1961 or 2025 Act by date',
-      'ITNS 281 and 281N challans, matched to CSI',
-      'Forms 138 to 144, and 24Q, 26Q, 27Q, 27EQ',
-      'Checked with Protean FVU 1.2 and 9.5',
-      'Form 130 and 131 certificates checked and sent',
-      'Add GST later without re-entering clients',
+      'Date-routed 1961 & 2025 Act statements',
+      'ITNS 281 / 281N challans matched to CSI',
+      'Checked with Protean FVU 1.2 & 9.5',
+      'Form 130 / 131 batch PAdES signing',
     ],
   },
 ];
 
 export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?: boolean }) {
   const [tab, setTab] = useState<'all' | 'standalone'>(standaloneDefault ? 'standalone' : 'all');
+  const [openPlan, setOpenPlan] = useState<string | null>(null);
   const activePlans = tab === 'all' ? ALL_IN_ONE_PLANS : STANDALONE_PLANS;
 
   return (
-    <section id="pricing" className="site-base px-3 py-10 sm:px-6 sm:py-14 lg:px-10" aria-labelledby="plans-title">
-      <div data-nav-theme="dark" className="relative mx-auto max-w-[1480px] overflow-hidden rounded-[30px] bg-night text-white sm:rounded-[38px] p-6 sm:p-10 lg:p-12">
+    <section id="pricing" className="site-base px-3 py-8 sm:px-6 sm:py-10 lg:px-10" aria-labelledby="plans-title">
+      <div data-nav-theme="dark" className="relative mx-auto max-w-[1480px] overflow-hidden rounded-[26px] bg-night text-white sm:rounded-[34px] p-4 sm:p-8 lg:p-9">
         {/* Top Header Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-4 sm:pb-5">
           <div>
-            <span className="text-[13px] text-mint">Pricing</span>
-            <h2 id="plans-title" className="mt-1 text-[clamp(32px,3.8vw,56px)] font-medium leading-[1.05] tracking-[-0.04em]">
+            <span className="text-[12.5px] text-mint">Pricing</span>
+            <h2 id="plans-title" className="mt-0.5 text-[clamp(26px,3.2vw,44px)] font-medium leading-[1.08] tracking-[-0.035em]">
               One price a year for the whole firm
             </h2>
           </div>
@@ -130,7 +120,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
             <button
               type="button"
               onClick={() => setTab('all')}
-              className={`rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
+              className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all ${
                 tab === 'all'
                   ? 'bg-mint text-ink shadow-sm'
                   : 'text-white/70 hover:text-white'
@@ -141,7 +131,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
             <button
               type="button"
               onClick={() => setTab('standalone')}
-              className={`rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
+              className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all ${
                 tab === 'standalone'
                   ? 'bg-sky text-ink shadow-sm'
                   : 'text-white/70 hover:text-white'
@@ -153,84 +143,101 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
         </div>
 
         {/* Note on shared Client Master */}
-        <div className="mt-6 flex items-center justify-between text-[12.5px] text-white/60">
+        <div className="mt-3.5 flex items-center justify-between text-[12px] text-white/60">
           <p>
             {tab === 'all'
-              ? 'Every all-in-one plan has GST, TDS, signing and Desk, working from the same client list.'
-              : 'Start with GST or TDS alone. When you add the other, your clients are already there.'}
+              ? 'Every all-in-one plan includes GST, TDS, signing and Desk on one client list.'
+              : 'Start with GST or TDS alone. Add the other later with clients already set up.'}
           </p>
           <span className="hidden md:inline font-mono text-[11px] text-white/40">/ FY 2026-27 /</span>
         </div>
 
-        {/* Pricing Cards Grid (SSR-safe HTML) */}
-        <div className={`mt-8 grid gap-6 ${tab === 'all' ? 'lg:grid-cols-3' : 'lg:grid-cols-2 max-w-4xl mx-auto'}`}>
-          {activePlans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative flex flex-col justify-between rounded-2xl border p-6 sm:p-7 transition-all ${
-                plan.popular
-                  ? 'border-mint bg-white/[0.08] shadow-[0_20px_45px_-15px_rgba(82,232,136,0.25)]'
-                  : 'border-white/10 bg-white/[0.03] hover:border-white/20'
-              }`}
-            >
-              {plan.popular && (
-                <span className="absolute -top-3 right-6 rounded-full bg-mint px-3 py-0.5 text-[11px] font-semibold text-ink">
-                  Best for a team
-                </span>
-              )}
+        {/* Pricing Cards Grid (compact for laptop, collapsible features on mobile) */}
+        <div className={`mt-5 grid gap-4 ${tab === 'all' ? 'md:grid-cols-3' : 'md:grid-cols-2 max-w-4xl mx-auto'}`}>
+          {activePlans.map((plan) => {
+            const isOpen = openPlan === plan.id;
+            return (
+              <div
+                key={plan.id}
+                className={`relative flex flex-col justify-between rounded-2xl border p-4 sm:p-5 transition-all ${
+                  plan.popular
+                    ? 'border-mint bg-white/[0.08] shadow-[0_16px_36px_-15px_rgba(82,232,136,0.22)]'
+                    : 'border-white/10 bg-white/[0.03] hover:border-white/20'
+                }`}
+              >
+                {plan.popular && (
+                  <span className="absolute -top-2.5 right-4 rounded-full bg-mint px-2.5 py-0.5 text-[10.5px] font-semibold text-ink">
+                    Best for a team
+                  </span>
+                )}
 
-              <div>
-                <div className="flex items-baseline justify-between">
-                  <h3 className="text-[20px] font-semibold text-white tracking-tight">{plan.name}</h3>
-                </div>
-                <p className="mt-2 text-[13px] text-white/70 leading-relaxed min-h-[40px]">{plan.blurb}</p>
-
-                <div className="mt-6 flex items-baseline gap-1 border-y border-white/10 py-4">
-                  <span className="text-[22px] text-white/80 font-medium">&#8377;</span>
-                  <span className="text-[36px] font-semibold text-white tracking-tight tabular-nums">{plan.price}</span>
-                  <span className="text-[13px] text-white/60">{plan.period}</span>
-                </div>
-
-                <div className="mt-3 text-[12px] font-medium text-mint">
-                  {plan.quota}
-                </div>
-
-                <div className="mt-6 space-y-2.5">
-                  <p className="text-[12px] text-white/50">What’s included</p>
-                  {plan.features.map((feat) => (
-                    <div key={feat} className="flex items-start gap-2.5 text-[13px] text-white/80">
-                      <Check className="h-4 w-4 shrink-0 text-mint mt-0.5" />
-                      <span>{feat}</span>
+                <div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="text-[17px] sm:text-[18px] font-semibold text-white tracking-tight">{plan.name}</h3>
+                    <div className="flex items-baseline gap-0.5 md:hidden">
+                      <span className="text-[14px] text-white/80">&#8377;</span>
+                      <span className="text-[22px] font-semibold text-white tabular-nums">{plan.price}</span>
+                      <span className="text-[11px] text-white/60">{plan.period}</span>
                     </div>
-                  ))}
+                  </div>
+                  <p className="mt-1 text-[12.5px] text-white/65 leading-snug">{plan.blurb}</p>
+
+                  <div className="mt-3.5 hidden items-baseline gap-1 border-y border-white/10 py-2.5 md:flex">
+                    <span className="text-[18px] text-white/80 font-medium">&#8377;</span>
+                    <span className="text-[30px] font-semibold text-white tracking-tight tabular-nums leading-none">{plan.price}</span>
+                    <span className="text-[12px] text-white/60">{plan.period}</span>
+                  </div>
+
+                  <div className="mt-2.5 text-[11.5px] font-medium text-mint">
+                    {plan.quota}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpenPlan(isOpen ? null : plan.id)}
+                    aria-expanded={isOpen}
+                    className="mt-2.5 flex w-full items-center justify-between rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-[12px] text-white/75 md:hidden"
+                  >
+                    <span>What&rsquo;s included ({plan.features.length})</span>
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <div className={`mt-3 space-y-1.5 ${isOpen ? 'block' : 'hidden md:block'}`}>
+                    {plan.features.map((feat) => (
+                      <div key={feat} className="flex items-start gap-2 text-[12.5px] text-white/80 leading-snug">
+                        <Check className="h-3.5 w-3.5 shrink-0 text-mint mt-0.5" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <Link
+                    href="/signup"
+                    className={`flex h-9 sm:h-10 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-semibold transition-all ${
+                      plan.popular
+                        ? 'bg-mint text-ink hover:bg-mint/90 shadow-md'
+                        : 'bg-white text-ink hover:bg-white/90'
+                    }`}
+                  >
+                    <span>Start 14-day free trial</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
-
-              <div className="mt-8 pt-4 border-t border-white/10">
-                <Link
-                  href="/signup"
-                  className={`flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-all ${
-                    plan.popular
-                      ? 'bg-mint text-ink hover:bg-mint/90 shadow-md'
-                      : 'bg-white text-ink hover:bg-white/90'
-                  }`}
-                >
-                  <span>Start 14-day free trial</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Footer Guarantee Bar */}
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.02] p-4 text-[12px] text-white/60">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[12px] text-white/60">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-mint" />
-            <span>Prices are a year, before 18% GST. No per-PC fees.</span>
+            <ShieldCheck className="h-4 w-4 shrink-0 text-mint" />
+            <span>Prices are per year, before 18% GST. No per-PC fees.</span>
           </div>
           <Link href="/contact" className="text-white hover:text-mint font-medium transition-colors">
-            More than 600 GSTINs, or several branches? Talk to us
+            More than 600 GSTINs? Talk to us
           </Link>
         </div>
       </div>

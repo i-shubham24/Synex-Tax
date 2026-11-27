@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { SmoothScroll } from '../components/landing/SmoothScroll';
 import { SiteNav } from '../components/landing/SiteNav';
 import { LandingHero } from '../components/landing/LandingHero';
@@ -9,6 +10,11 @@ import { PilotProof } from '../components/landing/PilotProof';
 import { PlansStairs } from '../components/landing/PlansStairs';
 import { ClosingCta } from '../components/landing/ClosingFooter';
 import { LandingFooter } from '../components/landing/LandingFooter';
+import { JsonLd } from '../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../seo/meta';
+import { buildBreadcrumbSchema, buildHomeSchema } from '../seo/schema';
+
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.home);
 
 /**
  * Rhythm: light and dark alternate, never two dark in a row.
@@ -17,6 +23,7 @@ import { LandingFooter } from '../components/landing/LandingFooter';
 export default function HomePage() {
   return (
     <SmoothScroll>
+      <JsonLd data={[buildHomeSchema(), buildBreadcrumbSchema([])]} />
       <SiteNav />
       <main className="bg-white">
         <LandingHero /> {/* light, full-bleed */}

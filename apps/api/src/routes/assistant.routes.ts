@@ -6,6 +6,7 @@ import { db } from '../db/pool.js';
 import { bedrockFromEnv, type Assistant, type ChatTurn } from '../integrations/bedrock.js';
 import { cronAllowed } from '../plugins/cronAuth.js';
 import { publicMessage } from '../plugins/publicError.js';
+import { PROMPT_INJECTION_GUARD, wrapUntrustedForPrompt } from '../security/inputSanitization.js';
 
 const ctx = (req: FastifyRequest) => ({
   firmId: req.user.firmId,
@@ -17,6 +18,7 @@ const ctx = (req: FastifyRequest) => ({
 });
 
 const RULES =
+  `${PROMPT_INJECTION_GUARD}` +
   'You assist an Indian chartered accountant. Your answer is a draft for the CA to check, not advice to a client. ' +
   'Cite a section only from the list below, and always name the Act: write "section 393 of the Income-tax Act, 2025 (section 194C of the Income-tax Act, 1961)" or "section 16 of the CGST Act". ' +
   'If the section you would cite is not in the list, describe the provision without a number. Never guess a section, rule, notification or case. ' +
@@ -190,7 +192,12 @@ export async function assistantRoutes(fastify: FastifyInstance, opts: AssistantR
         return { t, m };
       });
       if (!out) return reply.status(404).send({ error: 'Not found' });
-      return reply.type('text/html; charset=utf-8').header('content-disposition', 'inline').send(exportHtml(out.t.title, out.t.kind, out.m));
+      return reply
+        .type('text/html; charset=utf-8')
+        .header('content-disposition', 'inline')
+        .header('content-security-policy', "default-src 'none'; sandbox; style-src 'unsafe-inline'")
+        .header('x-content-type-options', 'nosniff')
+        .send(exportHtml(out.t.title, out.t.kind, out.m));
     });
 
     app.delete<{ Params: { id: string } }>('/threads/:id', async (request, reply) => {
@@ -221,7 +228,12 @@ export async function assistantRoutes(fastify: FastifyInstance, opts: AssistantR
           ? await db.withTenantTransaction(ctx(request), async (c) => ((await threadFor(c, 'QUESTION', b.data.threadId, '')) ? history(c, b.data.threadId!) : null))
           : [];
         if (prior === null) throw notFound();
-        const answer = await assistant!.converse(QUESTION_SYSTEM(), [...prior, { role: 'user', text: b.data.question }], { maxTokens: 1200 });
+        const safePrior = prior.map((m) => (m.role === 'user' ? { ...m, text: wrapUntrustedForPrompt('untrusted_question', m.text) } : m));
+        const answer = await assistant!.converse(
+          QUESTION_SYSTEM(),
+          [...safePrior, { role: 'user', text: wrapUntrustedForPrompt('untrusted_question', b.data.question) }],
+          { maxTokens: 1200 },
+        );
         const r = checked(answer);
         const threadId = await db.withTenantTransaction(ctx(request), async (c) => {
           const id = (await threadFor(c, 'QUESTION', b.data.threadId, b.data.question))!;
@@ -238,7 +250,8 @@ export async function assistantRoutes(fastify: FastifyInstance, opts: AssistantR
       if (!b.success) return reply.status(400).send({ error: 'Invalid', message: 'Paste the notice text (up to 30,000 characters) and the facts.' });
       return modelCall(request, reply, async () => {
         const input = `Notice text:\n${b.data.notice}\n\nFacts from the CA:\n${b.data.facts || '(none given)'}`;
-        const answer = await assistant!.converse(NOTICE_SYSTEM(), [{ role: 'user', text: input }], { maxTokens: 2000 });
+        const modelInput = `${wrapUntrustedForPrompt('untrusted_notice', b.data.notice)}\n\n${wrapUntrustedForPrompt('untrusted_facts', b.data.facts || '(none given)')}`;
+        const answer = await assistant!.converse(NOTICE_SYSTEM(), [{ role: 'user', text: modelInput }], { maxTokens: 2000 });
         const r = checked(answer);
         const title = `Notice reply: ${b.data.notice.replace(/\s+/g, ' ').slice(0, 120)}`;
         const threadId = await db.withTenantTransaction(ctx(request), async (c) => {
@@ -260,8 +273,8 @@ export async function assistantRoutes(fastify: FastifyInstance, opts: AssistantR
         const lastDraft = turns?.filter((t) => t.role === 'assistant').pop();
         const source = turns?.find((t) => t.role === 'user');
         if (!lastDraft) throw notFound();
-        const input = `${source ? `${source.text}\n\n` : ''}Draft reply to improve:\n${lastDraft.text}`;
-        const answer = await assistant!.converse(ENHANCE_SYSTEM(), [{ role: 'user', text: input }], { maxTokens: 2400 });
+        const modelInput = `${source ? `${wrapUntrustedForPrompt('untrusted_notice_source', source.text)}\n\n` : ''}Draft reply to improve:\n${wrapUntrustedForPrompt('untrusted_draft', lastDraft.text)}`;
+        const answer = await assistant!.converse(ENHANCE_SYSTEM(), [{ role: 'user', text: modelInput }], { maxTokens: 2400 });
         const r = checked(answer);
         await db.withTenantTransaction(ctx(request), (c) => save(c, b.data.threadId, 'assistant', r.text, r.citations, r.removedList));
         return { threadId: b.data.threadId, draft: r.text, citations: r.citations, removed: r.removedList };
@@ -298,7 +311,7 @@ export async function assistantRoutes(fastify: FastifyInstance, opts: AssistantR
         const item = await db.withTenantTransaction(ctx(request), async (c) => (await c.query('SELECT source, title, published_on, body, link FROM public.assistant_feed_items WHERE id = $1', [request.params.id])).rows[0]);
         if (!item) throw Object.assign(new Error('Not found'), { statusCode: 404 });
         const text = `Source: ${FEED_SOURCES[item.source as keyof typeof FEED_SOURCES]?.label ?? item.source}\nTitle: ${item.title}\n${item.published_on ? `Date: ${new Date(item.published_on).toISOString().slice(0, 10)}\n` : ''}${item.body ? `Summary: ${item.body}` : 'No summary on the listing page.'}`;
-        const r = checked(await assistant!.converse(EXPLAIN_SYSTEM(), [{ role: 'user', text }], { maxTokens: 900 }));
+        const r = checked(await assistant!.converse(EXPLAIN_SYSTEM(), [{ role: 'user', text: wrapUntrustedForPrompt('untrusted_feed_item', text) }], { maxTokens: 900 }));
         return { explanation: r.text, citations: r.citations, removed: r.removedList, link: item.link };
       });
     });

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MarketingPage } from '../../components/marketing/MarketingPage';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: "What's new | SynTax",
-  description: 'Changes to SynTax, newest first.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.whatsNew);
 
 const RELEASES: Array<{ date: string; title: string; items: Array<[string, string, string?]> }> = [
   {
@@ -64,40 +64,43 @@ const RELEASES: Array<{ date: string; title: string; items: Array<[string, strin
 
 export default function WhatsNewPage() {
   return (
-    <MarketingPage
-      eyebrow="What's new"
-      title="What changed, newest first."
-      summary={<p>What changed in SynTax and when. Updates reach every firm automatically; there is nothing to download or install.</p>}
-    >
-      <ol className="space-y-20">
-        {RELEASES.map((r) => (
-          <li key={r.date} className="grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-4">
-              <time className="flex items-center gap-2 text-[13px] text-ink-soft">
-                <span className="h-2 w-2 rounded-[2px] bg-mint" aria-hidden />
-                {r.date}
-              </time>
-              <h2 className="mt-3 max-w-[22rem] text-[clamp(24px,2.2vw,32px)] font-normal leading-[1.15] tracking-[-0.03em] text-ink">{r.title}</h2>
-            </div>
-            <ul className="grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:col-span-8">
-              {r.items.map(([title, body, href]) => (
-                <li key={title} className="border-t border-ink/15 pt-4">
-                  <h3 className="text-[15.5px] font-medium tracking-[-0.01em] text-ink">
-                    {href ? (
-                      <Link href={href} className="underline decoration-transparent underline-offset-4 transition-colors hover:decoration-ink">
-                        {title}
-                      </Link>
-                    ) : (
-                      title
-                    )}
-                  </h3>
-                  <p className="mt-2 text-[14px] leading-[1.6] text-ink-soft">{body}</p>
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
-      </ol>
-    </MarketingPage>
+    <>
+      <JsonLd data={buildBreadcrumbSchema([{ name: "What's New", path: '/whats-new' }])} />
+      <MarketingPage
+        eyebrow="What's new"
+        title="What changed, newest first."
+        summary={<p>What changed in SynTax and when. Updates reach every firm automatically; there is nothing to download or install.</p>}
+      >
+        <ol className="space-y-20">
+          {RELEASES.map((r) => (
+            <li key={r.date} className="grid gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-4">
+                <time className="flex items-center gap-2 text-[13px] text-ink-soft">
+                  <span className="h-2 w-2 rounded-[2px] bg-mint" aria-hidden />
+                  {r.date}
+                </time>
+                <h2 className="mt-3 max-w-[22rem] text-[clamp(24px,2.2vw,32px)] font-normal leading-[1.15] tracking-[-0.03em] text-ink">{r.title}</h2>
+              </div>
+              <ul className="grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:col-span-8">
+                {r.items.map(([title, body, href]) => (
+                  <li key={title} className="border-t border-ink/15 pt-4">
+                    <h3 className="text-[15.5px] font-medium tracking-[-0.01em] text-ink">
+                      {href ? (
+                        <Link href={href} className="underline decoration-transparent underline-offset-4 transition-colors hover:decoration-ink">
+                          {title}
+                        </Link>
+                      ) : (
+                        title
+                      )}
+                    </h3>
+                    <p className="mt-2 text-[14px] leading-[1.6] text-ink-soft">{body}</p>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      </MarketingPage>
+    </>
   );
 }

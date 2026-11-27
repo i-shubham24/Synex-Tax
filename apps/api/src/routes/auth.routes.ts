@@ -3,13 +3,14 @@ import { z } from 'zod';
 import { demoEnabled, isLocalEnv } from '../security/env.js';
 import { AuthService } from '../modules/auth/authService.js';
 import { publicMessage } from '../plugins/publicError.js';
+import { safeDisplayText, safeOptionalDisplayText } from '../security/inputSanitization.js';
 
 const SignupSchema = z.object({
-  fullName: z.string().min(2).max(120),
+  fullName: safeDisplayText('Full name', 2, 120),
   email: z.string().email().max(254),
   password: z.string().min(8).max(128),
-  firmName: z.string().min(2).max(200),
-  frnNumber: z.string().optional(),
+  firmName: safeDisplayText('Firm name', 2, 200),
+  frnNumber: safeOptionalDisplayText('FRN number', 40),
 });
 
 const LoginSchema = z.object({
@@ -122,7 +123,7 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
     {
       config: {
         rateLimit: {
-          max: 10,
+          max: 5,
           timeWindow: '1 minute',
         },
       },
@@ -158,13 +159,13 @@ export async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginO
     },
   );
 
-  // 4. MFA Verification
+  // 4. MFA Verification (strict brute-force throttle: 5 req / min)
   fastify.post(
     '/mfa/verify',
     {
       config: {
         rateLimit: {
-          max: 10,
+          max: 5,
           timeWindow: '1 minute',
         },
       },

@@ -162,17 +162,17 @@ export function TrySection({
   demo: ReactNode;
 }) {
   return (
-    <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby={titleId}>
-      <div className="grid gap-12 lg:grid-cols-12 lg:items-start">
+    <section className="mx-auto max-w-[1380px] px-4 py-12 sm:px-10 sm:py-20" aria-labelledby={titleId}>
+      <div className="grid gap-8 sm:gap-12 lg:grid-cols-12 lg:items-start">
         <div className="lg:col-span-4">
-          <h2 id={titleId} className="max-w-[22rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
+          <h2 id={titleId} className="max-w-[22rem] text-[clamp(26px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
             {title}
           </h2>
-          <div className="mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">{body}</div>
-          {aside ? <div className="mt-10">{aside}</div> : null}
+          <div className="mt-4 sm:mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">{body}</div>
+          {aside ? <div className="mt-7 sm:mt-10">{aside}</div> : null}
         </div>
         <div className="min-w-0 lg:col-span-8">
-          <div className="flex justify-center rounded-[20px] bg-mist px-4 py-10 sm:px-10 sm:py-14">{demo}</div>
+          <div className="flex justify-center rounded-[18px] sm:rounded-[20px] bg-mist px-2.5 py-4 sm:px-10 sm:py-12">{demo}</div>
         </div>
       </div>
     </section>
@@ -242,12 +242,12 @@ export function StairSteps({ titleId, title, aside, steps }: { titleId: string; 
 export function RulesPanel({ titleId, title, rules, footnote }: { titleId: string; title: string; rules: Array<{ rule: string; what: string }>; footnote?: ReactNode }) {
   return (
     <section className="px-3 sm:px-6 lg:px-10" aria-labelledby={titleId}>
-      <div className="mx-auto max-w-[1480px] rounded-[30px] bg-mist px-6 py-16 sm:rounded-[38px] sm:px-10 sm:py-20">
+      <div className="mx-auto max-w-[1480px] rounded-[24px] bg-mist px-4 py-12 sm:rounded-[38px] sm:px-10 sm:py-18">
         <div className="mx-auto max-w-[1300px]">
-          <h2 id={titleId} className="max-w-[30rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
+          <h2 id={titleId} className="max-w-[30rem] text-[clamp(26px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
             {title}
           </h2>
-          <dl className="mt-12 grid gap-x-12 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+          <dl className="mt-8 sm:mt-12 grid gap-x-10 gap-y-6 sm:gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
             {rules.map((r) => (
               <div key={r.rule} className="border-t border-ink/15 pt-4">
                 <dt className="text-[15px] font-medium tracking-[-0.01em] text-ink">{r.rule}</dt>

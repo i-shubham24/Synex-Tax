@@ -269,11 +269,8 @@ export function SiteNav() {
           >
             Sign in
           </Link>
-          <PillButton href="/contact" size="sm" tone={dark ? 'light' : 'dark'} className="hidden xl:inline-flex">
-            Book a demo
-          </PillButton>
-          <PillButton href="/signup" size="sm" tone="mint">
-            Start 14-day free trial
+          <PillButton href="/contact" size="sm" tone={dark ? 'light' : 'mint'}>
+            Book 14-day trial
           </PillButton>
         </div>
 
@@ -293,17 +290,17 @@ export function SiteNav() {
 
       {/* Mobile menu sheet */}
       {open && (
-        <div className="mx-3 rounded-[24px] bg-white p-5 shadow-[0_24px_60px_-24px_rgba(20,20,22,0.45)] lg:hidden max-h-[85vh] overflow-y-auto">
-          <div className="text-[12px] font-semibold text-ink/40 uppercase tracking-wider mb-2">
+        <div className="mx-3 rounded-[24px] bg-white p-4 shadow-[0_24px_60px_-24px_rgba(20,20,22,0.45)] lg:hidden max-h-[85vh] overflow-y-auto">
+          <div className="text-[11px] font-semibold text-ink/40 uppercase tracking-wider mb-1.5 px-2">
             Product Suites
           </div>
-          <ul className="space-y-1 font-display text-[16px] font-medium tracking-[-0.02em] border-b border-ink/10 pb-4 mb-4">
+          <ul className="space-y-0.5 font-display text-[15px] font-medium tracking-[-0.02em] border-b border-ink/10 pb-3 mb-3">
             {PRODUCTS.map((p) => (
               <li key={p.name}>
                 <Link
                   href={p.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center justify-between rounded-xl px-3 py-2 text-ink hover:bg-slate-50"
+                  className="flex items-center justify-between rounded-xl px-2.5 py-1.5 text-ink hover:bg-slate-50"
                 >
                   <span>{p.name}</span>
                   <span className="text-[11px] text-ink/45">Explore</span>
@@ -312,36 +309,39 @@ export function SiteNav() {
             ))}
           </ul>
 
-          <ul className="space-y-1 font-display text-[16px] font-medium tracking-[-0.02em]">
+          <ul className="space-y-0.5 font-display text-[15px] font-medium tracking-[-0.02em]">
             <li>
-              <Link href="/switch" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+              <Link href="/switch" onClick={() => setOpen(false)} className="block rounded-xl px-2.5 py-1.5 text-ink/80 hover:bg-slate-50">
                 Why Switch
               </Link>
             </li>
             <li>
-              <Link href="/pricing" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+              <Link href="/pricing" onClick={() => setOpen(false)} className="block rounded-xl px-2.5 py-1.5 text-ink/80 hover:bg-slate-50">
                 Pricing
               </Link>
             </li>
             <li>
-              <a href={`${base}#pilot`} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
+              <a href={`${base}#pilot`} onClick={() => setOpen(false)} className="block rounded-xl px-2.5 py-1.5 text-ink/80 hover:bg-slate-50">
                 Pilot
               </a>
             </li>
-            <li>
-              <Link href="/login" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-ink/80 hover:bg-slate-50">
-                Sign in
-              </Link>
-            </li>
           </ul>
 
-          <div className="mt-5 space-y-2">
-            <PillButton href="/signup" full tone="mint">
-              Start 14-day free trial
-            </PillButton>
-            <PillButton href="/contact" full tone="light">
-              Book a demo
-            </PillButton>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-ink/15 bg-white px-2.5 text-[12px] sm:text-[13px] font-medium text-ink transition-colors hover:bg-mist"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setOpen(false)}
+              className="flex h-10 items-center justify-center whitespace-nowrap rounded-full bg-mint px-2.5 text-[12px] sm:text-[13px] font-semibold text-ink transition-colors hover:bg-mint-hover"
+            >
+              Book 14-day trial
+            </Link>
           </div>
         </div>
       )}

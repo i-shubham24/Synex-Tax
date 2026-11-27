@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { MarketingPage } from '../../components/marketing/MarketingPage';
 import { ContactForm } from '../../components/legal/ContactForm';
 import { LEGAL } from '../../lib/legal';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Contact | SynTax',
-  description: 'Book a demo, ask about pricing or moving your clients, or reach support and the grievance officer.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.contact);
 
 const ROUTES: Array<{ title: string; body: string; href: string; cta: string }> = [
   {
@@ -38,9 +38,11 @@ const ROUTES: Array<{ title: string; body: string; href: string; cta: string }> 
 
 export default function ContactPage() {
   return (
-    <MarketingPage
-      eyebrow="Contact"
-      title="Talk to the people building it."
+    <>
+      <JsonLd data={buildBreadcrumbSchema([{ name: 'Contact', path: '/contact' }])} />
+      <MarketingPage
+        eyebrow="Contact"
+        title="Talk to the people building it."
       summary={
         <p>
           We are in {LEGAL.city} and reply in English, Punjabi or Hindi, usually within one working day.
@@ -80,6 +82,7 @@ export default function ContactPage() {
           </div>
         </section>
       </div>
-    </MarketingPage>
+      </MarketingPage>
+    </>
   );
 }

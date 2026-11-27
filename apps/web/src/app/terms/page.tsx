@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Bullets, LegalPage, type LegalSection } from '../../components/legal/LegalPage';
 import { LEGAL } from '../../lib/legal';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Terms of service | SynTax',
-  description: 'The terms that apply when a firm or business uses SynTax for GST and TDS compliance.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.terms);
 
 const SECTIONS: LegalSection[] = [
   {
@@ -178,16 +178,19 @@ const SECTIONS: LegalSection[] = [
 
 export default function TermsPage() {
   return (
-    <LegalPage
-      eyebrow="Terms of service"
-      title="Plain terms for using SynTax."
-      summary={
-        <p>
-          What we provide, what your firm stays responsible for, how billing works and what happens to your data if you leave.
-          Written to be read, not skimmed past.
-        </p>
-      }
-      sections={SECTIONS}
-    />
+    <>
+      <JsonLd data={buildBreadcrumbSchema([{ name: 'Terms of service', path: '/terms' }])} />
+      <LegalPage
+        eyebrow="Terms of service"
+        title="Plain terms for using SynTax."
+        summary={
+          <p>
+            What we provide, what your firm stays responsible for, how billing works and what happens to your data if you leave.
+            Written to be read, not skimmed past.
+          </p>
+        }
+        sections={SECTIONS}
+      />
+    </>
   );
 }

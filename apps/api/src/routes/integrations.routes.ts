@@ -6,8 +6,10 @@ import { whatsappFromEnv } from '../integrations/whatsapp.js';
 import { bedrockFromEnv } from '../integrations/bedrock.js';
 import { agentSigningKey } from '../security/agentChallenge.js';
 import { isLocalEnv } from '../security/env.js';
+import { PROMPT_INJECTION_GUARD, wrapUntrustedForPrompt } from '../security/inputSanitization.js';
 
 const FVU_SYSTEM =
+  `${PROMPT_INJECTION_GUARD}` +
   'You help an Indian chartered accountant fix a TDS statement that Protean\'s File Validation Utility rejected. ' +
   'Explain each error in plain words and say which field to correct. Placeholders such as [PAN_1] stand for identifiers; keep them as they are. ' +
   'Be brief. Do not invent rules; if an error is unclear, say so.';
@@ -47,7 +49,7 @@ export async function integrationsRoutes(fastify: FastifyInstance) {
     const b = z.object({ text: z.string().min(1).max(20000) }).safeParse(request.body);
     if (!b.success) return reply.status(400).send({ error: 'Send the error report text.' });
     try {
-      return reply.send({ answer: await assistant.ask(FVU_SYSTEM, b.data.text) });
+      return reply.send({ answer: await assistant.ask(FVU_SYSTEM, wrapUntrustedForPrompt('untrusted_fvu_report', b.data.text)) });
     } catch (err) {
       request.log.warn({ err: (err as Error).message }, 'assistant failed');
       return reply.status(502).send({ error: 'NO_ANSWER', message: 'The assistant did not answer. Try again later.' });

@@ -4,12 +4,11 @@ import { LandingFooter } from '../../../components/landing/LandingFooter';
 import { PriceClose, RulesPanel, StairSteps, TrySection } from '../../../components/products/ProductSections';
 import { SignHero, TokensCard } from '../../../components/products/sign/SignHero';
 import { SignDemo } from '../../../components/products/sign/SignDemo';
+import { JsonLd } from '../../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../../seo/meta';
+import { buildBreadcrumbSchema, buildSuiteSchema } from '../../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'SynTax Sign | DSC signing with your USB token, without Java',
-  description:
-    'A small Windows app signs approved returns with the Class 3 DSC on your USB token. The token driver asks for the PIN, SynTax never sees it. Also checks and sends Form 130 and 131 certificates, runs Protean FVU and backs up Tally data.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.sign);
 
 /** Certificates season, from TRACES to the payee. SynTax never makes the PDFs. */
 const CERTIFICATES = [
@@ -63,6 +62,24 @@ const SAFEGUARDS = [
 export default function SignProductPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          buildSuiteSchema({
+            path: '/products/sign',
+            name: 'SynTax Sign',
+            description: SEO_PAGES.sign.description,
+            lowPrice: '4999',
+            highPrice: '29999',
+            features: SAFEGUARDS.map((r) => `${r.rule}: ${r.what}`),
+            howToTitle: 'Sign and verify certificates in SynTax',
+            howToSteps: CERTIFICATES.map((s) => ({ name: s.title, text: s.body })),
+          }),
+          buildBreadcrumbSchema([
+            { name: 'Products', path: '/products/sign' },
+            { name: 'SynTax Sign', path: '/products/sign' },
+          ]),
+        ]}
+      />
       <SiteNav />
       <main className="bg-white">
         <SignHero />
@@ -94,7 +111,7 @@ export default function SignProductPage() {
           steps={CERTIFICATES}
         />
 
-        <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="also-title">
+        <section className="mx-auto max-w-[1380px] px-4 py-12 sm:px-10 sm:py-20" aria-labelledby="also-title">
           <div className="grid gap-12 lg:grid-cols-12">
             <h2 id="also-title" className="max-w-[22rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink lg:col-span-4">
               The same app does three more jobs.

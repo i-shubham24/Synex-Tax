@@ -4,12 +4,11 @@ import { LandingFooter } from '../../../components/landing/LandingFooter';
 import { GstHero, SplitCard } from '../../../components/products/gst/GstHero';
 import { MatchDemo } from '../../../components/products/gst/MatchDemo';
 import { PriceClose, RulesPanel, StairSteps, TrySection } from '../../../components/products/ProductSections';
+import { JsonLd } from '../../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../../seo/meta';
+import { buildBreadcrumbSchema, buildSuiteSchema } from '../../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'SynTax GST | Purchase register and GSTR-2B matching, IMS and GSTR-3B',
-  description:
-    'Upload the Tally or Busy purchase register as exported, match it with the GSTR-2B download, act on IMS before the 14th and draft GSTR-3B with Rule 88A set-off.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.gst);
 
 /** Where every purchase invoice ends up after matching, and what it means for this month's 3B. */
 const OUTCOMES: Array<{ found: string; means: string; tone: 'claim' | 'check' | 'hold' }> = [
@@ -61,6 +60,24 @@ const MONTH = [
 export default function GstProductPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          buildSuiteSchema({
+            path: '/products/gst',
+            name: 'SynTax GST',
+            description: SEO_PAGES.gst.description,
+            lowPrice: '5999',
+            highPrice: '29999',
+            features: RULES.map((r) => `${r.rule}: ${r.what}`),
+            howToTitle: 'One GST month in SynTax',
+            howToSteps: MONTH.map((s) => ({ name: s.title, text: s.body })),
+          }),
+          buildBreadcrumbSchema([
+            { name: 'Products', path: '/products/gst' },
+            { name: 'SynTax GST', path: '/products/gst' },
+          ]),
+        ]}
+      />
       <SiteNav />
       <main className="bg-white">
         <GstHero />
@@ -93,23 +110,23 @@ export default function GstProductPage() {
         />
 
         {/* Outcomes: a reference list, so a quiet table rather than cards */}
-        <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="outcomes-title">
-          <div className="grid gap-12 lg:grid-cols-12">
+        <section className="mx-auto max-w-[1380px] px-4 py-12 sm:px-10 sm:py-20" aria-labelledby="outcomes-title">
+          <div className="grid gap-8 sm:gap-12 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              <h2 id="outcomes-title" className="max-w-[22rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
+              <h2 id="outcomes-title" className="max-w-[22rem] text-[clamp(26px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
                 Every invoice ends up in one of eight places.
               </h2>
-              <p className="mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">
+              <p className="mt-4 sm:mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">
                 Each register line and each 2B document is counted once, so the totals for claim, check and hold add up to
                 your books.
               </p>
-              <ul className="mt-8 space-y-2 text-[13px] text-ink">
+              <ul className="mt-6 sm:mt-8 space-y-2 text-[13px] text-ink">
                 <li className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-mint" /> Goes into this month’s claim</li>
                 <li className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-sky" /> Needs a look before claiming</li>
                 <li className="flex items-center gap-2.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-ink" /> Held back for now</li>
               </ul>
             </div>
-            <div className="lg:col-span-8">
+            <div className="relative min-w-0 lg:col-span-8">
               <table className="w-full border-collapse text-left">
                 <thead className="sr-only">
                   <tr>
@@ -120,13 +137,13 @@ export default function GstProductPage() {
                 <tbody>
                   {OUTCOMES.map((o) => (
                     <tr key={o.found} className="border-t border-hairline align-top last:border-b">
-                      <th scope="row" className="w-[42%] py-5 pr-6 text-[15px] font-medium tracking-[-0.01em] text-ink">
-                        <span className="flex items-start gap-3">
-                          <span className={`mt-[7px] h-2.5 w-2.5 shrink-0 rounded-[2px] ${DOT[o.tone]}`} aria-hidden />
+                      <th scope="row" className="w-[44%] py-4 pr-3 sm:w-[42%] sm:py-5 sm:pr-6 text-[13.5px] sm:text-[15px] font-medium tracking-[-0.01em] text-ink">
+                        <span className="flex items-start gap-2.5 sm:gap-3">
+                          <span className={`mt-[6px] sm:mt-[7px] h-2.5 w-2.5 shrink-0 rounded-[2px] ${DOT[o.tone]}`} aria-hidden />
                           {o.found}
                         </span>
                       </th>
-                      <td className="py-5 text-[14px] leading-[1.55] text-ink-soft">{o.means}</td>
+                      <td className="py-4 sm:py-5 text-[13px] sm:text-[14px] leading-[1.55] text-ink-soft">{o.means}</td>
                     </tr>
                   ))}
                 </tbody>

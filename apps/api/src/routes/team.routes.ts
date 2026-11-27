@@ -5,15 +5,16 @@ import { MODULES, effectiveModules } from '../security/modules.js';
 import { expectedVersion, versionTag, VERSION_MATCHES } from '../plugins/concurrency.js';
 import { randomToken, sha256 } from '../security/authCrypto.js';
 import { accountMailer, appOrigin, invitationEmail } from '../modules/auth/accountMail.js';
+import { safeDisplayText, safeOptionalDisplayText } from '../security/inputSanitization.js';
 
 const UUID = z.guid();
 const ModulesBody = z.object({ modules: z.array(z.enum(MODULES)).max(MODULES.length).nullable() });
 const AssignBody = z.object({ entityId: UUID, accessLevel: z.enum(['VIEW', 'PREPARE', 'REVIEW']).default('PREPARE') });
 const InviteBody = z.object({
   email: z.string().trim().email().max(254),
-  name: z.string().trim().min(2).max(120),
+  name: safeDisplayText('Name', 2, 120),
   role: z.enum(['MANAGER', 'STAFF', 'CLIENT']),
-  designation: z.string().trim().max(80).optional(),
+  designation: safeOptionalDisplayText('Designation', 80),
   entityIds: z.array(UUID).max(200).default([]),
   accessLevel: z.enum(['VIEW', 'PREPARE', 'REVIEW']).default('PREPARE'),
 });

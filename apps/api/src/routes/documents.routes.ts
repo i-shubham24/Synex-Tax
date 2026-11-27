@@ -484,7 +484,14 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         inline ? 'PREVIEW' : 'DOWNLOAD',
       ]),
     );
-    if (inline && v.mime_type.startsWith('image/')) reply.header('content-security-policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'");
+    if (inline) {
+      reply.header(
+        'content-security-policy',
+        v.mime_type.startsWith('image/')
+          ? "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+          : "default-src 'none'; script-src 'none'; object-src 'self'; style-src 'unsafe-inline'",
+      );
+    }
     return reply
       .header('content-type', v.mime_type)
       .header('content-disposition', contentDisposition(inline ? 'inline' : 'attachment', v.original_name))

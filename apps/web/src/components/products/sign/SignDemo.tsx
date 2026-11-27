@@ -39,7 +39,7 @@ export function SignDemo() {
 
   return (
     <div className="relative w-full max-w-[520px] overflow-hidden rounded-[14px] bg-white shadow-[0_30px_60px_-30px_rgba(20,40,80,0.35)] ring-1 ring-black/[0.06]">
-      <div className="flex items-center justify-between border-b border-hairline px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-3.5 py-3 sm:px-5">
         <p className="flex items-center gap-2 text-[12.5px] font-medium text-ink">
           <LogoMark size={16} /> GSTR-3B, October 2026
         </p>

@@ -6,6 +6,7 @@ import type pg from 'pg';
 import { getTenantContext, resolveGstRegistration, isPeriodLocked } from './gstHelper.js';
 import { parseInvoiceCsv, parseGstr2bJson, type Gstr2bParseResult } from '@synextax/ingestion';
 import { validateUploadedFile } from '../../security/fileUploadValidator.js';
+import { escapeCsvCell } from '../../security/inputSanitization.js';
 import { validateGstin } from '@synextax/tax-engine';
 import { GstReconciliationEngine, type PurchaseRegisterInvoice } from '@synextax/queue-worker';
 
@@ -536,12 +537,35 @@ export async function reconRoutes(fastify: FastifyInstance) {
       );
 
       const rows = prRes.rows;
+      const header = [
+        'Vendor GSTIN',
+        'Invoice Number',
+        'Invoice Date',
+        'Taxable Value',
+        'Invoice Value',
+        'Recon Status',
+        'ITC Eligibility',
+      ]
+        .map(escapeCsvCell)
+        .join(',');
       const csvLines = [
-        'Vendor GSTIN,Invoice Number,Invoice Date,Taxable Value,Invoice Value,Recon Status,ITC Eligibility',
-        ...rows.map((r) => `"${r.vendor_gstin}","${r.invoice_num}","${r.invoice_date}",${r.taxable_value},${r.total_invoice_value},"${r.recon_status}","${r.itc_eligibility}"`),
+        header,
+        ...rows.map((r) =>
+          [
+            r.vendor_gstin,
+            r.invoice_num,
+            r.invoice_date,
+            r.taxable_value,
+            r.total_invoice_value,
+            r.recon_status,
+            r.itc_eligibility,
+          ]
+            .map(escapeCsvCell)
+            .join(','),
+        ),
       ];
 
-      reply.header('Content-Type', 'text/csv');
+      reply.header('Content-Type', 'text/csv; charset=utf-8');
       reply.header('Content-Disposition', `attachment; filename="Vendor_Discrepancies_${reg.gstin}_${period}.csv"`);
       return reply.send(csvLines.join('\n'));
     });

@@ -4,12 +4,11 @@ import { LandingFooter } from '../../../components/landing/LandingFooter';
 import { PriceClose, RulesPanel, StairSteps, TrySection } from '../../../components/products/ProductSections';
 import { HealthCard, TdsHero } from '../../../components/products/tds/TdsHero';
 import { CutoverDemo } from '../../../components/products/tds/CutoverDemo';
+import { JsonLd } from '../../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../../seo/meta';
+import { buildBreadcrumbSchema, buildSuiteSchema } from '../../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'SynTax TDS | TDS and TCS statements under the 1961 and 2025 Acts',
-  description:
-    'Every TDS row routed to the right Act by its date: 24Q, 26Q, 27Q and 27EQ up to March 2026, Forms 138 to 144 from April. Challans matched to the CSI file, statements checked with Protean FVU, corrections from the TRACES .conso file.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.tds);
 
 const QUARTER = [
   {
@@ -59,6 +58,24 @@ const CHECKS = [
 export default function TdsProductPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          buildSuiteSchema({
+            path: '/products/tds',
+            name: 'SynTax TDS',
+            description: SEO_PAGES.tds.description,
+            lowPrice: '4999',
+            highPrice: '29999',
+            features: CHECKS.map((r) => `${r.rule}: ${r.what}`),
+            howToTitle: 'One TDS quarter in SynTax',
+            howToSteps: QUARTER.map((s) => ({ name: s.title, text: s.body })),
+          }),
+          buildBreadcrumbSchema([
+            { name: 'Products', path: '/products/tds' },
+            { name: 'SynTax TDS', path: '/products/tds' },
+          ]),
+        ]}
+      />
       <SiteNav />
       <main className="bg-white">
         <TdsHero />
@@ -91,7 +108,7 @@ export default function TdsProductPage() {
         />
 
         {/* Old form numbers to new: a lookup, so a plain three-column table */}
-        <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="forms-title">
+        <section className="mx-auto max-w-[1380px] px-4 py-12 sm:px-10 sm:py-20" aria-labelledby="forms-title">
           <div className="grid gap-12 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <h2 id="forms-title" className="max-w-[22rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">

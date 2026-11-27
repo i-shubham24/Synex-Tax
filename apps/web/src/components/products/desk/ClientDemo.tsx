@@ -90,29 +90,46 @@ export function ClientDemo() {
       </div>
 
       <div className="grid sm:grid-cols-[180px_minmax(0,1fr)]">
-        {/* The tree: group, then entities by PAN */}
-        <nav aria-label="Clients" className="border-b border-hairline px-3 py-3 sm:border-b-0 sm:border-r">
-          {GROUPS.map((g) => (
-            <div key={g.group} className="mb-2 last:mb-0">
-              <p className="px-2 pb-1 text-[11px] text-ink-soft">{g.group}</p>
-              <ul className="space-y-0.5">
-                {g.entities.map((x) => (
-                  <li key={x.key}>
-                    <button
-                      type="button"
-                      onClick={() => setKey(x.key)}
-                      aria-current={x.key === key ? 'true' : undefined}
-                      className={`w-full rounded-[6px] px-2 py-1.5 text-left text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
-                        x.key === key ? 'bg-ink text-white' : 'text-ink hover:bg-mist'
-                      }`}
-                    >
-                      {x.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        {/* The tree: horizontal selector pills on mobile, grouped list on wide screens */}
+        <nav aria-label="Clients" className="border-b border-hairline px-3.5 py-2.5 sm:border-b-0 sm:border-r sm:px-3 sm:py-3">
+          <div className="flex flex-wrap gap-1.5 sm:hidden">
+            {ALL.map((x) => (
+              <button
+                key={x.key}
+                type="button"
+                onClick={() => setKey(x.key)}
+                aria-current={x.key === key ? 'true' : undefined}
+                className={`rounded-full border px-2.5 py-1 text-[11.5px] transition-colors ${
+                  x.key === key ? 'border-ink bg-ink text-white' : 'border-ink/20 text-ink hover:border-ink/50'
+                }`}
+              >
+                {x.name}
+              </button>
+            ))}
+          </div>
+          <div className="hidden sm:block">
+            {GROUPS.map((g) => (
+              <div key={g.group} className="mb-2 last:mb-0">
+                <p className="px-2 pb-1 text-[11px] text-ink-soft">{g.group}</p>
+                <ul className="space-y-0.5">
+                  {g.entities.map((x) => (
+                    <li key={x.key}>
+                      <button
+                        type="button"
+                        onClick={() => setKey(x.key)}
+                        aria-current={x.key === key ? 'true' : undefined}
+                        className={`w-full rounded-[6px] px-2 py-1.5 text-left text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
+                          x.key === key ? 'bg-ink text-white' : 'text-ink hover:bg-mist'
+                        }`}
+                      >
+                        {x.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </nav>
 
         <AnimatePresence mode="wait" initial={false}>

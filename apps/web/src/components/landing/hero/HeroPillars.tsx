@@ -43,7 +43,7 @@ export function HeroPillars({ trackRef, onReveal, className }: Props) {
     let cancelled = false;
     const cleanups: Array<() => void> = [];
     // Copy must never stay greyed out, even if the GPU is slow to start.
-    const revealFallback = window.setTimeout(() => revealRef.current(), 2400);
+    const revealFallback = window.setTimeout(() => revealRef.current(), 350);
     cleanups.push(() => window.clearTimeout(revealFallback));
 
     import('./PillarScene').then(({ PillarScene }) => {

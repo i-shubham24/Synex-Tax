@@ -13,7 +13,7 @@ const LOG = [
 
 export function TrailCard() {
   return (
-    <div className="w-[290px] rounded-[12px] bg-white p-4 shadow-[0_24px_50px_-24px_rgba(20,40,80,0.45)] ring-1 ring-black/[0.06]">
+    <div className="w-full max-w-[300px] rounded-[12px] bg-white p-4 shadow-[0_24px_50px_-24px_rgba(20,40,80,0.45)] ring-1 ring-black/[0.06]">
       <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-ink">
         <LogoMark size={14} /> Audit trail, today
       </p>

@@ -86,10 +86,12 @@ interface AuthContextType {
   mfaEnroll: (challengeToken: string, totpCode: string) => Promise<boolean>;
   loginDemo: (role?: 'PARTNER' | 'STAFF') => Promise<void>;
   logout: () => Promise<void>;
-  upgradePlan: (plan: 'SOLO' | 'GROWTH' | 'SCALE') => void;
   /** fetch with the session's bearer token; on a 401 it refreshes once and retries. */
   authFetch: (input: string, init?: RequestInit) => Promise<Response>;
 }
+
+const DEMO_WORKSPACE_ALLOWED =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_DEMO_WORKSPACE === 'true';
 
 const DEMO_PARTNER: UserSession = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -141,18 +143,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (typeof window === 'undefined') return;
 
-        /* Check for active cached session first so page refresh never drops or flickers */
-        const cachedUserStr = sessionStorage.getItem('synextax_session') || localStorage.getItem('synextax_session');
-        if (cachedUserStr && mounted) {
-          try {
-            const cachedUser = JSON.parse(cachedUserStr) as UserSession;
-            setUser(cachedUser);
-            setToken(`mem_session_${cachedUser.id || DEMO_PARTNER.id}`);
-            setIsLoading(false);
-            return;
-          } catch {}
-        }
-
         const restored = await restoreOnce();
 
         if (restored.ok && mounted) {
@@ -167,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: data.user.role,
             frnNumber: data.user.frnNumber,
             mfaVerified: true,
-            plan: 'TRIAL',
+            plan: data.user.plan || 'TRIAL',
             trialDaysRemaining: data.user.trialDaysRemaining ?? 14,
             activeClientsCount: 2,
             maxTrialClients: 3,
@@ -178,17 +168,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        /* Default demo fallback if visiting any workspace screen directly on preview */
-        const isPublicPath = ['/', '/login', '/signup', '/forgot-password', '/invite', '/client', '/upload', ...PUBLIC_SITE_PATHS].some(
-          (p) => window.location.pathname === p || window.location.pathname.startsWith(`${p}/`)
-        );
-        if (!isPublicPath && mounted) {
-          setUser(DEMO_PARTNER);
-          setToken(`mem_session_${DEMO_PARTNER.id}`);
-          sessionStorage.setItem('synextax_session', JSON.stringify(DEMO_PARTNER));
-          localStorage.setItem('synextax_session', JSON.stringify(DEMO_PARTNER));
+        // Only restore an explicit local preview session when demo workspaces are enabled.
+        // Never trust unverified localStorage session JSON in production or auto-auth arbitrary paths like /admin.
+        if (DEMO_WORKSPACE_ALLOWED && sessionStorage.getItem('synextax_offline_demo') === '1' && mounted) {
+          const savedRole = sessionStorage.getItem('synextax_offline_demo_role') === 'STAFF' ? 'STAFF' : 'PARTNER';
+          const u: UserSession = { ...DEMO_PARTNER, role: savedRole };
+          setUser(u);
+          setToken(`mem_session_${u.id}`);
           setIsLoading(false);
           return;
+        }
+
+        for (const k of ['synextax_session', 'synextax_offline_demo', 'synextax_offline_demo_role']) {
+          sessionStorage.removeItem(k);
+          localStorage.removeItem(k);
         }
 
         if (mounted) {
@@ -483,7 +476,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: data.user.role ?? 'PARTNER',
             frnNumber: data.user.frnNumber || '014289N',
             mfaVerified: true,
-            plan: 'TRIAL',
+            plan: data.user.plan || 'TRIAL',
             trialDaysRemaining: data.user.trialDaysRemaining ?? 14,
             activeClientsCount: 2,
             maxTrialClients: 3,
@@ -492,22 +485,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           sessionStorage.setItem('synextax_session', JSON.stringify(u));
           localStorage.setItem('synextax_session', JSON.stringify(u));
           sessionStorage.removeItem('synextax_offline_demo');
+          sessionStorage.removeItem('synextax_offline_demo_role');
           setIsLoading(false);
           return;
         }
       }
     } catch {
-      /* Live demo API unreachable, fall through to offline demo mode */
+      /* Live demo API unreachable; check explicit dev/preview opt-in before offline fallback */
     }
 
-    /* Offline fallback */
+    if (!DEMO_WORKSPACE_ALLOWED) {
+      setUser(null);
+      setToken(null);
+      setIsLoading(false);
+      throw new Error('Demo workspace is disabled in production. Please sign in with your firm account.');
+    }
+
+    /* Offline fallback (development / explicit NEXT_PUBLIC_ENABLE_DEMO_WORKSPACE preview only) */
     const fallback = { ...DEMO_PARTNER, role };
     setUser(fallback);
     setToken(`mem_session_${fallback.id}`);
     sessionStorage.setItem('synextax_session', JSON.stringify(fallback));
     localStorage.setItem('synextax_session', JSON.stringify(fallback));
     sessionStorage.setItem('synextax_offline_demo', '1');
-    localStorage.setItem('synextax_offline_demo', '1');
+    sessionStorage.setItem('synextax_offline_demo_role', role);
     setIsLoading(false);
   }, []);
 
@@ -593,14 +594,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setToken(null);
     // Nothing that identifies the session is left in the browser.
-    for (const k of ['synextax_session', 'synextax_offline_demo', 'synextax_token', 'synextax_challenge_token', 'synextax_locked']) {
+    for (const k of ['synextax_session', 'synextax_offline_demo', 'synextax_offline_demo_role', 'synextax_token', 'synextax_challenge_token', 'synextax_locked']) {
       sessionStorage.removeItem(k);
       localStorage.removeItem(k);
     }
-  }, []);
-
-  const upgradePlan = useCallback((plan: 'SOLO' | 'GROWTH' | 'SCALE') => {
-    setUser((prev) => (prev ? { ...prev, plan, trialDaysRemaining: 365, maxTrialClients: 999 } : null));
   }, []);
 
   return (
@@ -616,7 +613,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         mfaEnroll,
         loginDemo,
         logout,
-        upgradePlan,
         authFetch,
       }}
     >

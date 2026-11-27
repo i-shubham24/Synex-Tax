@@ -3,6 +3,9 @@ import { Inter_Tight, Poppins, Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 import { PublicLayoutWrapper } from '../components/PublicLayoutWrapper';
+import { JsonLd } from '../components/seo/JsonLd';
+import { BRAND_NAME, SITE_URL } from '../seo/meta';
+import { buildSitewideGraph } from '../seo/schema';
 
 // Hero display face: tight neo-grotesk, matches the Legite hero reference.
 const interTight = Inter_Tight({
@@ -37,9 +40,26 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SynTax | GST, TDS and Income Tax for CA Practices',
+  metadataBase: new URL(SITE_URL),
+  title: 'GST & TDS Software India | SynTax for CA Firms',
   description:
-    'Cloud GST and dual-Act TDS filing for Chartered Accountants: IMS, 2B reconciliation, Forms 138 to 144, FVU validation and local DSC signing.',
+    'Prepare GSTR-1, GSTR-2B matching, IMS, dual-Act TDS Forms 138 to 144, FVU checks and USB DSC signing from one cloud workspace built for Indian CA firms.',
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    siteName: BRAND_NAME,
+    title: 'GST & TDS Software India | SynTax for CA Firms',
+    description:
+      'Prepare GSTR-1, GSTR-2B matching, IMS, dual-Act TDS Forms 138 to 144, FVU checks and USB DSC signing from one cloud workspace built for Indian CA firms.',
+    images: [{ url: '/syntax-logo.png', width: 397, height: 232, alt: 'SynTax logo' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GST & TDS Software India | SynTax for CA Firms',
+    description:
+      'Prepare GSTR-1, GSTR-2B matching, IMS, dual-Act TDS Forms 138 to 144, FVU checks and USB DSC signing from one cloud workspace built for Indian CA firms.',
+    images: ['/syntax-logo.png'],
+  },
   icons: {
     icon: '/brand/syntax-mark-32.png',
     apple: '/brand/syntax-mark-192.png',
@@ -53,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${interTight.variable} ${poppins.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <body className="min-h-screen bg-white text-ink antialiased flex flex-col font-sans">
+        <JsonLd data={buildSitewideGraph()} />
         <AuthProvider>
           <PublicLayoutWrapper>{children}</PublicLayoutWrapper>
         </AuthProvider>

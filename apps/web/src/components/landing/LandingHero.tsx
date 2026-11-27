@@ -1,11 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nextDue, type NextDue } from '../../lib/deadlines';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { HeroPillars } from './hero/HeroPillars';
 import { PillButton } from './primitives';
+
+const HeroPillars = dynamic(() => import('./hero/HeroPillars').then((m) => m.HeroPillars), {
+  ssr: false,
+});
 
 // Where the Legite hero shows press logos we show the statutory forms the
 // product files, each set like a wordmark. No borrowed brands, no fake press.
@@ -62,15 +66,19 @@ export function LandingHero() {
     setOpening(true);
     try {
       await loginDemo('PARTNER');
-    } finally {
       router.push('/dashboard');
+    } catch {
+      router.push('/login');
+    } finally {
+      setOpening(false);
     }
   }, [loginDemo, router]);
   const trackRef = useRef<HTMLElement>(null);
-  const [revealed, setRevealed] = useState(false);
-  const onReveal = useCallback(() => setRevealed(true), []);
+  // Render primary hero copy and CTAs at full contrast immediately for zero LCP/FCP delay.
+  const revealed = true;
+  const onReveal = useCallback(() => {}, []);
 
-  const ink = revealed ? 'text-ink' : 'text-[#cfcfd6]';
+  const ink = 'text-ink';
 
   return (
     <section id="top" ref={trackRef} className="relative bg-hero-canvas" aria-labelledby="hero-title">
@@ -101,15 +109,20 @@ export function LandingHero() {
         {/* Copy (the nav lives in the fixed SiteNav) */}
         <div className="relative z-10 order-1 flex flex-1 flex-col px-4 sm:px-10 lg:w-[54%] lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
           <p
-            className={`mb-6 inline-flex w-fit self-start max-w-full flex-wrap sm:flex-nowrap items-center gap-2 rounded-2xl sm:rounded-full border border-ink/10 bg-white/70 py-1.5 pl-2 pr-3.5 text-[12px] sm:text-[12.5px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
+            className={`mb-5 inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-ink/10 bg-white/80 py-1 pl-1.5 pr-3 text-[11px] sm:text-[12px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
           >
-            <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[11px] font-semibold text-ink">Next due</span>
-            <span className="min-h-[1.25em] leading-snug" aria-live="polite">
+            <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-ink">Next due</span>
+            <span className="truncate leading-none" aria-live="polite">
               {due ? (
                 <>
-                  {due.what}, {due.due}
+                  <span className="sm:hidden">
+                    {due.what.replace(/ for .*$/, '')} &middot; {due.due.replace(/^[A-Za-z]+ /, '')}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {due.what}, {due.due}
+                  </span>
                   <span className="text-ink/50">
-                    {due.days === 0 ? ', today' : due.days === 1 ? ', tomorrow' : `, in ${due.days} days`}
+                    {due.days === 0 ? ', today' : due.days === 1 ? ', tomorrow' : `, ${due.days}d`}
                   </span>
                 </>
               ) : (
@@ -119,13 +132,13 @@ export function LandingHero() {
           </p>
           <h1
             id="hero-title"
-            className={`font-display text-[clamp(42px,6.5vw,104px)] font-semibold leading-[1.02] tracking-hero transition-colors duration-[1200ms] ease-out-expo ${ink}`}
+            className={`font-display text-[clamp(40px,6.5vw,104px)] font-semibold leading-[1.02] tracking-hero transition-colors duration-[1200ms] ease-out-expo ${ink}`}
           >
             <span className="block whitespace-nowrap">GST &amp; TDS</span>
             <span className="block whitespace-nowrap">Made Easy</span>
           </h1>
           <p
-            className={`mt-6 max-w-[25rem] font-display text-[clamp(15px,1.35vw,19px)] leading-[1.45] tracking-[-0.015em] transition-colors duration-[1200ms] ease-out-expo ${
+            className={`mt-5 max-w-[25rem] font-display text-[clamp(15px,1.35vw,19px)] leading-[1.45] tracking-[-0.015em] transition-colors duration-[1200ms] ease-out-expo ${
               revealed ? 'text-ink/80' : 'text-[#d6d6dc]'
             }`}
             style={{ transitionDelay: '120ms' }}
@@ -133,23 +146,26 @@ export function LandingHero() {
             File returns, act on IMS and sign TDS statements for every client from one fast, secure workspace.
           </p>
           <div
-            className={`mt-9 transition-colors duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
+            className={`mt-6 sm:mt-8 transition-colors duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
             style={{ transitionDelay: '260ms' }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 w-full sm:w-auto">
+            <div className="flex flex-nowrap items-center gap-2 sm:gap-4 w-fit max-w-full">
               <PillButton
                 onClick={openSample}
                 disabled={opening}
+                compactMobile
                 size="lg"
-                className="w-full sm:w-auto justify-between sm:justify-start"
+                className="shrink-0"
               >
-                {opening ? 'Opening the sample firm…' : 'Explore a sample firm'}
+                <span className="sm:hidden">{opening ? 'Opening…' : 'Sample firm'}</span>
+                <span className="hidden sm:inline">{opening ? 'Opening the sample firm…' : 'Explore a sample firm'}</span>
               </PillButton>
-              <PillButton href="/switch" tone="light" size="lg" className="w-full sm:w-auto justify-between sm:justify-start">
-                Switching from desktop?
+              <PillButton href="/switch" tone="light" compactMobile size="lg" className="shrink-0">
+                <span className="sm:hidden">From desktop?</span>
+                <span className="hidden sm:inline">Switching from desktop?</span>
               </PillButton>
             </div>
-            <p className="mt-4 text-[13.5px] text-ink/55">
+            <p className="mt-3.5 text-[12.5px] sm:text-[13.5px] text-ink/55">
               The sample firm opens with two clients set up. No sign-up needed.
             </p>
           </div>

@@ -44,6 +44,9 @@ function looksExecutable(buf: Buffer): boolean {
   return false;
 }
 
+const MAX_ZIP_ENTRIES = 5000;
+const MAX_ZIP_UNCOMPRESSED_BYTES = 100 * 1024 * 1024;
+
 /** Names of the entries in a ZIP's central directory, or null when it cannot be read. */
 export function zipEntryNames(buf: Buffer): string[] | null {
   const min = Math.max(0, buf.length - 22 - 0xffff);
@@ -57,10 +60,15 @@ export function zipEntryNames(buf: Buffer): string[] | null {
   if (eocd < 0) return null;
   const count = buf.readUInt16LE(eocd + 10);
   let p = buf.readUInt32LE(eocd + 16);
-  if (count === 0xffff || p === 0xffffffff) return null; // ZIP64 is not accepted
+  if (count === 0xffff || p === 0xffffffff || count > MAX_ZIP_ENTRIES) return null; // ZIP64 / excessive entries are not accepted
   const names: string[] = [];
+  let totalUncompressed = 0;
   for (let n = 0; n < count; n++) {
     if (p + 46 > buf.length || buf.readUInt32LE(p) !== 0x02014b50) return null;
+    const uncompressedSize = buf.readUInt32LE(p + 24);
+    if (uncompressedSize === 0xffffffff) return null;
+    totalUncompressed += uncompressedSize;
+    if (totalUncompressed > MAX_ZIP_UNCOMPRESSED_BYTES) return null;
     const nameLen = buf.readUInt16LE(p + 28);
     const extraLen = buf.readUInt16LE(p + 30);
     const commentLen = buf.readUInt16LE(p + 32);

@@ -44,11 +44,19 @@ export function PlanStair() {
         ))}
       </div>
 
-      {/* Phones: one under another */}
+      {/* Phones: compact horizontal tiers */}
       <ul className="grid gap-2 sm:hidden">
         {STEPS.map((s, i) => (
-          <li key={s.name} className={`pixel-host relative flex h-[150px] flex-col overflow-hidden rounded-[10px] p-5 ${s.tone}`}>
-            <Step s={s} pixels={i === 2} />
+          <li key={s.name} className={`pixel-host relative flex flex-col overflow-hidden rounded-[10px] px-4 py-3.5 ${s.tone}`}>
+            {i === 2 && <PixelField seed={91} count={30} cell={14} cols={18} rows={10} color="#c9f9d8" maxOpacity={0.75} />}
+            <div className="relative flex items-baseline justify-between gap-2">
+              <p className="text-[14px] font-medium tracking-[-0.02em]">{s.name}</p>
+              <p className="text-[24px] font-medium leading-none tracking-[-0.04em] tabular-nums">
+                &#8377;{s.price}
+                <span className={`ml-1 text-[11.5px] font-normal tracking-normal ${s.sub}`}>a year</span>
+              </p>
+            </div>
+            <p className={`relative mt-1.5 text-[12px] ${s.sub}`}>{s.limits}</p>
           </li>
         ))}
       </ul>

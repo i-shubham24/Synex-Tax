@@ -7,12 +7,11 @@ import { PriceClose, RulesPanel, SuiteHero, TrySection } from '../../components/
 import { PlanPicker } from '../../components/pricing/PlanPicker';
 import { PlanStair } from '../../components/pricing/PlanStair';
 import { Faq } from '../../components/pricing/Faq';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema, buildPricingSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Pricing | SynTax for CA practices',
-  description:
-    'One yearly price for the whole firm, with no per-PC fees. All four suites from ₹8,999 a year, or GST + Sign at ₹5,999 and TDS + Sign at ₹4,999. 14-day trial.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.pricing);
 
 /** What actually differs between the all-in-one plans. Everything else is in every plan. */
 const TIERS = [
@@ -65,6 +64,18 @@ const FAQS = [
 export default function PricingPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          buildPricingSchema(
+            [
+              ...TIERS.map((t) => ({ name: t.name, priceInr: t.price, description: `${t.who}. Covers ${t.gstins} GSTINs, ${t.tans} TANs.` })),
+              ...PACKS.map((p) => ({ name: p.name, priceInr: p.price, description: `${p.covers}. ${p.note}` })),
+            ],
+            FAQS,
+          ),
+          buildBreadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
+        ]}
+      />
       <SiteNav />
       <main className="bg-white">
         <SuiteHero
@@ -91,48 +102,48 @@ export default function PricingPage() {
         />
 
         {/* Plans: what differs, side by side */}
-        <section id="plans" className="mx-auto max-w-[1380px] scroll-mt-24 px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="plans-title">
-          <div className="grid gap-6 lg:grid-cols-12 lg:items-end">
-            <h2 id="plans-title" className="max-w-[30rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink lg:col-span-7">
+        <section id="plans" className="mx-auto max-w-[1380px] scroll-mt-24 px-4 py-12 sm:px-10 sm:py-16" aria-labelledby="plans-title">
+          <div className="grid gap-4 lg:grid-cols-12 lg:items-end">
+            <h2 id="plans-title" className="max-w-[30rem] text-[clamp(26px,2.8vw,38px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink lg:col-span-7">
               All four suites, three sizes of firm.
             </h2>
-            <p className="max-w-[26rem] text-[14px] leading-[1.6] text-ink-soft lg:col-span-5">
+            <p className="max-w-[26rem] text-[13.5px] leading-[1.55] text-ink-soft lg:col-span-5">
               Every all-in-one plan has GST, TDS, signing and Desk. Prices are for a year, before 18% GST.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-3 md:grid-cols-3">
+          <div className="mt-7 grid gap-3 md:grid-cols-3">
             {TIERS.map((t) => (
               <article
                 key={t.name}
-                className={`flex flex-col rounded-[14px] p-6 sm:p-7 ${t.pick ? 'bg-night text-white' : 'bg-mist text-ink'}`}
+                className={`flex flex-col rounded-[14px] p-4 sm:p-5 ${t.pick ? 'bg-night text-white' : 'bg-mist text-ink'}`}
                 aria-label={`${t.name} plan`}
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="text-[22px] font-medium tracking-[-0.03em]">{t.name}</h3>
-                  {t.pick ? <span className="rounded-full bg-mint px-2.5 py-0.5 text-[11.5px] font-medium text-ink">Best for a team</span> : null}
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="text-[20px] font-medium tracking-[-0.03em]">{t.name}</h3>
+                  {t.pick ? <span className="rounded-full bg-mint px-2.5 py-0.5 text-[11px] font-medium text-ink">Best for a team</span> : null}
                 </div>
-                <p className={`mt-1.5 text-[13.5px] ${t.pick ? 'text-white/65' : 'text-ink-soft'}`}>{t.who}</p>
-                <p className="mt-8 text-[44px] font-medium leading-none tracking-[-0.05em] tabular-nums">
+                <p className={`mt-1 text-[13px] ${t.pick ? 'text-white/65' : 'text-ink-soft'}`}>{t.who}</p>
+                <p className="mt-4 text-[34px] sm:text-[38px] font-medium leading-none tracking-[-0.05em] tabular-nums">
                   &#8377;{t.price}
-                  <span className={`ml-1.5 text-[14px] font-normal tracking-normal ${t.pick ? 'text-white/60' : 'text-ink-soft'}`}>a year</span>
+                  <span className={`ml-1.5 text-[13px] font-normal tracking-normal ${t.pick ? 'text-white/60' : 'text-ink-soft'}`}>a year</span>
                 </p>
-                <dl className={`mt-8 space-y-2.5 border-t pt-5 text-[14px] ${t.pick ? 'border-white/15' : 'border-ink/10'}`}>
+                <dl className={`mt-4 space-y-2 border-t pt-3.5 text-[13px] ${t.pick ? 'border-white/15' : 'border-ink/10'}`}>
                   {[
                     ['GSTINs', t.gstins],
                     ['TANs', t.tans],
                     ['People', t.people],
                     ['Support', t.support],
                   ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-4">
+                    <div key={k} className="flex justify-between gap-3">
                       <dt className={t.pick ? 'text-white/60' : 'text-ink-soft'}>{k}</dt>
                       <dd className="text-right">{v}</dd>
                     </div>
                   ))}
                 </dl>
-                {t.extra ? <p className={`mt-4 text-[13px] ${t.pick ? 'text-white/70' : 'text-ink-soft'}`}>{t.extra}.</p> : null}
-                <div className="mt-auto pt-8">
-                  <PillButton href="/signup" tone={t.pick ? 'mint' : 'dark'} full>
+                {t.extra ? <p className={`mt-3 text-[12.5px] ${t.pick ? 'text-white/70' : 'text-ink-soft'}`}>{t.extra}.</p> : null}
+                <div className="mt-auto pt-5">
+                  <PillButton href="/signup" tone={t.pick ? 'mint' : 'dark'} full size="sm">
                     Start with {t.name}
                   </PillButton>
                 </div>
@@ -140,18 +151,18 @@ export default function PricingPage() {
             ))}
           </div>
 
-          <div className="mt-14">
-            <h3 className="text-[17px] font-medium tracking-[-0.02em] text-ink">Only need one of GST or TDS?</h3>
-            <ul className="mt-4 border-b border-hairline">
+          <div className="mt-10">
+            <h3 className="text-[16px] font-medium tracking-[-0.02em] text-ink">Only need one of GST or TDS?</h3>
+            <ul className="mt-3 border-b border-hairline">
               {PACKS.map((p) => (
-                <li key={p.name} className="grid gap-2 border-t border-hairline py-5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto] sm:items-baseline sm:gap-8">
-                  <p className="text-[16px] font-medium tracking-[-0.015em] text-ink">{p.name}</p>
-                  <p className="text-[14px] leading-[1.55] text-ink-soft">
+                <li key={p.name} className="grid gap-1.5 border-t border-hairline py-4 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto] sm:items-baseline sm:gap-8">
+                  <p className="text-[15px] font-medium tracking-[-0.015em] text-ink">{p.name}</p>
+                  <p className="text-[13.5px] leading-[1.5] text-ink-soft">
                     {p.covers}. {p.note}
                   </p>
-                  <p className="text-[20px] font-medium tracking-[-0.03em] tabular-nums text-ink sm:text-right">
+                  <p className="text-[18px] font-medium tracking-[-0.03em] tabular-nums text-ink sm:text-right">
                     &#8377;{p.price}
-                    <span className="ml-1 text-[13px] font-normal tracking-normal text-ink-soft">a year</span>
+                    <span className="ml-1 text-[12.5px] font-normal tracking-normal text-ink-soft">a year</span>
                   </p>
                 </li>
               ))}
@@ -161,7 +172,7 @@ export default function PricingPage() {
 
         <RulesPanel titleId="every-title" title="In every plan, whatever its size." rules={EVERY_PLAN} />
 
-        <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="faq-title">
+        <section className="mx-auto max-w-[1380px] px-4 py-12 sm:px-10 sm:py-16" aria-labelledby="faq-title">
           <div className="grid gap-12 lg:grid-cols-12">
             <h2 id="faq-title" className="max-w-[20rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink lg:col-span-4">
               Before you decide.

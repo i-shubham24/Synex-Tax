@@ -4,11 +4,11 @@ import { LandingFooter } from '../../components/landing/LandingFooter';
 import { PriceClose, RulesPanel, StairSteps, SuiteHero, TrySection } from '../../components/products/ProductSections';
 import { SheetCheck } from '../../components/switch/SheetCheck';
 import { YearsToHistory } from '../../components/switch/YearsToHistory';
+import { JsonLd } from '../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../seo/meta';
+import { buildBreadcrumbSchema, buildHowToSchema } from '../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'Switch from desktop tax software | SynTax',
-  description: 'Move your client list, TDS history and team from installed tax software to SynTax, and see what changes for your practice and what stays the same.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.switch);
 
 /** The afternoon, in the order it is done. */
 const MOVE = [
@@ -55,6 +55,15 @@ const SAME = [
 export default function SwitchPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          buildHowToSchema(
+            'How to switch your CA practice from desktop tax software to SynTax',
+            MOVE.map((s) => ({ name: s.title, text: s.body })),
+          ),
+          buildBreadcrumbSchema([{ name: 'Switch to SynTax', path: '/switch' }]),
+        ]}
+      />
       <SiteNav />
       <main className="bg-white">
         <SuiteHero

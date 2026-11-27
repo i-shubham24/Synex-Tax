@@ -53,16 +53,16 @@ const SETTINGS_TABS: SettingsTab[] = [
 ];
 
 export default function SettingsPage() {
-  const { user, upgradePlan } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('firm');
 
   // DSC Bridge state
   const [bridgeTesting, setBridgeTesting] = useState<boolean>(false);
   const [bridgeStatus, setBridgeStatus] = useState<string | null>(null);
 
-  // Billing state
-  const [currentPlan, setCurrentPlan] = useState<string>(user?.plan || 'PILOT');
-  const [billingSaved, setBillingSaved] = useState<boolean>(false);
+  // Billing state (server-verified plan, never self-mutated in browser state)
+  const currentPlan = user?.plan || 'PILOT';
+  const [requestedPlan, setRequestedPlan] = useState<string | null>(null);
 
   const handleTestBridge = async () => {
     setBridgeTesting(true);
@@ -84,11 +84,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpgrade = (plan: 'SOLO' | 'GROWTH' | 'SCALE') => {
-    if (upgradePlan) upgradePlan(plan);
-    setCurrentPlan(plan);
-    setBillingSaved(true);
-    setTimeout(() => setBillingSaved(false), 4000);
+  const handleRequestPlan = (plan: 'SOLO' | 'GROWTH' | 'SCALE') => {
+    setRequestedPlan(plan);
   };
 
   return (
@@ -250,9 +247,17 @@ export default function SettingsPage() {
                 </span>
               </div>
 
-              {billingSaved && (
-                <div className="p-3 rounded-lg bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 text-xs">
-                  Subscription plan successfully updated to {currentPlan}.
+              {requestedPlan && (
+                <div className="p-3 rounded-lg bg-pos-muted text-pos-ink border border-pos-line text-xs flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    Plan changes ({requestedPlan}) are provisioned after GST tax invoice settlement. Contact billing or view full plan terms.
+                  </span>
+                  <a
+                    href={`/contact?plan=${requestedPlan}`}
+                    className="px-3 py-1 rounded-md bg-pos-accent text-white font-semibold hover:bg-pos-accent-deep"
+                  >
+                    Continue to billing request
+                  </a>
                 </div>
               )}
 
@@ -262,7 +267,7 @@ export default function SettingsPage() {
                   currentPlan === 'SOLO' ? 'border-pos-accent bg-pos-muted shadow-md' : 'border-pos-line bg-pos-surface'
                 }`}>
                   <div className="font-semibold text-sm text-pos-ink">SOLO CA</div>
-                  <div className="text-lg font-semibold text-pos-ink">₹2,999 <span className="text-xs font-normal text-pos-ink/60">/mo</span></div>
+                  <div className="text-lg font-semibold text-pos-ink">Annual license <span className="text-xs font-normal text-pos-ink/60">+ GST</span></div>
                   <ul className="space-y-1.5 text-[12px] text-pos-ink/70 font-sans">
                     <li>• Up to 10 Active Clients</li>
                     <li>• Sub-second GSTR-2B Recon</li>
@@ -271,10 +276,11 @@ export default function SettingsPage() {
                   </ul>
                   <button
                     type="button"
-                    onClick={() => handleUpgrade('SOLO')}
-                    className="w-full py-1.5 rounded-lg bg-pos-surface hover:bg-pos-line border border-pos-line font-semibold text-pos-ink"
+                    disabled={currentPlan === 'SOLO'}
+                    onClick={() => handleRequestPlan('SOLO')}
+                    className="w-full py-1.5 rounded-lg bg-pos-surface hover:bg-pos-line disabled:opacity-60 border border-pos-line font-semibold text-pos-ink"
                   >
-                    {currentPlan === 'SOLO' ? 'Active Plan' : 'Select Solo'}
+                    {currentPlan === 'SOLO' ? 'Active Plan' : 'Request Solo'}
                   </button>
                 </div>
 
@@ -285,7 +291,7 @@ export default function SettingsPage() {
                     <span className="font-semibold text-sm text-pos-ink">GROWTH PRACTICE</span>
                     <span className="text-[12px] bg-pos-accent text-white font-semibold px-2 py-0.5 rounded">POPULAR</span>
                   </div>
-                  <div className="text-lg font-semibold text-pos-ink">₹7,999 <span className="text-xs font-normal text-pos-ink/60">/mo</span></div>
+                  <div className="text-lg font-semibold text-pos-ink">Annual license <span className="text-xs font-normal text-pos-ink/60">+ GST</span></div>
                   <ul className="space-y-1.5 text-[12px] text-pos-ink/70 font-sans">
                     <li>• Up to 50 Active Clients</li>
                     <li>• Statutory Maker-Checker RBAC</li>
@@ -294,10 +300,11 @@ export default function SettingsPage() {
                   </ul>
                   <button
                     type="button"
-                    onClick={() => handleUpgrade('GROWTH')}
-                    className="w-full py-1.5 rounded-lg bg-pos-accent text-white font-semibold hover:bg-pos-accent-deep"
+                    disabled={currentPlan === 'GROWTH'}
+                    onClick={() => handleRequestPlan('GROWTH')}
+                    className="w-full py-1.5 rounded-lg bg-pos-accent text-white font-semibold hover:bg-pos-accent-deep disabled:opacity-60"
                   >
-                    {currentPlan === 'GROWTH' ? 'Active Plan' : 'Select Growth'}
+                    {currentPlan === 'GROWTH' ? 'Active Plan' : 'Request Growth'}
                   </button>
                 </div>
 
@@ -305,7 +312,7 @@ export default function SettingsPage() {
                   currentPlan === 'SCALE' ? 'border-pos-accent bg-pos-muted shadow-md' : 'border-pos-line bg-pos-surface'
                 }`}>
                   <div className="font-semibold text-sm text-pos-ink">ENTERPRISE SCALE</div>
-                  <div className="text-lg font-semibold text-pos-ink">₹19,999 <span className="text-xs font-normal text-pos-ink/60">/mo</span></div>
+                  <div className="text-lg font-semibold text-pos-ink">Annual license <span className="text-xs font-normal text-pos-ink/60">+ GST</span></div>
                   <ul className="space-y-1.5 text-[12px] text-pos-ink/70 font-sans">
                     <li>• Unlimited Active Clients</li>
                     <li>• Multi-branch ICAI FRN Hub</li>
@@ -314,10 +321,11 @@ export default function SettingsPage() {
                   </ul>
                   <button
                     type="button"
-                    onClick={() => handleUpgrade('SCALE')}
-                    className="w-full py-1.5 rounded-lg bg-pos-surface hover:bg-pos-line border border-pos-line font-semibold text-pos-ink"
+                    disabled={currentPlan === 'SCALE'}
+                    onClick={() => handleRequestPlan('SCALE')}
+                    className="w-full py-1.5 rounded-lg bg-pos-surface hover:bg-pos-line disabled:opacity-60 border border-pos-line font-semibold text-pos-ink"
                   >
-                    {currentPlan === 'SCALE' ? 'Active Plan' : 'Select Scale'}
+                    {currentPlan === 'SCALE' ? 'Active Plan' : 'Request Scale'}
                   </button>
                 </div>
               </div>

@@ -4,12 +4,11 @@ import { LandingFooter } from '../../../components/landing/LandingFooter';
 import { PriceClose, RulesPanel, StairSteps, TrySection } from '../../../components/products/ProductSections';
 import { DeskHero, TrailCard } from '../../../components/products/desk/DeskHero';
 import { ClientDemo } from '../../../components/products/desk/ClientDemo';
+import { JsonLd } from '../../../components/seo/JsonLd';
+import { buildPageMetadata, SEO_PAGES } from '../../../seo/meta';
+import { buildBreadcrumbSchema, buildSuiteSchema } from '../../../seo/schema';
 
-export const metadata: Metadata = {
-  title: 'SynTax Desk | Client master, team access, papers, fees and audit trail',
-  description:
-    'One client record by PAN with its GSTINs and TANs, feeding GST, TDS and signing. Staff see only their clients, clients upload papers through a link, fees are invoiced and every change is logged in a tamper-evident trail.',
-};
+export const metadata: Metadata = buildPageMetadata(SEO_PAGES.desk);
 
 /** A new client, in the order the firm sets them up. */
 const ONBOARD = [
@@ -63,6 +62,24 @@ const RECORDS = [
 export default function DeskProductPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          buildSuiteSchema({
+            path: '/products/desk',
+            name: 'SynTax Desk',
+            description: SEO_PAGES.desk.description,
+            lowPrice: '8999',
+            highPrice: '29999',
+            features: RECORDS.map((r) => `${r.rule}: ${r.what}`),
+            howToTitle: 'Client onboarding in SynTax Desk',
+            howToSteps: ONBOARD.map((s) => ({ name: s.title, text: s.body })),
+          }),
+          buildBreadcrumbSchema([
+            { name: 'Products', path: '/products/desk' },
+            { name: 'SynTax Desk', path: '/products/desk' },
+          ]),
+        ]}
+      />
       <SiteNav />
       <main className="bg-white">
         <DeskHero />
@@ -95,22 +112,22 @@ export default function DeskProductPage() {
         />
 
         {/* Roles: a matrix is the honest shape for "who can do what" */}
-        <section className="mx-auto max-w-[1380px] px-6 py-20 sm:px-10 sm:py-28" aria-labelledby="access-title">
-          <div className="grid gap-12 lg:grid-cols-12">
+        <section className="mx-auto max-w-[1380px] px-4 py-12 sm:px-10 sm:py-20" aria-labelledby="access-title">
+          <div className="grid gap-8 sm:gap-12 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              <h2 id="access-title" className="max-w-[22rem] text-[clamp(28px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
+              <h2 id="access-title" className="max-w-[22rem] text-[clamp(26px,2.8vw,40px)] font-normal leading-[1.14] tracking-[-0.035em] text-ink">
                 Who in the firm can do what.
               </h2>
-              <p className="mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">
+              <p className="mt-4 sm:mt-5 max-w-[22rem] text-[14px] leading-[1.6] text-ink-soft">
                 The person who prepares a return is never the one who approves it. A partner can narrow any staff member to
                 particular clients and screens.
               </p>
             </div>
-            <div className="overflow-x-auto lg:col-span-8">
+            <div className="relative overflow-x-auto lg:col-span-8">
               <table className="w-full min-w-[560px] border-collapse text-left">
                 <thead>
                   <tr className="text-[12.5px] text-ink-soft">
-                    <th className="pb-3 pr-6 font-normal">
+                    <th className="relative pb-3 pr-6 font-normal">
                       <span className="sr-only">Action</span>
                     </th>
                     {['Partner', 'Manager', 'Staff', 'Client'].map((r) => (
