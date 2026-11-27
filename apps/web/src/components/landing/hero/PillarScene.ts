@@ -227,6 +227,7 @@ export class PillarScene {
 
   private camLook = new THREE.Vector3();
   private tmpV = new THREE.Vector3();
+  private mobileLift = 0;
 
   constructor(private canvas: HTMLCanvasElement, opts: PillarSceneOptions) {
     this.reduced = opts.reducedMotion;
@@ -363,8 +364,9 @@ export class PillarScene {
     this.cssSize = { w: width, h: height };
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
-    // Keep the cluster framed on narrow screens.
-    this.camera.fov = width / height < 0.9 ? 36 : 27;
+    // Frame the coin & pillar tops visibly higher on compact mobile viewports.
+    this.camera.fov = width < 640 ? 33 : width / height < 0.9 ? 36 : 27;
+    this.mobileLift = width < 640 ? 0.65 : 0;
     this.camera.updateProjectionMatrix();
   }
 
@@ -555,7 +557,7 @@ export class PillarScene {
     this.scrollCurrent += (this.scrollTarget - this.scrollCurrent) * (this.reduced ? 1 : 1 - Math.pow(0.002, dt));
     this.cluster.rotation.y = -0.18 + this.pointerCurrent.x * 0.24 + this.scrollCurrent * 0.35;
     this.cluster.rotation.x = this.pointerCurrent.y * 0.04;
-    this.cluster.position.y = -this.scrollCurrent * 2.6;
+    this.cluster.position.y = this.mobileLift - this.scrollCurrent * 2.6;
 
     if (!this.introDone) this.updateIntro(t);
 

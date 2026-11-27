@@ -149,14 +149,14 @@ const PILL_CHIP: Record<PillTone, string> = {
 /** The arrow chip: on hover the arrow exits top-right while a fresh one slides in from bottom-left. */
 export function ArrowChip({ tone = 'dark', size = 'md', compactMobile = false }: { tone?: PillTone; size?: 'sm' | 'md' | 'lg'; compactMobile?: boolean }) {
   const box = compactMobile
-    ? 'h-6 w-6 sm:h-11 sm:w-11'
+    ? 'h-8 w-8 sm:h-11 sm:w-11'
     : size === 'lg'
       ? 'h-11 w-11'
       : size === 'sm'
         ? 'h-7 w-7'
         : 'h-9 w-9';
   const icon = compactMobile
-    ? 'h-3 w-3 sm:h-[18px] sm:w-[18px]'
+    ? 'h-3.5 w-3.5 sm:h-[18px] sm:w-[18px]'
     : size === 'lg'
       ? 'h-[18px] w-[18px]'
       : size === 'sm'
@@ -203,7 +203,7 @@ export function PillButton({
   className?: string;
 }) {
   const pad = compactMobile
-    ? 'h-9 gap-1.5 pl-3 pr-1.5 text-[11.5px] sm:h-14 sm:gap-4 sm:pl-7 sm:pr-1.5 sm:text-[16.5px]'
+    ? 'h-11 gap-2 pl-3.5 pr-1.5 text-[12.5px] min-[360px]:pl-4 min-[360px]:text-[13.5px] sm:h-14 sm:gap-4 sm:pl-7 sm:pr-1.5 sm:text-[16.5px]'
     : size === 'lg'
       ? 'h-14 gap-4 pl-7 pr-1.5 text-[16.5px]'
       : size === 'sm'

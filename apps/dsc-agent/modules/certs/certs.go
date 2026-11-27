@@ -36,8 +36,9 @@ type Certificate struct {
 func Scan(root, sub string) ([]Certificate, error) {
 	dir := root
 	if sub != "" {
-		clean := filepath.Clean(sub)
-		if filepath.IsAbs(clean) || strings.HasPrefix(clean, "..") {
+		norm := strings.ReplaceAll(sub, `\`, `/`)
+		clean := filepath.Clean(filepath.FromSlash(norm))
+		if filepath.IsAbs(clean) || strings.HasPrefix(norm, "/") || hasWindowsDrivePrefix(sub) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 			return nil, ErrNotInbox
 		}
 		dir = filepath.Join(root, clean)
@@ -105,11 +106,16 @@ var (
 	ErrNotAFile  = errors.New("certs: not a PDF file in the certificates folder")
 )
 
+func hasWindowsDrivePrefix(p string) bool {
+	return len(p) >= 2 && ((p[0] >= 'a' && p[0] <= 'z') || (p[0] >= 'A' && p[0] <= 'Z')) && p[1] == ':'
+}
+
 // Read returns one PDF's bytes, unchanged, from inside root. rel is the path Scan reported. The
 // file must be a signed PDF of at most 2 MB; links that lead outside root are refused.
 func Read(root, rel string) ([]byte, error) {
-	clean := filepath.Clean(filepath.FromSlash(rel))
-	if rel == "" || filepath.IsAbs(clean) || filepath.VolumeName(clean) != "" || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+	norm := strings.ReplaceAll(rel, `\`, `/`)
+	clean := filepath.Clean(filepath.FromSlash(norm))
+	if rel == "" || filepath.IsAbs(clean) || filepath.VolumeName(clean) != "" || hasWindowsDrivePrefix(rel) || strings.HasPrefix(norm, "/") || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
 		return nil, ErrNotInbox
 	}
 	if !strings.EqualFold(filepath.Ext(clean), ".pdf") {

@@ -141,6 +141,9 @@ func (c Config) Read(dir string) (Result, error) {
 }
 
 func (c Config) inRoot(dir string) error {
+	if len(dir) >= 2 && ((dir[0] >= 'a' && dir[0] <= 'z') || (dir[0] >= 'A' && dir[0] <= 'Z')) && dir[1] == ':' && !filepath.IsAbs(dir) {
+		return ErrNotWorkspace
+	}
 	root, err := filepath.Abs(c.Root)
 	if err != nil {
 		return err

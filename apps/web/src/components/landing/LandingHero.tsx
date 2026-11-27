@@ -82,7 +82,7 @@ export function LandingHero() {
 
   return (
     <section id="top" ref={trackRef} className="relative bg-hero-canvas" aria-labelledby="hero-title">
-      <div className="relative flex min-h-[680px] flex-col overflow-hidden pt-[76px] lg:h-[100svh] lg:max-h-[1000px]">
+      <div className="relative flex flex-col overflow-hidden pt-[64px] lg:h-[100svh] lg:min-h-[680px] lg:max-h-[1000px] lg:pt-[76px]">
         {/* Ambient light: soft cool wash plus the cast shadow left of the cluster */}
         <div
           aria-hidden
@@ -93,11 +93,11 @@ export function LandingHero() {
           }}
         />
 
-        {/* 3D pillars: right side on desktop, block under the copy on mobile */}
+        {/* 3D pillars: right side on desktop, lifted snugly beneath copy on mobile */}
         <HeroPillars
           trackRef={trackRef}
           onReveal={onReveal}
-          className="relative order-2 h-[400px] w-full lg:absolute lg:inset-y-0 lg:right-0 lg:order-none lg:h-auto lg:w-[60%]"
+          className="relative order-2 -mt-6 h-[290px] w-full sm:-mt-4 sm:h-[340px] lg:absolute lg:inset-y-0 lg:right-0 lg:mt-0 lg:order-none lg:h-auto lg:w-[60%]"
         />
 
         {/* Bottom fog so the pillars dissolve into the frame */}
@@ -107,9 +107,9 @@ export function LandingHero() {
         />
 
         {/* Copy (the nav lives in the fixed SiteNav) */}
-        <div className="relative z-10 order-1 flex flex-1 flex-col px-4 sm:px-10 lg:w-[54%] lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
+        <div className="relative z-10 order-1 flex flex-col px-4 sm:px-10 lg:w-[54%] lg:flex-1 lg:justify-center lg:pl-[max(2.5rem,calc((100vw-1480px)/2+2.5rem))] lg:pr-0 lg:pt-0 lg:pb-8">
           <p
-            className={`mb-5 inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-ink/10 bg-white/80 py-1 pl-1.5 pr-3 text-[11px] sm:text-[12px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
+            className={`mb-3 sm:mb-5 inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-ink/10 bg-white/80 py-1 pl-1.5 pr-3 text-[11px] sm:text-[12px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
           >
             <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-ink">Next due</span>
             <span className="truncate leading-none" aria-live="polite">
@@ -138,7 +138,7 @@ export function LandingHero() {
             <span className="block whitespace-nowrap">Made Easy</span>
           </h1>
           <p
-            className={`mt-5 max-w-[25rem] font-display text-[clamp(15px,1.35vw,19px)] leading-[1.45] tracking-[-0.015em] transition-colors duration-[1200ms] ease-out-expo ${
+            className={`mt-3.5 sm:mt-5 max-w-[25rem] font-display text-[clamp(15px,1.35vw,19px)] leading-[1.45] tracking-[-0.015em] transition-colors duration-[1200ms] ease-out-expo ${
               revealed ? 'text-ink/80' : 'text-[#d6d6dc]'
             }`}
             style={{ transitionDelay: '120ms' }}
@@ -146,26 +146,32 @@ export function LandingHero() {
             File returns, act on IMS and sign TDS statements for every client from one fast, secure workspace.
           </p>
           <div
-            className={`mt-6 sm:mt-8 transition-colors duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
+            className={`mt-5 sm:mt-8 transition-colors duration-[900ms] ease-out-expo ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
             style={{ transitionDelay: '260ms' }}
           >
-            <div className="flex flex-nowrap items-center gap-2 sm:gap-4 w-fit max-w-full">
+            <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-fit sm:flex-nowrap sm:items-center sm:gap-4">
               <PillButton
                 onClick={openSample}
                 disabled={opening}
                 compactMobile
                 size="lg"
-                className="shrink-0"
+                className="w-full justify-between sm:w-auto sm:justify-start sm:shrink-0"
               >
                 <span className="sm:hidden">{opening ? 'Opening…' : 'Sample firm'}</span>
                 <span className="hidden sm:inline">{opening ? 'Opening the sample firm…' : 'Explore a sample firm'}</span>
               </PillButton>
-              <PillButton href="/switch" tone="light" compactMobile size="lg" className="shrink-0">
+              <PillButton
+                href="/switch"
+                tone="light"
+                compactMobile
+                size="lg"
+                className="w-full justify-between sm:w-auto sm:justify-start sm:shrink-0"
+              >
                 <span className="sm:hidden">From desktop?</span>
                 <span className="hidden sm:inline">Switching from desktop?</span>
               </PillButton>
             </div>
-            <p className="mt-3.5 text-[12.5px] sm:text-[13.5px] text-ink/55">
+            <p className="mt-2.5 sm:mt-3.5 text-[12px] sm:text-[13.5px] text-ink/55">
               The sample firm opens with two clients set up. No sign-up needed.
             </p>
           </div>

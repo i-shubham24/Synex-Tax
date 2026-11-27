@@ -23,11 +23,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Shared Packages & API
+        run: npm run build -w @synextax/api
+
       - name: Build Web Application
         run: npm run build -w @synextax/web
 
       - name: Run API Tests
-        run: npm test -w @synextax/api --if-present
+        run: npm test -w @synextax/api
 
   dsc-agent:
     name: Go 1.23+ DSC Local Agent
