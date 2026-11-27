@@ -115,7 +115,7 @@ export default function Form141Page() {
       icon: Coins,
     },
     E: {
-      name: 'Schedule E: TCS Tax Collected at Source (Section 395)',
+      name: 'Schedule E: TCS Tax Collected at Source (Section 394)',
       desc: 'E-commerce operator collections, scrap sales, overseas remittances, and luxury goods.',
       data: data?.schedules?.scheduleE_TcsCollections,
       icon: Building2,

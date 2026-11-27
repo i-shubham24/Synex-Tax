@@ -15,38 +15,39 @@ const CERTIFICATES = [
   {
     when: 'When TRACES has them ready',
     title: 'Request and download',
-    body: 'Request Form 130 and 131 certificates on TRACES for the quarter and download the zip, as you do today.',
+    body: 'Request Form 130 and 131 certificates on TRACES for the quarter and download the official .zip file, as you do today.',
   },
   {
     when: 'On your PC',
-    title: 'Convert and sign',
-    body: 'Run TRACES’ own PDF converter, which signs each certificate with your DSC. Save the PDFs into SynTax’s certificates folder.',
+    title: 'Convert with TRACES utility',
+    body: 'Use TRACES’ official PDF converter or signed .zip download to generate each DSC-signed PDF into SynTax’s certificates folder.',
   },
   {
     when: 'Before anything is sent',
-    title: 'Checked',
-    body: 'The app reads every PDF in that folder, finds the PAN in its file name and holds back any certificate that carries no signature.',
+    title: 'Verify signature & PAN',
+    body: 'SynTax verifies every PDF digital signature and PAN match, holding back any unsigned or mismatched file before dispatch.',
   },
   {
     when: 'Same day',
-    title: 'Sent to each payee',
-    body: 'Each payee gets their own certificate by email or WhatsApp through a link that expires. You see who opened it and when.',
+    title: 'Trackable payee delivery',
+    body: 'Dispatch per payee by email or WhatsApp link with expiring download URLs and open-tracking.',
   },
 ];
 
-/** The other jobs the same app does on the office PC. */
-const ALSO = [
+/** The other jobs the same workspace and local agent do. */
+const ALSO: Array<{ title: string; body: string; badge?: 'Early Access' | 'Coming Q1 2027' }> = [
   {
-    title: 'Runs Protean’s FVU',
-    body: 'Saves the statement into a fresh folder, opens Protean’s own FVU window there, and reads back the .fvu file or the error report.',
+    title: 'Zero-Java DSC + isolated FVU',
+    body: 'DSC signing runs natively on your PC with zero Java; Protean FVU validation runs automatically in an isolated validation engine with row-level error jump (local desktop FVU runner mode is also supported).',
   },
   {
-    title: 'Backs up Tally, Busy and Marg',
-    body: 'Copies the company data into dated zip files with a checksum for each file, and picks up the newest Zoho Books or Vyapar backup. Files the software has open are reported, not skipped.',
+    title: 'Tally, Busy, Marg, Zoho & Vyapar backups',
+    body: 'Schedules dated backups for Tally, Busy and Marg plus Zoho Books and Vyapar exports with SHA-256 checksums once paired via the local desktop agent.',
+    badge: 'Early Access',
   },
   {
     title: 'Listens to nobody else',
-    body: 'It only answers on this computer and only to the SynTax website. It cannot be pointed at your other files.',
+    body: 'The local signer only answers on 127.0.0.1 and only to signed SynTax challenges. It cannot be pointed at your other files.',
   },
 ];
 
@@ -56,7 +57,7 @@ const SAFEGUARDS = [
   { rule: 'What gets signed', what: 'Only the fingerprint of a return SynTax named in a request it signed itself, valid for two minutes and usable once.' },
   { rule: 'The certificate', what: 'Its chain is checked up to the CCA India root before the signature is accepted.' },
   { rule: 'The record', what: 'Every signature, cancel and wrong PIN goes into the tamper-evident audit trail, with who approved the return.' },
-  { rule: 'Expiry', what: 'Each token in the office register shows the days it has left, so renewals happen before a filing date, not on it.' },
+  { rule: 'Token Radar & FIPS 140-3', what: 'Each token shows days left before expiry and flags FIPS 140-2 Level 2/3 hardware tokens due for FIPS 140-3 Level 3 renewal.' },
 ];
 
 export default function SignProductPage() {
@@ -119,7 +120,14 @@ export default function SignProductPage() {
             <div className="grid gap-10 sm:grid-cols-3 lg:col-span-8">
               {ALSO.map((a) => (
                 <div key={a.title} className="border-t border-ink pt-4">
-                  <h3 className="text-[17px] font-medium tracking-[-0.02em] text-ink">{a.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-[17px] font-medium tracking-[-0.02em] text-ink">{a.title}</h3>
+                    {a.badge ? (
+                      <span className="rounded-full border border-ink/15 bg-mist px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink/70">
+                        {a.badge}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-2.5 text-[14px] leading-[1.6] text-ink-soft">{a.body}</p>
                 </div>
               ))}

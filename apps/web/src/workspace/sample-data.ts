@@ -41,6 +41,8 @@ const ENTITIES: Entity[] = [
     tans: [{ tan: 'AMRA01492B', branch: 'Head office', lastFiledQuarter: 'Q2 TY 2026-27', lastToken: '022610400172834' }],
     dscs: [{ id: 'd-1', holder: 'Rakesh Mehra (Director)', validTo: '2026-11-25', fips: 'FIPS_140_2', custody: 'OFFICE' }],
     itcReconciled: 4_820_000, pendingMismatch: 24_150,
+    aatoAbove5Cr: true,
+    rcmExposure: { rcmDomCount: 14, rcmImpCount: 2, totalRcmTaxable: 685_000, recurringCategories: ['GTA freight', 'Scrap purchase', 'Foreign SaaS'] },
   },
   {
     id: 'e-golden', groupId: 'g-golden', legalName: 'Golden City Healthcare LLP', pan: 'AAKFG4410M', constitution: 'LLP', assignedTo: 's-sg',
@@ -65,6 +67,8 @@ const ENTITIES: Entity[] = [
     tans: [{ tan: 'AMRM08821D', branch: 'Head office', lastFiledQuarter: 'Q2 TY 2026-27', lastToken: '022610400204417' }],
     dscs: [{ id: 'd-3', holder: 'Gurpreet Sandhu (Director)', validTo: '2026-12-28', fips: 'FIPS_140_2', custody: 'OFFICE' }],
     itcReconciled: 2_310_000, pendingMismatch: 61_900,
+    aatoAbove5Cr: true,
+    rcmExposure: { rcmDomCount: 9, rcmImpCount: 1, totalRcmTaxable: 310_000, recurringCategories: ['GTA freight', 'Rent', 'Foreign testing service'] },
   },
   {
     id: 'e-roadways', groupId: 'g-golden', legalName: 'Golden Temple Roadways', pan: 'AAGFG3302L', constitution: 'PARTNERSHIP', assignedTo: 's-ms',

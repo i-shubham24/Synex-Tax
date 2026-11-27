@@ -236,7 +236,7 @@ export function ProductGlance() {
                 id="glance-title"
                 className="mt-5 text-[clamp(38px,4.2vw,62px)] font-medium leading-[1.02] tracking-[-0.045em] text-ink"
               >
-                One desk for
+                One desk for{' '}
                 <br />
                 every client.
               </h2>

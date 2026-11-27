@@ -39,7 +39,7 @@ export function ClosingCta() {
 
         <div className="relative z-10 px-7 pb-10 pt-8 sm:px-10">
           <h2 id="closing-title" className="max-w-[40rem] text-[clamp(40px,5vw,76px)] font-medium leading-[1.02] tracking-[-0.05em]">
-            Your next GSTR-3B,
+            Your next GSTR-3B,{' '}
             <br />
             on SynTax
           </h2>

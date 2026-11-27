@@ -24,6 +24,7 @@ from recon_worker.parsing import (
     parse_date,
     quantize_money,
 )
+from recon_worker.recon import normalize_invoice_number
 from recon_worker.validators import (
     classify_section_17_5,
     validate_gstin,
@@ -57,6 +58,7 @@ class SanitizedInvoice:
     sgst_amount: str
     total_tax: str
     total_invoice_value: str
+    normalized_invoice_key: str = ""
     doc_type: str = "INV"
     itc_eligibility: str = "ELIGIBLE"
     blocked_credit_clause: str | None = None
@@ -201,6 +203,7 @@ def sanitize_purchase_register_bytes(file_bytes: bytes, filename: str) -> Saniti
             vendor_gstin=clean_gstin,
             vendor_name=raw_name.strip() if isinstance(raw_name, str) else None,
             invoice_num=clean_inv,
+            normalized_invoice_key=normalize_invoice_number(clean_inv),
             invoice_date=clean_date,
             taxable_value=format_money(taxable_dec) or "0.00",
             igst_amount=format_money(igst_dec) or "0.00",

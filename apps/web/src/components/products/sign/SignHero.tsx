@@ -26,6 +26,9 @@ export function TokensCard() {
           </li>
         ))}
       </ul>
+      <p className="mt-3 border-t border-hairline pt-2 text-[11px] leading-[1.45] text-ink-soft">
+        Tracks FIPS 140-2 renewals migrating to FIPS 140-3 Level 3 certified USB tokens.
+      </p>
     </div>
   );
 }
@@ -65,7 +68,7 @@ function TrustChain() {
       </div>
 
       {/* Phones: the same chain, one under another */}
-      <ol className="grid gap-2 sm:hidden">
+      <ol aria-hidden="true" className="grid gap-2 sm:hidden">
         {CHAIN.map((c) => {
           const Icon = c.icon;
           return (

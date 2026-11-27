@@ -101,8 +101,8 @@ export function TdsHero() {
       title={<>Two Acts, one&nbsp;quarter, no&nbsp;mix&#8209;ups.</>}
       body={
         <p>
-          SynTax files every row under the Act its date belongs to, writes the statement in Protean&rsquo;s format and runs
-          Protean&rsquo;s FVU on your PC.
+          SynTax files every row under the Act its date belongs to, validates in an isolated Protean FVU engine with row-level
+          error jump, and signs natively on your PC with zero Java.
         </p>
       }
       price="TDS + Sign is ₹4,999 a year"

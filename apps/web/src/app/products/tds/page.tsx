@@ -14,22 +14,22 @@ const QUARTER = [
   {
     when: 'Every month, by the 7th',
     title: 'Deposit the tax',
-    body: 'Pay through ITNS 281N, or 281 for 1961-Act months. Upload the bank’s CSI file and each challan is matched by BSR code, serial number and date.',
+    body: 'Pay through ITNS 281N across the 20 new 2025-Act payment sections, or 281 for 1961-Act months. Upload the bank’s CSI file to match by BSR code, serial number and date.',
   },
   {
     when: 'Through the quarter',
     title: 'Keep the rows',
-    body: 'Paste or import each month’s payments. Codes, rates, thresholds and PANs are checked as rows come in, and short or late deduction shows the interest it will cost.',
+    body: 'Paste or import each month’s payments. Codes, rates, thresholds, Aadhaar-PAN operative status (20% higher rate check) and short deduction interest are checked automatically.',
   },
   {
     when: 'By the 31st after the quarter',
-    title: 'File the statement',
-    body: 'SynTax writes the text file in Protean’s format and opens Protean’s own FVU on your computer to check it. Errors come back against the rows that caused them.',
+    title: 'Validate & sign',
+    body: 'DSC signing runs natively on your PC with zero Java; Protean FVU validation runs automatically in an isolated validation engine with row-level error jump (desktop FVU launch optional).',
   },
   {
     when: 'After TRACES processes it',
     title: 'Correct and certify',
-    body: 'Import the .conso file to see what TRACES found and write the correction statement. Download Form 130 and 131 certificates from TRACES and sign them in one batch with your DSC.',
+    body: 'Import the .conso file to build correction statements. Use TRACES’ official utility or signed .zip download: SynTax verifies every PDF signature and PAN match, then dispatches expiring payee links with open-tracking.',
   },
 ];
 
@@ -46,13 +46,14 @@ const FORMS: Array<{ what: string; old: string; next: string }> = [
   { what: 'Lower deduction', old: 'Section 197', next: 'Section 395(1)' },
 ];
 
-const CHECKS = [
+const CHECKS: Array<{ rule: string; what: string; badge?: 'Early Access' | 'Coming Q1 2027' }> = [
   { rule: 'Interest, month by month', what: '1% a month from when tax should have been deducted until it was, and 1.5% a month from deduction until it was paid. Part of a month counts as a month.' },
-  { rule: 'Challans', what: 'Each row is tied to a challan paid after its month began and by the 7th of the next (30 April for March). A challan is never used past its amount.' },
+  { rule: 'ITNS 281N challan matching', what: 'Supports the 20 new Income-tax Act, 2025 payment sections alongside 1961 Act ITNS 281 challans, matched by BSR, serial and date without over-allocating balance.' },
   { rule: 'Rates and thresholds', what: 'Each row is checked against the rate for its code, with the year’s earlier payments to the same payee counted towards the threshold.' },
-  { rule: 'Lower-deduction certificates', what: 'A row that claims one must fall within its dates, rate and remaining amount. Past the limit, the normal rate applies again.' },
-  { rule: 'PANs', what: 'Missing or invalid PANs are flagged for the higher rate. PANs are masked on screen; a partner or manager can reveal one with a reason, and that is logged.' },
-  { rule: 'Corrections', what: 'The TRACES .conso file is compared with your books, and the correction statement follows Protean’s format field by field.' },
+  { rule: 'Lower-deduction certificates', what: 'Validates Section 395 / 395(1) / 395(2) certificates for TY 2026-27+ and Section 197 for FY 2025-26 and earlier against dates, rate and remaining limit.' },
+  { rule: 'Inoperative Aadhaar-PAN & 20% check', what: 'Verifies PAN operative status against Aadhaar linkage and flags missing, invalid or inoperative PANs for the mandatory 20% higher deduction rate.' },
+  { rule: 'Corrections & FVU engine', what: 'The TRACES .conso file is compared with your books, and the statement compiler matches Protean’s FVU v1.2 (2025 Act) and v9.5 (1961 Act) schemas field by field.' },
+  { rule: 'Form 15CA / 15CB workings & Advance tax', what: 'Remittance 15CA/15CB classification worksheets and quarterly Section 234B/234C advance tax forecasting with e-Filing portal sync.', badge: 'Early Access' },
 ];
 
 export default function TdsProductPage() {
@@ -103,7 +104,7 @@ export default function TdsProductPage() {
         <StairSteps
           titleId="quarter-title"
           title="One TDS quarter, in the order you work it."
-          aside="Statements are due 31 July, 31 October, 31 January and 31 May. Tax deducted in March can be paid until 30 April."
+          aside="TDS statements (Forms 138, 140, 144) and TY 2026-27 Form 143 TCS are due 31 July, 31 October, 31 January and 31 May (legacy 1961-Act Form 27EQ TCS stays due on the 15th after Q1 to Q3, and 15 May for Q4). March deductions deposit by 30 April."
           steps={QUARTER}
         />
 
@@ -148,7 +149,15 @@ export default function TdsProductPage() {
           titleId="checks-title"
           title="What every row is checked against."
           rules={CHECKS}
-          footnote="Also in SynTax TDS: a salary register with monthly TDS and Form 124 claims, 15CA and 15CB workings for remittances abroad, and an advance tax forecast."
+          footnote={
+            <span>
+              Also in SynTax TDS: a salary register with monthly TDS and Form 124 claims. Note on TCS: legacy Form 27EQ falls due on the 15th (15 July, 15 Oct, 15 Jan, 15 May), while TY 2026-27 Form 143 aligns to the 31st (15 May for Q4 under Rule schedule verification).{' '}
+              <span className="inline-block rounded-full border border-ink/15 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink/70">
+                Early Access
+              </span>{' '}
+              15CA/15CB portal JSON push and automated advance tax challan sync.
+            </span>
+          }
         />
 
         <PriceClose

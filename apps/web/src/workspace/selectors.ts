@@ -9,6 +9,7 @@ import {
   gstReturnExpiry,
   isdRadar,
   pre14ImsGuard,
+  rcmEinvoiceRadar,
   tdsCorrectionDeadline,
   tdsStatementDueDate,
   tokenWatch,
@@ -86,7 +87,7 @@ export interface RadarItem {
 }
 
 export interface RadarTile {
-  id: 'cliff' | 'ims' | 'token' | 'dsc' | 'tds';
+  id: 'cliff' | 'ims' | 'token' | 'dsc' | 'tds' | 'rcm';
   title: string;
   summary: string;
   severity: Severity;
@@ -207,6 +208,30 @@ export function radar(s: WorkspaceSnapshot, entities: Entity[], today: IsoDate, 
     severity: 'warning',
   }));
 
+  // 6. RCMDOM & RCMIMP e-Invoice readiness (Dec 15 voluntary / Jan 1, 2027 mandatory > Rs 5 Cr)
+  const rcmItems = rcmEinvoiceRadar(
+    entities
+      .filter((e) => e.gstins[0]?.gstin)
+      .map((e) => ({
+        entityId: e.id,
+        entityName: e.legalName,
+        gstin: e.gstins[0].gstin,
+        aatoAbove5Cr: Boolean(e.aatoAbove5Cr),
+        rcmDomCount: e.rcmExposure?.rcmDomCount ?? 0,
+        rcmImpCount: e.rcmExposure?.rcmImpCount ?? 0,
+        totalRcmTaxable: e.rcmExposure?.totalRcmTaxable ?? 0,
+        recurringCategories: e.rcmExposure?.recurringCategories ?? [],
+      })),
+    today,
+  ).map<RadarItem>((r) => ({
+    key: `rcm-${r.entityId}`,
+    title: `${r.gstin}: RCMDOM (${r.rcmDomCount}) / RCMIMP (${r.rcmImpCount})`,
+    detail: `${r.entityName} (> Rs 5 Cr): Rs ${r.totalRcmTaxable.toLocaleString('en-IN')} Table 3.1(d) (${r.recurringCategories.join(', ')}). Voluntary Dec 15; mandatory Jan 1 (${r.daysToMandatory}d).`,
+    entityId: r.entityId,
+    href: '/billing',
+    severity: r.daysToMandatory <= 15 ? 'critical' : 'warning',
+  }));
+
   const sev = (items: RadarItem[]): Severity =>
     items.some((i) => i.severity === 'critical') ? 'critical' : items.length ? 'warning' : 'clear';
 
@@ -217,6 +242,7 @@ export function radar(s: WorkspaceSnapshot, entities: Entity[], today: IsoDate, 
     { id: 'token', title: 'API token watch', summary: tokenItems.length ? `${tokenItems.length} GSTINs need attention` : 'All sessions healthy', severity: sev(tokenItems), items: tokenItems },
     { id: 'dsc', title: 'DSC expiry and FIPS 140-3', summary: dscItems.length ? `${dscItems.length} expiring within 45 days` : 'No DSC expiring soon', severity: sev(dscItems), items: dscItems },
     { id: 'tds', title: 'TDS correction and ISD', summary: `${tdsItems.length} near the 2-year wall, ${isdItems.length} ISD gap`, severity: sev([...tdsItems, ...isdItems]), items: [...tdsItems, ...isdItems] },
+    { id: 'rcm', title: 'RCMDOM / RCMIMP e-Invoice', summary: rcmItems.length ? `${rcmItems.length} > Rs 5 Cr exposed (Dec 15 / Jan 1)` : 'No > Rs 5 Cr RCM exposure', severity: sev(rcmItems), items: rcmItems },
   ];
 }
 

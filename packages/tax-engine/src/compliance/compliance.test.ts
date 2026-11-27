@@ -10,7 +10,7 @@ import {
   tdsStatementDueDate,
   taxYearStart,
 } from './calendar.js';
-import { dscExpiryRadar, isdRadar, pre14ImsGuard, tokenWatch } from './radar.js';
+import { dscExpiryRadar, isdRadar, pre14ImsGuard, rcmEinvoiceRadar, tokenWatch } from './radar.js';
 
 test('Dual-Act cutover routes 31 Mar 2026 to 1961 and 1 Apr 2026 to 2025', () => {
   assert.equal(regimeFor('2026-03-31'), 'IT_ACT_1961');
@@ -116,4 +116,35 @@ test('ISD radar flags multi-state PANs without an ISD registration', () => {
     { entityId: 'c', entityName: 'Single', pan: 'R', gstins: [{ gstin: '6', stateCode: '03', type: 'REGULAR', active: true }] },
   ]);
   assert.deepEqual(res.map((e) => e.entityId), ['a']);
+});
+
+test('RCMDOM/RCMIMP radar flags >5 Cr clients with unregistered RCM or service import exposure', () => {
+  const flagged = rcmEinvoiceRadar(
+    [
+      {
+        entityId: 'e1',
+        entityName: 'Amritsar Silk Mills Pvt Ltd',
+        gstin: '03AAACA1294F1Z3',
+        aatoAbove5Cr: true,
+        rcmDomCount: 4,
+        rcmImpCount: 1,
+        totalRcmTaxable: 450000,
+        recurringCategories: ['GTA freight'],
+      },
+      {
+        entityId: 'e2',
+        entityName: 'Small Trader',
+        gstin: '03BBBBB1111B1Z2',
+        aatoAbove5Cr: false,
+        rcmDomCount: 2,
+        rcmImpCount: 0,
+        totalRcmTaxable: 120000,
+        recurringCategories: ['Rent'],
+      },
+    ],
+    '2026-11-27',
+  );
+  assert.equal(flagged.length, 1);
+  assert.equal(flagged[0].entityId, 'e1');
+  assert.equal(flagged[0].daysToMandatory, 35);
 });

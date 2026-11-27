@@ -80,7 +80,7 @@ export function AboutStairs() {
               </p>
             </div>
             {/* Stacked cards (mobile / tablet) */}
-            <div className="grid gap-3 sm:grid-cols-3 lg:hidden">
+            <div aria-hidden="true" className="grid gap-3 sm:grid-cols-3 lg:hidden">
               {STEPS.map((s, i) => (
                 <div key={s.title} className="h-[180px]">
                   <StairCard step={s} index={i} />
@@ -91,7 +91,7 @@ export function AboutStairs() {
         </div>
 
         <div className="mt-14 grid items-center gap-8 border-t border-white/10 pt-10 lg:grid-cols-[minmax(0,38fr)_minmax(0,31fr)_minmax(0,31fr)]">
-          <div className="flex gap-12 lg:hidden">
+          <div aria-hidden="true" className="flex gap-12 lg:hidden">
             <Stat dark value="2" sup="Acts" label="1961 and 2025 TDS" />
             <Stat dark value="3" sup="langs" supTone="sky" label="English, Punjabi, Hindi" />
           </div>

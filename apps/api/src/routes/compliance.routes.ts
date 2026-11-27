@@ -77,6 +77,24 @@ export async function complianceRoutes(fastify: FastifyInstance, _opts: FastifyP
       effectiveFrom: '2026-08-01',
       description: 'Automated hard stop on Table 4(D)(1) reclaim exceeding closing balance + 4(B)(2) reversals',
     },
+    {
+      flagCode: 'RCMDOM_RCMIMP_EINV_2026',
+      enabled: true,
+      effectiveFrom: '2026-12-15',
+      description: 'Notifications 04/2026-CT & 05/2026-CT recipient e-invoicing for RCMDOM and RCMIMP (voluntary >= Dec 15, mandatory Jan 1, 2027 > Rs 5 Cr)',
+    },
+    {
+      flagCode: 'PROVISIONAL_REFUND_SERVICES_NOV2026',
+      enabled: true,
+      effectiveFrom: '2026-11-01',
+      description: 'Inverted-duty refund expansion to input services availed on or after 1 Nov 2026 and 90% provisional risk checks',
+    },
+    {
+      flagCode: 'EWB_METRO_RAIL_2026',
+      enabled: true,
+      effectiveFrom: '2026-11-21',
+      description: 'Metro Rail transport mode (code 5) and dual-length 12/14 digit E-Way Bill validation',
+    },
   ];
 
   fastify.get('/flags', async (_request, reply) => {

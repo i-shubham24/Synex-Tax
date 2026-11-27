@@ -5,7 +5,7 @@ set -eu
 INPUT_FILE="${1:-}"
 CSI_FILE="${2:-}"
 OUTPUT_DIR="${3:-}"
-JAR=/opt/fvu/TDS_STANDALONE_FVU_9.5.jar
+JAR=/opt/protean/fvu-9.5/TDS_STANDALONE_FVU_9.5.jar
 
 if [ -z "$INPUT_FILE" ] || [ -z "$CSI_FILE" ] || [ -z "$OUTPUT_DIR" ]; then
   echo "Usage: fvu-runner.sh <statement.txt> <file.csi> <output_dir>" >&2

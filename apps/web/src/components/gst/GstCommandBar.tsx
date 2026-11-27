@@ -44,6 +44,7 @@ export function GstCommandBar({ currentStep = 'VALIDATED', isPeriodLocked = fals
     { label: '4-Pass 2B Recon', href: '/gst/recon-2b' },
     { label: 'IMS Console', href: '/gst/ims' },
     { label: 'GSTR-3B & PMT-06', href: '/gst/gstr3b' },
+    { label: 'Reports & Ledgers', href: '/gst/reports' },
     { label: 'Import Sanitizer', href: '/gst/import' },
   ];
 

@@ -6,10 +6,10 @@ FROM eclipse-temurin:21-jre-alpine
 
 RUN addgroup -g 10001 fvuuser &&     adduser -u 10001 -G fvuuser -D -s /sbin/nologin fvuuser
 
-WORKDIR /opt/fvu
-COPY protean/ /opt/fvu/
-COPY protean.sha256 /opt/fvu/protean.sha256
-RUN sha256sum -c /opt/fvu/protean.sha256 && chmod -R a-w /opt/fvu
+WORKDIR /opt/protean/fvu-9.5
+COPY protean/ /opt/protean/fvu-9.5/
+COPY protean.sha256 /opt/protean/fvu-9.5/protean.sha256
+RUN sha256sum -c /opt/protean/fvu-9.5/protean.sha256 && chmod -R a-w /opt/protean/fvu-9.5
 
 COPY fvu-runner.sh /app/fvu-runner.sh
 RUN chmod 0555 /app/fvu-runner.sh

@@ -30,6 +30,29 @@ export interface EinvParty {
 }
 
 export const EINVOICE_SCHEMA_VERSION = '1.1';
+export const RCM_EINV_VOLUNTARY_START = '2026-12-15';
+
+export type RcmSelfInvoiceType = 'RCMDOM' | 'RCMIMP';
+
+/**
+ * Notifications 04/2026-CT & 05/2026-CT + GSTN Nov 17, 2026 advisory:
+ * Production IRN generation for RCMDOM (domestic unregistered RCM) and RCMIMP (import of services)
+ * opens for voluntary adoption only for documents dated on or after 2026-12-15 (IRP sandboxes allow prior testing).
+ */
+export function validateRcmIrnEligibility(params: {
+  docDate: string;
+  rcmType: RcmSelfInvoiceType;
+  environment?: 'PRODUCTION' | 'SANDBOX';
+}): { allowed: boolean; error?: string } {
+  const env = params.environment ?? 'PRODUCTION';
+  if (env === 'PRODUCTION' && params.docDate < RCM_EINV_VOLUNTARY_START) {
+    return {
+      allowed: false,
+      error: `Production IRN requests for ${params.rcmType} self-invoices require document date >= ${RCM_EINV_VOLUNTARY_START} (Notifications 04/2026-CT & 05/2026-CT).`,
+    };
+  }
+  return { allowed: true };
+}
 
 const num = (s: string) => new Decimal(s).toNumber();
 const ddmmyyyy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
@@ -68,8 +91,18 @@ function party(p: EinvParty, label: string, errors: string[]) {
 export function buildEinvoiceJson(doc: BillingDoc, seller: EinvParty, buyer: EinvParty): { json: Record<string, unknown>; errors: string[] } {
   const errors = [...doc.errors];
   const d = doc.input;
-  if (!d.customerGstin) errors.push('An e-invoice is generated only for a registered buyer (B2B); this buyer has no GSTIN.');
-  if (buyer.gstin !== d.customerGstin) errors.push('The buyer GSTIN does not match the document.');
+  if (d.rcmSelfInvoiceType) {
+    const rcmCheck = validateRcmIrnEligibility({
+      docDate: d.docDate,
+      rcmType: d.rcmSelfInvoiceType,
+      environment: d.irnEnvironment ?? 'PRODUCTION',
+    });
+    if (!rcmCheck.allowed && rcmCheck.error) errors.push(rcmCheck.error);
+  }
+  if (!d.customerGstin && !d.rcmSelfInvoiceType) {
+    errors.push('An e-invoice is generated only for a registered buyer (B2B); this buyer has no GSTIN.');
+  }
+  if (!d.rcmSelfInvoiceType && buyer.gstin !== d.customerGstin) errors.push('The buyer GSTIN does not match the document.');
   if (seller.gstin !== d.supplierGstin) errors.push('The seller GSTIN does not match the document.');
 
   const sellerDtls = party({ ...seller, stateCode: d.supplierGstin.slice(0, 2) }, 'Seller', errors);
@@ -106,7 +139,12 @@ export function buildEinvoiceJson(doc: BillingDoc, seller: EinvParty, buyer: Ein
   const roundOff = num(t.roundOff);
   const json: Record<string, unknown> = {
     Version: EINVOICE_SCHEMA_VERSION,
-    TranDtls: { TaxSch: 'GST', SupTyp: 'B2B', RegRev: d.reverseCharge ? 'Y' : 'N', IgstOnIntra: 'N' },
+    TranDtls: {
+      TaxSch: 'GST',
+      SupTyp: d.rcmSelfInvoiceType ?? 'B2B',
+      RegRev: d.reverseCharge || Boolean(d.rcmSelfInvoiceType) ? 'Y' : 'N',
+      IgstOnIntra: 'N',
+    },
     DocDtls: { Typ: d.docType, No: d.docNo, Dt: ddmmyyyy(d.docDate) },
     SellerDtls: sellerDtls,
     BuyerDtls: buyerDtls,

@@ -6,12 +6,11 @@ import { Decimal } from 'decimal.js';
  * (workers/queue-worker/src/recon/reconciliationEngine.ts, Gstr2BRecord).
  *
  * Sections read: b2b (invoices), cdnr (credit and debit notes), b2ba and cdnra (amendments, with
- * the original number kept). Dates in the file are DD-MM-YYYY. itcavl "N" means 2B itself says the
- * credit is not available (for example place-of-supply or section 16(4) cases); the engine keeps
- * such documents out of matched ITC.
+ * the original number kept), impg/impgsez (Bill of Entry import IGST credits), and isd (Input Service Distributor).
+ * Dates in the file are DD-MM-YYYY. itcavl "N" means 2B itself says the credit is not available
+ * (for example place-of-supply or section 16(4) cases); the engine keeps such documents out of matched ITC.
  *
- * Not yet read: impg/impgsez (imports), isd, ecom. The layout follows the portal download as
- * published; check it against the first real file from a CA (tests/golden-fixtures/real/a).
+ * IMPG and ISD documents carry creditCategory ('IMPG' | 'ISD') so domestic B2B matching keeps them segregated.
  */
 
 export interface Gstr2bDocument {
@@ -20,7 +19,9 @@ export interface Gstr2bDocument {
   supplierName?: string;
   docNum: string;
   docDate: string; // YYYY-MM-DD
-  docType: 'INV' | 'CRN' | 'DBN';
+  docType: 'INV' | 'CRN' | 'DBN' | 'IMPG' | 'ISD';
+  creditCategory: 'B2B' | 'IMPG' | 'ISD';
+  portCode?: string;
   taxableValue: string;
   igstAmount: string;
   cgstAmount: string;
@@ -33,9 +34,11 @@ export interface Gstr2bDocument {
   gstr1FilingDate?: string;
   /** The supplier's return period that reported it, MMYYYY. */
   supplierPeriod?: string;
-  section: 'b2b' | 'cdnr' | 'b2ba' | 'cdnra';
+  section: 'b2b' | 'cdnr' | 'b2ba' | 'cdnra' | 'impg' | 'impgsez' | 'isd';
   /** For amendments: the number of the document being amended. */
   originalInvoiceRef?: string;
+  /** Original value if amended in Table 9A / B2BA / CDNRA. */
+  originalTotalTax?: string;
 }
 
 export interface Gstr2bParseResult {
@@ -50,7 +53,7 @@ export interface Gstr2bParseResult {
   unreadSections: string[];
 }
 
-const READ = new Set(['b2b', 'cdnr', 'b2ba', 'cdnra']);
+const READ = new Set(['b2b', 'cdnr', 'b2ba', 'cdnra', 'impg', 'impgsez', 'isd']);
 
 function isoDate(raw: unknown, where: string): string {
   const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(raw ?? ''));
@@ -78,28 +81,35 @@ export function parseGstr2bJson(input: string | unknown): Gstr2bParseResult {
     d: any,
     docType: Gstr2bDocument['docType'],
     originalInvoiceRef?: string,
+    creditCategory: Gstr2bDocument['creditCategory'] = 'B2B',
+    portCode?: string,
   ) => {
     const igst = money(d.igst), cgst = money(d.cgst), sgst = money(d.sgst), cess = money(d.cess);
-    const ctin = String(supplier.ctin ?? '').toUpperCase();
+    const ctin = String(supplier.ctin ?? portCode ?? 'ICEGATE').toUpperCase();
     documents.push({
       id: `${section}:${ctin}:${no}`,
       supplierGstin: ctin,
-      supplierName: supplier.trdnm || undefined,
+      supplierName: supplier.trdnm || (creditCategory === 'IMPG' ? `ICEGATE Import (${portCode || 'Port'})` : undefined),
       docNum: String(no),
-      docDate: isoDate(d.dt, `${section} ${ctin} ${no}`),
+      docDate: isoDate(d.dt ?? d.boedt ?? d.docdt, `${section} ${ctin} ${no}`),
       docType,
+      creditCategory,
+      ...(portCode ? { portCode } : {}),
       taxableValue: money(d.txval).toFixed(2),
       igstAmount: igst.toFixed(2),
       cgstAmount: cgst.toFixed(2),
       sgstAmount: sgst.toFixed(2),
       cessAmount: cess.toFixed(2),
       totalTax: igst.plus(cgst).plus(sgst).plus(cess).toFixed(2),
-      itcAvailable: String(d.itcavl ?? 'Y').toUpperCase() !== 'N',
+      itcAvailable: String(d.itcavl ?? d.itcelg ?? 'Y').toUpperCase() !== 'N',
       ...(d.rsn ? { itcReason: String(d.rsn) } : {}),
       ...(supplier.supfildt ? { gstr1FilingDate: isoDate(supplier.supfildt, `${section} ${ctin} filing date`) } : {}),
       ...(supplier.supprd ? { supplierPeriod: String(supplier.supprd) } : {}),
       section,
       ...(originalInvoiceRef ? { originalInvoiceRef } : {}),
+      ...(d.oigst !== undefined || d.ocgst !== undefined || d.osgst !== undefined
+        ? { originalTotalTax: money(d.oigst).plus(money(d.ocgst)).plus(money(d.osgst)).toFixed(2) }
+        : {}),
     });
   };
   const noteType = (typ: unknown): Gstr2bDocument['docType'] => (String(typ).toUpperCase() === 'D' ? 'DBN' : 'CRN');
@@ -109,6 +119,17 @@ export function parseGstr2bJson(input: string | unknown): Gstr2bParseResult {
   for (const s of dd.b2ba ?? []) for (const inv of s.inv ?? []) push('b2ba', s, inv.inum, inv, 'INV', inv.oinum);
   for (const s of dd.cdnr ?? []) for (const nt of s.nt ?? []) push('cdnr', s, nt.ntnum, nt, noteType(nt.typ));
   for (const s of dd.cdnra ?? []) for (const nt of s.nt ?? []) push('cdnra', s, nt.ntnum, nt, noteType(nt.typ), nt.ontnum);
+  for (const imp of dd.impg ?? []) push('impg', {}, String(imp.boenum ?? ''), imp, 'IMPG', imp.isamd === 'Y' ? imp.oboenum : undefined, 'IMPG', String(imp.portcd ?? 'PORT'));
+  for (const s of dd.impgsez ?? []) {
+    for (const imp of s.boes ?? s.inv ?? []) {
+      push('impgsez', s, String(imp.boenum ?? imp.inum ?? ''), imp, 'IMPG', imp.isamd === 'Y' ? imp.oboenum : undefined, 'IMPG', String(imp.portcd ?? 'SEZ'));
+    }
+  }
+  for (const s of dd.isd ?? []) {
+    for (const d of s.doclist ?? []) {
+      push('isd', s, String(d.docnum ?? ''), d, 'ISD', undefined, 'ISD');
+    }
+  }
 
   return {
     recipientGstin: String(data.gstin).toUpperCase(),

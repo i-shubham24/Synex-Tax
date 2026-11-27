@@ -1,5 +1,13 @@
 import type pg from 'pg';
-import { formHasSection, proteanStateCode, writeTdsStatement, type StatementAddress as Form140Address, type StatementInput, type WriteIssue } from '@synextax/tax-engine';
+import {
+  formHasSection,
+  proteanStateCode,
+  resolveStatementSchemaVersion,
+  writeTdsStatement,
+  type StatementAddress as Form140Address,
+  type StatementInput,
+  type WriteIssue,
+} from '@synextax/tax-engine';
 
 interface AddressJson {
   line1?: string;
@@ -35,7 +43,7 @@ export async function buildStatement(
   client: pg.PoolClient,
   returnId: string,
   today: string,
-): Promise<{ fileName: string; text: string; issues: WriteIssue[]; tan: string } | null> {
+): Promise<{ fileName: string; text: string; issues: WriteIssue[]; tan: string; fvuVersion?: string; schemaVersion?: string } | null> {
   const ret = (
     await client.query(
       `SELECT r.id, r.tax_year, r.quarter, r.form_code, r.statutory_regime, r.workflow_status, r.tan_registration_id,
@@ -112,6 +120,7 @@ export async function buildStatement(
     quarter: qNum(ret.quarter),
     earlierRegularFiled: Boolean(earlier),
     previousToken: earlier?.token ?? undefined,
+    allowForm138Q4V10: process.env.FORM_138_Q4_V10_ENABLED === 'true',
     challans: challans.map((c) => ({
       mode: c.payment_mode === 'B' ? 'B' : 'C',
       bsrCode: c.bsr_code,
@@ -155,9 +164,22 @@ export async function buildStatement(
   };
 
   const { text, issues } = writeTdsStatement(input);
+  const schemaMeta = resolveStatementSchemaVersion({
+    regime: 'IT_ACT_2025',
+    form,
+    quarter: qNum(ret.quarter),
+    allowForm138Q4V10: input.allowForm138Q4V10,
+  });
   const fileName = `${ret.tan}_${form}_${ret.quarter}_${ret.tax_year}${String((ret.tax_year + 1) % 100).padStart(2, '0')}.txt`;
   if (!issues.length) {
     await client.query('UPDATE public.tan_registrations SET statement_file_seq = statement_file_seq + 1 WHERE id = $1', [ret.tan_registration_id]);
   }
-  return { fileName, text: issues.length ? '' : text, issues, tan: ret.tan };
+  return {
+    fileName,
+    text: issues.length ? '' : text,
+    issues,
+    tan: ret.tan,
+    fvuVersion: schemaMeta.fvuVersion,
+    schemaVersion: schemaMeta.schemaVersion,
+  };
 }

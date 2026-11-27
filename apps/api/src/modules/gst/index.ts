@@ -4,6 +4,7 @@ import { gstr1Routes } from './gstr1.routes.js';
 import { reconRoutes } from './recon.routes.js';
 import { imsRoutes } from './ims.routes.js';
 import { gstr3bRoutes } from './gstr3b.routes.js';
+import { gstReportsRoutes } from './reports.routes.js';
 
 export async function gstModuleRoutes(fastify: FastifyInstance) {
   fastify.register(salesRoutes);
@@ -11,4 +12,5 @@ export async function gstModuleRoutes(fastify: FastifyInstance) {
   fastify.register(reconRoutes);
   fastify.register(imsRoutes);
   fastify.register(gstr3bRoutes);
+  fastify.register(gstReportsRoutes);
 }

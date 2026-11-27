@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkCertificates } from './certificates.js';
+import { checkCertificates, lowerDeductionSectionLabel } from './certificates.js';
 
 const cert = { id: 'c1', certificateNo: 'ABCDE12345', pan: 'ABCPK1234L', sectionCode: '1027', ratePercent: '2', amountLimit: '500000', validFrom: '2026-04-01', validTo: '2027-03-31' };
 const row = (id: string, over: object) => ({ id, pan: 'ABCPK1234L', name: 'Dr Kaur', sectionCode: '1027', paidOn: '2026-07-01', amountPaid: '200000', taxDeducted: '4000', reasonCode: 'A', certificateNo: 'ABCDE12345', ...over });
@@ -29,4 +29,13 @@ test('certificate rows: limit used in date order, rate floor, validity, section 
   assert.match(by('r6'), /not in the register/);
   assert.equal(by('r7'), '');
   assert.deepEqual([usage[0].rows, usage[0].used, usage[0].remaining], [5, '1000000.00', '0.00']);
+});
+
+test('statutory certificate section labels and checks scope Sec 395 vs Sec 197 cleanly', () => {
+  assert.equal(lowerDeductionSectionLabel(2025), 'Section 197');
+  assert.equal(lowerDeductionSectionLabel(2026), 'Section 395 / 395(1) / 395(2)');
+
+  const legacyCert = { ...cert, statutorySection: '197' as const };
+  const { findings } = checkCertificates([row('r-ty26', { paidOn: '2026-07-10' })], [legacyCert], { taxYear: 2026 });
+  assert.match(findings[0]?.message ?? '', /legacy Section 197.*Section 395/);
 });

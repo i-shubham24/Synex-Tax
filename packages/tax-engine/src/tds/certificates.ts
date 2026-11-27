@@ -16,6 +16,13 @@ export interface Certificate {
   amountLimit: string;
   validFrom: string;
   validTo: string;
+  /** '395', '395(1)', '395(2)' for TY 2026-27+, '197' for <= FY 2025-26. */
+  statutorySection?: '197' | '395' | '395(1)' | '395(2)';
+}
+
+/** Lower/nil deduction section label strictly scoped by Act / tax year. */
+export function lowerDeductionSectionLabel(taxYear: number): 'Section 395 / 395(1) / 395(2)' | 'Section 197' {
+  return taxYear >= 2026 ? 'Section 395 / 395(1) / 395(2)' : 'Section 197';
 }
 
 export interface CertifiedRow {
@@ -46,7 +53,11 @@ export interface CertificateUse {
   rows: number;
 }
 
-export function checkCertificates(rows: CertifiedRow[], certs: Certificate[]): { findings: CertificateFinding[]; usage: CertificateUse[] } {
+export function checkCertificates(
+  rows: CertifiedRow[],
+  certs: Certificate[],
+  options?: { taxYear?: number },
+): { findings: CertificateFinding[]; usage: CertificateUse[] } {
   const findings: CertificateFinding[] = [];
   const used = new Map<string, Decimal>();
   const count = new Map<string, number>();
@@ -58,6 +69,12 @@ export function checkCertificates(rows: CertifiedRow[], certs: Certificate[]): {
     if (!cert) {
       findings.push({ ...base, message: no ? `Certificate ${no} is not in the register.` : 'Flag A without a certificate number.' });
       continue;
+    }
+    const rowYear = options?.taxYear ?? (r.paidOn >= '2026-04-01' ? 2026 : 2025);
+    if (rowYear >= 2026 && cert.statutorySection === '197') {
+      findings.push({ ...base, message: `Certificate ${no} is under legacy Section 197, whereas TY 2026-27+ requires Section 395 / 395(1) / 395(2).` });
+    } else if (rowYear < 2026 && cert.statutorySection && cert.statutorySection.startsWith('395')) {
+      findings.push({ ...base, message: `Certificate ${no} is under Section ${cert.statutorySection}, whereas FY <= 2025-26 uses Section 197.` });
     }
     if (cert.pan.toUpperCase() !== r.pan.toUpperCase()) findings.push({ ...base, message: `Certificate ${no} was issued to another PAN.` });
     if (cert.sectionCode !== r.sectionCode) findings.push({ ...base, message: `Certificate ${no} covers code ${cert.sectionCode}, not ${r.sectionCode}.` });

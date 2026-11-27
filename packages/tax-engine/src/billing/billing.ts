@@ -73,6 +73,9 @@ export interface BillingDocInput {
   originalDocDate?: string | null;
   /** Round the amount payable to the nearest rupee (default true). */
   roundOff?: boolean;
+  /** Notifications 04/2026-CT & 05/2026-CT recipient self-invoice type. */
+  rcmSelfInvoiceType?: 'RCMDOM' | 'RCMIMP';
+  irnEnvironment?: 'PRODUCTION' | 'SANDBOX';
 }
 
 export interface BillingLine extends BillingLineInput {

@@ -18,7 +18,10 @@ import {
   ewayBillRequired,
   ewayConsignmentValue,
   formatSeriesNumber,
+  normalizeEwayTransportMode,
   seriesPrefixError,
+  validateEwayBillNumber,
+  validateRcmIrnEligibility,
   type BillingDoc,
   type BillingDocInput,
   type BillingStoredDoc,
@@ -131,11 +134,14 @@ const IrnBody = z.object({
   ackDate: z.string().trim().max(40).refine((s) => !Number.isNaN(Date.parse(s)), 'not a date'),
 });
 const EwbBody = z.object({
-  ewbNo: z.string().trim().regex(/^[0-9A-Za-z]{10,32}$/),
+  ewbNo: z.string().trim().refine((val) => validateEwayBillNumber(val, { allowVariableAdv687: process.env.GSTN_ADV_687_ENABLED === 'true' }), 'EWB number must be 12 or 14 digits (or 10-32 chars under Adv 687)'),
   ewbDate: z.string().trim().max(40).refine((s) => !Number.isNaN(Date.parse(s)), 'not a date'),
 });
 const TransportBody = z.object({
-  mode: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  mode: z.union([
+    z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5),
+    z.enum(['ROAD', 'RAIL', 'AIR', 'SHIP', 'METRO', 'METRO_RAIL']),
+  ]),
   distanceKm: z.number().int().min(1).max(4000),
   vehicleNo: optText(20),
   vehicleType: z.preprocess(blankToNull, z.enum(['R', 'O']).nullable().optional()),
@@ -827,14 +833,26 @@ export async function billingRoutes(fastify: FastifyInstance) {
   fastify.get('/documents/:id/einvoice', READ, async (request, reply) => {
     const id = UUID.safeParse((request.params as any).id);
     if (!id.success) return reply.status(404).send({ error: 'Not found' });
+    const query = (request.query ?? {}) as { rcmType?: 'RCMDOM' | 'RCMIMP'; env?: 'PRODUCTION' | 'SANDBOX' };
     try {
       const out = await db.withTenantTransaction(ctx(request), async (c) => {
         const { row, doc } = await loadDocument(c, id.data);
         if (row.status !== 'ACTIVE') throw bad('A cancelled document gets no IRN.');
+        if (query.rcmType) {
+          const rcmCheck = validateRcmIrnEligibility({
+            docDate: doc.input.docDate,
+            rcmType: query.rcmType,
+            environment: query.env ?? 'PRODUCTION',
+          });
+          if (!rcmCheck.allowed) throw bad(rcmCheck.error ?? 'RCM IRN date check failed.');
+        }
         const reg = await registration(c, row.supplier_gstin);
         const seller = await sellerParty(c, reg);
         if (!seller.configured) throw bad('Enter the client’s address (billing settings) first: the IRP needs it.');
-        return { row, ...buildEinvoiceJson(doc, seller, buyerParty(row.buyer, row.place_of_supply)) };
+        const patchedDoc = query.rcmType
+          ? { ...doc, input: { ...doc.input, rcmSelfInvoiceType: query.rcmType, irnEnvironment: query.env ?? 'PRODUCTION' } }
+          : doc;
+        return { row, ...buildEinvoiceJson(patchedDoc, seller, buyerParty(row.buyer, row.place_of_supply)) };
       });
       if (out.errors.length) return reply.status(422).send({ error: 'Not ready', message: 'The e-invoice JSON cannot be prepared yet.', details: out.errors });
       reply.header('Content-Type', 'application/json; charset=utf-8');
@@ -880,7 +898,9 @@ export async function billingRoutes(fastify: FastifyInstance) {
     const b = TransportBody.safeParse(request.body);
     if (!id.success) return reply.status(404).send({ error: 'Not found' });
     if (!b.success) return invalid(reply, b.error);
-    const transport: EwayTransport = { ...b.data };
+    const normalizedMode = normalizeEwayTransportMode(b.data.mode);
+    if (!normalizedMode) return reply.status(400).send({ error: 'Invalid', message: 'Check: transport mode.' });
+    const transport: EwayTransport = { ...b.data, mode: normalizedMode };
     try {
       const out = await db.withTenantTransaction(ctx(request), async (c) => {
         const { row, doc } = await loadDocument(c, id.data);

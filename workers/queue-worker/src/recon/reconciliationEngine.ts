@@ -6,8 +6,10 @@ export interface PurchaseRegisterInvoice {
   vendorGstin: string;
   vendorName?: string;
   invoiceNum: string;
+  normalizedInvoiceKey?: string;
   invoiceDate: string; // YYYY-MM-DD
   docType: 'INV' | 'CRN' | 'DBN';
+  creditCategory?: 'B2B' | 'IMPG' | 'ISD';
   taxableValue: string;
   igstAmount: string;
   cgstAmount: string;
@@ -21,8 +23,10 @@ export interface Gstr2BRecord {
   supplierGstin: string;
   supplierName?: string;
   docNum: string;
+  normalizedInvoiceKey?: string;
   docDate: string; // YYYY-MM-DD
-  docType: 'INV' | 'CRN' | 'DBN';
+  docType: 'INV' | 'CRN' | 'DBN' | 'IMPG' | 'ISD';
+  creditCategory?: 'B2B' | 'IMPG' | 'ISD';
   taxableValue: string;
   igstAmount: string;
   cgstAmount: string;
@@ -92,6 +96,11 @@ export interface ReconReport {
   unmatchedPurchase: PurchaseRegisterInvoice[];
   unmatchedPortal2b: Gstr2BRecord[];
   outOfPeriodPurchase: PurchaseRegisterInvoice[];
+  /** Segregated import IGST (IMPG / BOE) & Input Service Distributor (ISD) credits outside domestic B2B matching. */
+  impgRecords?: Gstr2BRecord[];
+  isdRecords?: Gstr2BRecord[];
+  totalImpgItc?: string;
+  totalIsdItc?: string;
 }
 
 /** 'YYYY-MM' (or the GSTN 'MMYYYY') to 'YYYY-MM'; null when it is neither. */
@@ -152,12 +161,26 @@ export class GstReconciliationEngine {
     const outOfPeriod: PurchaseRegisterInvoice[] = [];
     const unmatchedPR = new Map<string, PurchaseRegisterInvoice>();
     for (const pr of purchaseInvoices) {
+      // Compute separate match key without altering verbatim invoiceNum.
+      pr.normalizedInvoiceKey = pr.normalizedInvoiceKey || normalizeInvoiceNumber(pr.invoiceNum);
+      if (pr.creditCategory === 'IMPG' || pr.creditCategory === 'ISD') continue;
       if (key && (pr.invoiceDate || '').slice(0, 7) > key) outOfPeriod.push(pr);
       else unmatchedPR.set(pr.id, pr);
     }
 
+    const impgRecords: Gstr2BRecord[] = [];
+    const isdRecords: Gstr2BRecord[] = [];
     const unmatched2B = new Map<string, Gstr2BRecord>();
     for (const rec of portalRecords) {
+      rec.normalizedInvoiceKey = rec.normalizedInvoiceKey || normalizeInvoiceNumber(rec.docNum);
+      if (rec.docType === 'IMPG' || rec.creditCategory === 'IMPG') {
+        impgRecords.push(rec);
+        continue;
+      }
+      if (rec.docType === 'ISD' || rec.creditCategory === 'ISD') {
+        isdRecords.push(rec);
+        continue;
+      }
       unmatched2B.set(rec.id, rec);
     }
 
@@ -304,6 +327,9 @@ export class GstReconciliationEngine {
     const sumDeferred = outOfPeriod.reduce((a, pr) => a.plus(D(pr.totalTax)), new Decimal(0));
     const count = (st: ReconMatchStatus) => matchedPairs.filter((p) => p.status === st).length;
 
+    const sumImpg = impgRecords.reduce((a, r) => (r.itcAvailable ? a.plus(D(r.totalTax)) : a), new Decimal(0));
+    const sumIsd = isdRecords.reduce((a, r) => (r.itcAvailable ? a.plus(D(r.totalTax)) : a), new Decimal(0));
+
     return {
       period,
       totalPurchaseInvoices: purchaseInvoices.length,
@@ -325,6 +351,10 @@ export class GstReconciliationEngine {
       unmatchedPurchase: Array.from(unmatchedPR.values()),
       unmatchedPortal2b: Array.from(unmatched2B.values()),
       outOfPeriodPurchase: outOfPeriod,
+      impgRecords,
+      isdRecords,
+      totalImpgItc: sumImpg.toFixed(2),
+      totalIsdItc: sumIsd.toFixed(2),
     };
   }
 }

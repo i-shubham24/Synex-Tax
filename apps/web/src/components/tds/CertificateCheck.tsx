@@ -45,7 +45,7 @@ export function CertificateCheck() {
   return (
     <section className="space-y-3">
       <div className="pos-card space-y-3 p-4 text-[13px] text-pos-ink/65">
-        <p>Run the TRACES PDF converter (with your digital signature) on the certificate files you downloaded from TRACES, and save the PDFs in the agent&apos;s certificates folder. SynTax then checks each one before you send it.</p>
+        <p>Run TRACES&apos; official PDF converter or load your signed TRACES .zip certificates into the agent&apos;s certificates folder. SynTax verifies every PDF signature and PAN match, then dispatches per payee with expiring links and open-tracking.</p>
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1">Sub-folder (optional)<input value={sub} onChange={(e) => setSub(e.target.value)} placeholder="e.g. Q2 2026-27" className="h-9 rounded-[10px] border border-pos-line bg-pos-surface px-3 text-pos-ink" /></label>
           <button type="button" onClick={scan} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-pos-accent px-4 font-medium text-white"><FolderSearch className="h-4 w-4" /> Check certificates</button>

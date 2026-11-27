@@ -152,3 +152,74 @@ def test_4_pass_reconciliation():
     assert summary.vendor_not_in_pr_count == 1
     assert summary.ims_pending_actions_count == 1
     assert summary.total_itc_at_risk == Decimal("5760.00")
+
+
+def test_preserves_verbatim_invoice_and_segregates_impg_isd():
+    engine = GstReconciliationEngine()
+    pr = [
+        PurchaseInvoice(
+            id="p1",
+            vendor_gstin="03AABCA1234F1ZJ",
+            vendor_name="Vendor",
+            invoice_num="INV/26-27/0042",
+            invoice_date="2026-11-05",
+            doc_type="INV",
+            taxable_value=Decimal("10000.00"),
+            igst_amount=Decimal("1800.00"),
+            cgst_amount=Decimal("0.00"),
+            sgst_amount=Decimal("0.00"),
+            total_tax=Decimal("1800.00"),
+        )
+    ]
+    r2b = [
+        Gstr2BInvoice(
+            id="b1",
+            supplier_gstin="03AABCA1234F1ZJ",
+            supplier_name="Vendor",
+            doc_num="INV262742",
+            doc_date="2026-11-05",
+            doc_type="INV",
+            taxable_value=Decimal("10000.00"),
+            igst_amount=Decimal("1800.00"),
+            cgst_amount=Decimal("0.00"),
+            sgst_amount=Decimal("0.00"),
+            total_tax=Decimal("1800.00"),
+        ),
+        Gstr2BInvoice(
+            id="b_impg",
+            supplier_gstin="INBOM4",
+            supplier_name="ICEGATE",
+            doc_num="BOE-9911",
+            doc_date="2026-11-08",
+            doc_type="IMPG",
+            credit_category="IMPG",
+            taxable_value=Decimal("50000.00"),
+            igst_amount=Decimal("9000.00"),
+            cgst_amount=Decimal("0.00"),
+            sgst_amount=Decimal("0.00"),
+            total_tax=Decimal("9000.00"),
+        ),
+        Gstr2BInvoice(
+            id="b_isd",
+            supplier_gstin="07AABCA1234F1Z2",
+            supplier_name="ISD Unit",
+            doc_num="ISD-09",
+            doc_date="2026-11-09",
+            doc_type="ISD",
+            credit_category="ISD",
+            taxable_value=Decimal("0.00"),
+            igst_amount=Decimal("1200.00"),
+            cgst_amount=Decimal("0.00"),
+            sgst_amount=Decimal("0.00"),
+            total_tax=Decimal("1200.00"),
+        ),
+    ]
+    pairs, summary = engine.reconcile(pr, r2b)
+    assert summary.fuzzy_matches_count == 1
+    assert summary.vendor_not_in_pr_count == 0
+    assert summary.impg_count == 1
+    assert summary.isd_count == 1
+    assert summary.total_impg_itc == Decimal("9000.00")
+    assert summary.total_isd_itc == Decimal("1200.00")
+    assert pairs[0].purchase_invoice.invoice_num == "INV/26-27/0042"
+    assert pairs[0].normalized_invoice_key == "INV262742"

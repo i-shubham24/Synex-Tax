@@ -58,8 +58,8 @@ export function LandingHero() {
   const router = useRouter();
   const { loginDemo } = useAuth();
   const [opening, setOpening] = useState(false);
-  const [due, setDue] = useState<NextDue | null>(null);
-  // Worked out in the browser so it reads the visitor's today, not the build's.
+  const [due, setDue] = useState<NextDue>(() => nextDue(new Date()));
+  // Recomputed on the client so cached HTML still shows the visitor's current day.
   useEffect(() => setDue(nextDue(new Date())), []);
   // Signs in to the sample firm (two sample clients, partner role) and opens its workspace.
   const openSample = useCallback(async () => {
@@ -112,22 +112,16 @@ export function LandingHero() {
             className={`mb-3 sm:mb-5 inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-ink/10 bg-white/80 py-1 pl-1.5 pr-3 text-[11px] sm:text-[12px] font-medium text-ink/75 backdrop-blur transition-opacity duration-700 ${revealed ? 'opacity-100' : 'opacity-0'}`}
           >
             <span className="shrink-0 rounded-full bg-mint px-2 py-0.5 text-[10px] sm:text-[10.5px] font-semibold text-ink">Next due</span>
-            <span className="truncate leading-none" aria-live="polite">
-              {due ? (
-                <>
-                  <span className="sm:hidden">
-                    {due.what.replace(/ for .*$/, '')} &middot; {due.due.replace(/^[A-Za-z]+ /, '')}
-                  </span>
-                  <span className="hidden sm:inline">
-                    {due.what}, {due.due}
-                  </span>
-                  <span className="text-ink/50">
-                    {due.days === 0 ? ', today' : due.days === 1 ? ', tomorrow' : `, ${due.days}d`}
-                  </span>
-                </>
-              ) : (
-                '\u00a0'
-              )}
+            <span className="truncate leading-none" aria-live="polite" suppressHydrationWarning>
+              <span className="sm:hidden">
+                {due.what.replace(/ for .*$/, '')} &middot; {due.due.replace(/^[A-Za-z]+ /, '')}
+              </span>
+              <span className="hidden sm:inline">
+                {due.what}, {due.due}
+              </span>
+              <span className="text-ink/50">
+                {due.days === 0 ? ', today' : due.days === 1 ? ', tomorrow' : `, ${due.days}d`}
+              </span>
             </span>
           </p>
           <h1
@@ -180,7 +174,7 @@ export function LandingHero() {
           </div>
         </div>
 
-        <div className="relative z-10 order-3 px-4 pb-10 sm:px-10 lg:hidden">
+        <div aria-hidden="true" className="relative z-10 order-3 px-4 pb-10 sm:px-10 lg:hidden">
           <FormMarks revealed={revealed} />
         </div>
       </div>

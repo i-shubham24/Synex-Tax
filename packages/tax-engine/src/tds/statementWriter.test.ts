@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeTdsStatement, type StatementInput } from './statementWriter.js';
+import { resolveStatementSchemaVersion, writeTdsStatement, type StatementInput } from './statementWriter.js';
 import { parseEtdsStatement } from './etdsStatement.js';
 
 const address = { line1: 'SCO 12', district: 'Amritsar', stateCode: '26', pin: '143001' };
@@ -177,4 +177,19 @@ test('government deductors: ministry, state and AIN go in fields 57, 54 and 68; 
   const s = writeTdsStatement(state);
   assert.deepEqual(s.issues, []);
   assert.deepEqual([s.text.split('\r\n')[1].split('^')[53], s.text.split('\r\n')[1].split('^')[56]], ['26', '']);
+});
+
+test('resolveStatementSchemaVersion enforces exact FVU 1.2 / 9.5 schema matrix and Form 138 Q4 gate', () => {
+  assert.deepEqual(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '138', quarter: 1 }), { fvuVersion: '1.2', schemaVersion: 'v1.2', supported: true });
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '138', quarter: 4 }).schemaVersion, 'v1.0');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '138', quarter: 4 }).supported, false);
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '138', quarter: 4, allowForm138Q4V10: true }).supported, true);
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '140', quarter: 2 }).schemaVersion, 'v1.2');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '143', quarter: 2 }).schemaVersion, 'v1.2');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_2025', form: '144', quarter: 2 }).schemaVersion, 'v1.2');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_1961', form: '24Q', quarter: 3 }).schemaVersion, 'v7.3');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_1961', form: '24Q', quarter: 4 }).schemaVersion, 'v7.6');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_1961', form: '26Q', quarter: 2 }).schemaVersion, 'v8.0');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_1961', form: '27Q', quarter: 2 }).schemaVersion, 'v7.8');
+  assert.equal(resolveStatementSchemaVersion({ regime: 'IT_ACT_1961', form: '27EQ', quarter: 2 }).schemaVersion, 'v7.5');
 });

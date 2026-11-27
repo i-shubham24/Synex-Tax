@@ -199,7 +199,7 @@ export function StepPanel({ tone = 'sky', tall = false, children }: { tone?: 'sk
 }
 
 /* ---------------------------------------------------------------- Stairs */
-export type Step = { when: string; title: string; body: string };
+export type Step = { when: string; title: string; body: string; badge?: 'Early Access' | 'Coming Q1 2027' };
 
 function useRise(p: MotionValue<number>, from: number, reduce: boolean | null) {
   return useTransform(p, [0, 1], reduce ? [0, 0] : [from, 0]);
@@ -227,7 +227,14 @@ export function StairSteps({ titleId, title, aside, steps }: { titleId: string; 
             <motion.article key={s.when} style={{ y: rises[i] }} className="pixel-host relative flex flex-col overflow-hidden rounded-[10px] bg-mint p-5 text-ink">
               <div className="hidden lg:block" style={{ height: i * 56 }} aria-hidden />
               <PixelField seed={40 + i} count={26} cell={13} cols={16} rows={8} color="#c9f9d8" maxOpacity={0.7} />
-              <p className="relative text-[12px] font-medium text-ink/70">{s.when}</p>
+              <div className="relative flex items-center justify-between gap-2">
+                <p className="text-[12px] font-medium text-ink/70">{s.when}</p>
+                {s.badge ? (
+                  <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink">
+                    {s.badge}
+                  </span>
+                ) : null}
+              </div>
               <h3 className="relative mt-8 text-[22px] font-medium leading-tight tracking-[-0.03em]">{s.title}</h3>
               <p className="relative mt-2 text-[12.5px] leading-[1.55] text-ink/80">{s.body}</p>
             </motion.article>
@@ -239,7 +246,17 @@ export function StairSteps({ titleId, title, aside, steps }: { titleId: string; 
 }
 
 /* ----------------------------------------------------------------- Rules */
-export function RulesPanel({ titleId, title, rules, footnote }: { titleId: string; title: string; rules: Array<{ rule: string; what: string }>; footnote?: ReactNode }) {
+export function RulesPanel({
+  titleId,
+  title,
+  rules,
+  footnote,
+}: {
+  titleId: string;
+  title: string;
+  rules: Array<{ rule: string; what: string; badge?: 'Early Access' | 'Coming Q1 2027' }>;
+  footnote?: ReactNode;
+}) {
   return (
     <section className="px-3 sm:px-6 lg:px-10" aria-labelledby={titleId}>
       <div className="mx-auto max-w-[1480px] rounded-[24px] bg-mist px-4 py-12 sm:rounded-[38px] sm:px-10 sm:py-18">
@@ -250,12 +267,19 @@ export function RulesPanel({ titleId, title, rules, footnote }: { titleId: strin
           <dl className="mt-8 sm:mt-12 grid gap-x-10 gap-y-6 sm:gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
             {rules.map((r) => (
               <div key={r.rule} className="border-t border-ink/15 pt-4">
-                <dt className="text-[15px] font-medium tracking-[-0.01em] text-ink">{r.rule}</dt>
+                <dt className="flex flex-wrap items-center gap-2 text-[15px] font-medium tracking-[-0.01em] text-ink">
+                  <span>{r.rule}</span>
+                  {r.badge ? (
+                    <span className="rounded-full border border-ink/15 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink/70">
+                      {r.badge}
+                    </span>
+                  ) : null}
+                </dt>
                 <dd className="mt-2 text-[14px] leading-[1.55] text-ink-soft">{r.what}</dd>
               </div>
             ))}
           </dl>
-          {footnote ? <p className="mt-14 max-w-[44rem] text-[13px] leading-[1.6] text-ink-soft">{footnote}</p> : null}
+          {footnote ? <div className="mt-14 max-w-[46rem] text-[13px] leading-[1.6] text-ink-soft">{footnote}</div> : null}
         </div>
       </div>
     </section>

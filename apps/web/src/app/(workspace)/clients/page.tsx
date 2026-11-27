@@ -33,7 +33,14 @@ interface ClientItem {
   constitution: string;
   primaryContact: string;
   contactMobile: string;
+  gstRegistrationId?: string;
   gstin?: string;
+  portalStatus?: string;
+  cancellationStatus?: string;
+  cancellationArn?: string | null;
+  autoApprovalDueAt?: string | null;
+  lutArn?: string | null;
+  lutValidTo?: string | null;
   tan?: string;
   accountingSoftware: string;
   status: 'ACTIVE' | 'WARNING' | 'RECONCILED';
@@ -110,6 +117,14 @@ export default function ClientsMasterPage() {
   const [revealing, setRevealing] = useState<boolean>(false);
   const [revealFeedback, setRevealFeedback] = useState<string | null>(null);
 
+  // Nov 5, 2026 GSTIN Cancellation & LUT Tracker State
+  const [lutArnDraft, setLutArnDraft] = useState<string>('');
+  const [lutValidToDraft, setLutValidToDraft] = useState<string>('2027-03-31');
+  const [cancelArnDraft, setCancelArnDraft] = useState<string>('');
+  const [cancelStatusDraft, setCancelStatusDraft] = useState<'NONE' | 'APPLIED' | 'QUERY_RAISED' | 'AUTO_APPROVED' | 'APPROVED' | 'REJECTED'>('NONE');
+  const [trackerMsg, setTrackerMsg] = useState<string | null>(null);
+  const [savingTracker, setSavingTracker] = useState<boolean>(false);
+
   // Load live clients tree
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +137,7 @@ export default function ClientsMasterPage() {
             const mapped: ClientItem[] = [];
             for (const grp of json.groups) {
               for (const ent of grp.entities || []) {
+                const primaryGst = ent.gstRegistrations?.[0] ?? ent.gstins?.[0];
                 mapped.push({
                   id: ent.id,
                   groupName: grp.name,
@@ -130,11 +146,18 @@ export default function ClientsMasterPage() {
                   constitution: ent.constitution || 'Private Limited Company',
                   primaryContact: ent.contacts?.[0]?.name || 'Managing Director',
                   contactMobile: ent.contacts?.[0]?.mobile || '98140 12345',
-                  gstin: ent.gstins?.[0]?.gstin,
-                  tan: ent.tans?.[0]?.tan,
-                  accountingSoftware: 'TallyPrime TDL',
+                  gstRegistrationId: primaryGst?.id,
+                  gstin: primaryGst?.gstin,
+                  portalStatus: primaryGst?.portalStatus ?? 'ACTIVE',
+                  cancellationStatus: primaryGst?.cancellationStatus ?? 'NONE',
+                  cancellationArn: primaryGst?.cancellationArn ?? null,
+                  autoApprovalDueAt: primaryGst?.autoApprovalDueAt ?? null,
+                  lutArn: primaryGst?.lutArn ?? null,
+                  lutValidTo: primaryGst?.lutValidTo ?? null,
+                  tan: ent.tanRegistrations?.[0]?.tan ?? ent.tans?.[0]?.tan,
+                  accountingSoftware: ent.accountingSoftware || 'TallyPrime TDL',
                   status: 'ACTIVE',
-                  statusLabel: 'Active Master',
+                  statusLabel: primaryGst?.cancellationStatus === 'APPLIED' ? 'Cancellation 3-Day Window' : 'Active Master',
                 });
               }
             }
@@ -155,6 +178,84 @@ export default function ClientsMasterPage() {
   }, [authFetch]);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId) || clients[0] || CLIENTS_LIST[0];
+
+  useEffect(() => {
+    setLutArnDraft(selectedClient.lutArn ?? '');
+    setLutValidToDraft(selectedClient.lutValidTo ?? '2027-03-31');
+    setCancelArnDraft(selectedClient.cancellationArn ?? '');
+    setCancelStatusDraft((selectedClient.cancellationStatus as any) || 'NONE');
+    setTrackerMsg(null);
+  }, [selectedClient]);
+
+  const handleSaveCancellation = async () => {
+    setSavingTracker(true);
+    setTrackerMsg(null);
+    const dueIso =
+      cancelStatusDraft === 'APPLIED'
+        ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+        : selectedClient.autoApprovalDueAt ?? null;
+    try {
+      if (selectedClient.gstRegistrationId) {
+        await authFetch(`/api/v1/client-master/gst-registrations/${selectedClient.gstRegistrationId}/cancellation`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cancellationStatus: cancelStatusDraft,
+            cancellationArn: cancelArnDraft.trim() || undefined,
+          }),
+        });
+      }
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === selectedClient.id
+            ? {
+                ...c,
+                cancellationStatus: cancelStatusDraft,
+                cancellationArn: cancelArnDraft.trim() || null,
+                autoApprovalDueAt: dueIso,
+                portalStatus:
+                  cancelStatusDraft === 'APPROVED' || cancelStatusDraft === 'AUTO_APPROVED'
+                    ? 'CANCELLED'
+                    : cancelStatusDraft === 'APPLIED' || cancelStatusDraft === 'QUERY_RAISED'
+                      ? 'CANCELLATION_PENDING'
+                      : 'ACTIVE',
+              }
+            : c,
+        ),
+      );
+      setTrackerMsg('GSTIN cancellation tracking updated.');
+    } finally {
+      setSavingTracker(false);
+    }
+  };
+
+  const handleSaveLut = async () => {
+    if (!lutArnDraft.trim() || !lutValidToDraft) return;
+    setSavingTracker(true);
+    setTrackerMsg(null);
+    try {
+      if (selectedClient.gstRegistrationId) {
+        await authFetch(`/api/v1/client-master/gst-registrations/${selectedClient.gstRegistrationId}/lut`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lutArn: lutArnDraft.trim(),
+            lutValidTo: lutValidToDraft,
+          }),
+        });
+      }
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === selectedClient.id
+            ? { ...c, lutArn: lutArnDraft.trim(), lutValidTo: lutValidToDraft }
+            : c,
+        ),
+      );
+      setTrackerMsg('LUT (Form RFD-11) ARN and renewal date saved.');
+    } finally {
+      setSavingTracker(false);
+    }
+  };
 
   const handleRevealPan = async () => {
     setRevealing(true);
@@ -427,6 +528,76 @@ export default function ClientsMasterPage() {
                 <span className="text-[#16A34A] font-semibold">Monthly GSTR-1 & 3B</span>
               </div>
             </div>
+
+            {/* Nov 5, 2026 GSTIN Cancellation & LUT Tracker */}
+            {selectedClient.gstin && (
+              <div className="p-3 rounded-xl bg-[#FAFAFB] dark:bg-[#0E0F10] border border-[#E5E7EB] dark:border-[#24272B] space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-[#0E0F10] dark:text-white">GSTIN Cancellation &amp; LUT Tracker</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-black/5 dark:bg-white/10">
+                    {selectedClient.portalStatus ?? 'ACTIVE'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  <select
+                    value={cancelStatusDraft}
+                    onChange={(e) => setCancelStatusDraft(e.target.value as any)}
+                    className="rounded-lg border border-pos-line bg-pos-surface px-2 py-1 text-[11px] text-pos-ink"
+                  >
+                    <option value="NONE">Active (No Cancellation)</option>
+                    <option value="APPLIED">REG-16 Applied (3-Day Auto)</option>
+                    <option value="QUERY_RAISED">Officer Query Raised</option>
+                    <option value="AUTO_APPROVED">Auto-Approved (3 Working Days)</option>
+                    <option value="APPROVED">Approved / Cancelled</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                  <input
+                    value={cancelArnDraft}
+                    onChange={(e) => setCancelArnDraft(e.target.value)}
+                    placeholder="Cancellation ARN"
+                    className="rounded-lg border border-pos-line bg-pos-surface px-2 py-1 font-mono text-[11px] text-pos-ink"
+                  />
+                </div>
+                {selectedClient.autoApprovalDueAt && (
+                  <p className="text-[11px] text-amber-600 font-medium">
+                    Nov 5 Rule Auto-Approval Target: {String(selectedClient.autoApprovalDueAt).slice(0, 10)}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={savingTracker}
+                  onClick={handleSaveCancellation}
+                  className="w-full rounded-lg border border-pos-line bg-pos-surface py-1 text-[11px] font-semibold hover:bg-pos-muted disabled:opacity-50"
+                >
+                  Save Cancellation Status
+                </button>
+
+                <div className="border-t border-pos-line pt-2 grid grid-cols-2 gap-1.5">
+                  <input
+                    value={lutArnDraft}
+                    onChange={(e) => setLutArnDraft(e.target.value)}
+                    placeholder="LUT ARN (RFD-11)"
+                    className="rounded-lg border border-pos-line bg-pos-surface px-2 py-1 font-mono text-[11px] text-pos-ink"
+                  />
+                  <input
+                    type="date"
+                    value={lutValidToDraft}
+                    onChange={(e) => setLutValidToDraft(e.target.value)}
+                    className="rounded-lg border border-pos-line bg-pos-surface px-2 py-1 font-mono text-[11px] text-pos-ink"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={savingTracker || !lutArnDraft.trim()}
+                  onClick={handleSaveLut}
+                  className="w-full rounded-lg border border-pos-line bg-pos-surface py-1 text-[11px] font-semibold hover:bg-pos-muted disabled:opacity-50"
+                >
+                  Save LUT (Form RFD-11)
+                </button>
+                {trackerMsg && <p className="text-[11px] text-emerald-600">{trackerMsg}</p>}
+              </div>
+            )}
 
             {/* Quick Action Navigation Grid */}
             <div className="grid grid-cols-2 gap-2 text-xs">

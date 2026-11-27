@@ -25,8 +25,12 @@ export interface GstRegistration {
   stateCode: string;
   type: 'REGULAR' | 'COMPOSITION' | 'ISD' | 'SEZ_UNIT' | 'TDS_DEDUCTOR';
   filingCategory: FilingCategory;
-  portalStatus: 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
+  portalStatus: 'ACTIVE' | 'SUSPENDED' | 'CANCELLED' | 'CANCELLATION_PENDING';
   token: { state: TokenState; expiresAt: string | null };
+  lutArn?: string | null;
+  lutValidTo?: string | null;
+  cancellationStatus?: 'NONE' | 'APPLIED' | 'QUERY_RAISED' | 'AUTO_APPROVED' | 'APPROVED' | 'REJECTED';
+  cancellationArn?: string | null;
 }
 
 export interface TanRegistration {
@@ -57,6 +61,13 @@ export interface Entity {
   dscs: DscCertificate[];
   itcReconciled: number; // Rs, current period
   pendingMismatch: number; // Rs at risk
+  aatoAbove5Cr?: boolean;
+  rcmExposure?: {
+    rcmDomCount: number;
+    rcmImpCount: number;
+    totalRcmTaxable: number;
+    recurringCategories: string[];
+  };
 }
 
 export interface ClientGroup {

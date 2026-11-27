@@ -64,7 +64,7 @@ export default function SecurityPage() {
             id: 'never',
             title: 'What we never hold',
             items: [
-              { title: 'Portal passwords', body: 'We do not ask for or store GST, income tax or TRACES passwords. Portal access uses the official API consent you can revoke.', status: 'live' },
+              { title: 'GSP-direct portal integration & zero passwords', body: 'We never ask for or store GST, income tax or TRACES passwords. Portal access runs over official GSP-direct API consent you can revoke.', status: 'live' },
               { title: 'Aadhaar numbers', body: 'Full 12-digit Aadhaar numbers are never stored.', status: 'live' },
               { title: 'DSC PINs and keys', body: 'Signing happens on your own computer through the small SynTax signing app. The token’s driver asks for the PIN, and the private key never leaves the token.', status: 'live' },
             ],
@@ -73,7 +73,8 @@ export default function SecurityPage() {
             id: 'hosting',
             title: 'Where it runs',
             items: [
-              { title: 'Hosting in India', body: 'Production in AWS Mumbai with an encrypted standby copy in AWS Hyderabad. Client data is not moved outside India.', status: 'coming' },
+              { title: 'AWS Mumbai + AWS Hyderabad standby', body: 'Configured for production in AWS Mumbai (ap-south-1) with encrypted standby in AWS Hyderabad (ap-south-2) and zero cross-border transfer of client tax data.', status: 'coming' },
+              { title: 'CERT-In VAPT & security testing', body: 'Continuous automated multi-tenant isolation, RBAC, and replay security suite aligned with CERT-In empanelled VAPT requirements.', status: 'live' },
               { title: 'No outside analytics or AI on client data', body: 'No advertising or tracking scripts. Client personal data is never sent to analytics or AI services outside India.', status: 'live' },
             ],
           },

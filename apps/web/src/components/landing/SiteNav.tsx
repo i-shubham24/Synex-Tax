@@ -270,7 +270,7 @@ export function SiteNav() {
             Sign in
           </Link>
           <PillButton href="/contact" size="sm" tone={dark ? 'light' : 'mint'}>
-            Book 14-day trial
+            Book a demo
           </PillButton>
         </div>
 
@@ -340,7 +340,7 @@ export function SiteNav() {
               onClick={() => setOpen(false)}
               className="flex h-10 items-center justify-center whitespace-nowrap rounded-full bg-mint px-2.5 text-[12px] sm:text-[13px] font-semibold text-ink transition-colors hover:bg-mint-hover"
             >
-              Book 14-day trial
+              Book a demo
             </Link>
           </div>
         </div>

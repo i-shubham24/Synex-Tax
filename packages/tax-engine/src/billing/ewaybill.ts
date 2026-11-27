@@ -25,8 +25,39 @@ import type { EinvParty } from './einvoice.js';
 export const EWAY_BILL_JSON_VERSION = '1.0.0621';
 export const EWAY_BILL_LIMIT = new Decimal(50000);
 
+/** Transport mode enum including GSTN Nov 21, 2026 Metro Rail mode (code 5). */
+export const EWAY_TRANSPORT_MODES = {
+  ROAD: 1,
+  RAIL: 2,
+  AIR: 3,
+  SHIP: 4,
+  METRO_RAIL: 5,
+} as const;
+
+export type EwayTransportModeInput = 1 | 2 | 3 | 4 | 5 | 'ROAD' | 'RAIL' | 'AIR' | 'SHIP' | 'METRO' | 'METRO_RAIL';
+
+export function normalizeEwayTransportMode(mode: EwayTransportModeInput): 1 | 2 | 3 | 4 | 5 | null {
+  if (mode === 1 || mode === 'ROAD') return 1;
+  if (mode === 2 || mode === 'RAIL') return 2;
+  if (mode === 3 || mode === 'AIR') return 3;
+  if (mode === 4 || mode === 'SHIP') return 4;
+  if (mode === 5 || mode === 'METRO' || mode === 'METRO_RAIL') return 5;
+  return null;
+}
+
+/**
+ * Dual-length E-Way Bill validator: supports 12-digit legacy and 14-digit Jan 2027 numbers,
+ * plus variable-length alphanumeric EWB numbers when GSTN Advisory 687 flag is enabled.
+ */
+export function validateEwayBillNumber(ewbNo: string, options?: { allowVariableAdv687?: boolean }): boolean {
+  const cleanEwb = (ewbNo ?? '').trim();
+  if (/^(\d{12}|\d{14})$/.test(cleanEwb)) return true;
+  if (options?.allowVariableAdv687) return /^[0-9A-Za-z]{10,32}$/.test(cleanEwb);
+  return false;
+}
+
 export interface EwayTransport {
-  mode: 1 | 2 | 3 | 4;
+  mode: 1 | 2 | 3 | 4 | 5;
   distanceKm: number;
   vehicleNo?: string | null;
   vehicleType?: 'R' | 'O' | null;
@@ -54,15 +85,15 @@ export function ewayBillRequired(doc: BillingDoc, limit: Decimal = EWAY_BILL_LIM
 
 export function ewayTransportErrors(t: EwayTransport, docDate: string): string[] {
   const e: string[] = [];
-  if (![1, 2, 3, 4].includes(t.mode)) e.push('Mode of transport must be road, rail, air or ship.');
+  if (![1, 2, 3, 4, 5].includes(t.mode)) e.push('Mode of transport must be road, rail, air, ship or metro rail.');
   if (!Number.isInteger(t.distanceKm) || t.distanceKm < 1 || t.distanceKm > 4000) e.push('Distance must be a whole number of kilometres from 1 to 4,000.');
   const vehicle = (t.vehicleNo ?? '').toUpperCase().replace(/[\s-]/g, '');
   if (vehicle && !/^[A-Z0-9]{7,15}$/.test(vehicle)) e.push('Vehicle number should be letters and digits, as on the registration (for example PB10AB1234).');
   if (t.transporterId && !/^[0-9]{2}[0-9A-Z]{13}$/.test(t.transporterId)) e.push('Transporter id must be a 15 character GSTIN or TRANSIN.');
   if (t.mode === 1 && !vehicle && !t.transporterId) e.push('For road transport give the vehicle number or the transporter id.');
   if (t.mode !== 1) {
-    if (!t.transDocNo) e.push('For rail, air or ship give the transport document number.');
-    if (!t.transDocDate) e.push('For rail, air or ship give the transport document date.');
+    if (!t.transDocNo) e.push('For rail, air, ship or metro rail give the transport document number.');
+    if (!t.transDocDate) e.push('For rail, air, ship or metro rail give the transport document date.');
   }
   if (t.transDocNo && (t.transDocNo.length > 15 || !/^[A-Za-z0-9/-]+$/.test(t.transDocNo))) e.push('Transport document number: up to 15 letters, digits, "/" or "-".');
   if (t.transDocDate && t.transDocDate < docDate) e.push('The transport document date cannot be before the invoice date.');

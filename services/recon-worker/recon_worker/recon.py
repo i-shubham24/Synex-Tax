@@ -33,6 +33,8 @@ class PurchaseInvoice:
     sgst_amount: Decimal
     total_tax: Decimal
     itc_eligibility: str = "ELIGIBLE"  # ELIGIBLE, INELIGIBLE_17_5, INELIGIBLE_OTHER
+    credit_category: str = "B2B"  # B2B, IMPG, ISD
+    normalized_invoice_key: str = ""
 
 
 @dataclass
@@ -42,7 +44,7 @@ class Gstr2BInvoice:
     supplier_name: str | None
     doc_num: str
     doc_date: str  # YYYY-MM-DD
-    doc_type: str  # INV, CRN, DBN
+    doc_type: str  # INV, CRN, DBN, IMPG, ISD
     taxable_value: Decimal
     igst_amount: Decimal
     cgst_amount: Decimal
@@ -55,6 +57,8 @@ class Gstr2BInvoice:
     original_invoice_ref: str | None = None
     original_taxable_value: Decimal | None = None
     original_total_tax: Decimal | None = None
+    credit_category: str = "B2B"  # B2B, IMPG, ISD
+    normalized_invoice_key: str = ""
 
 
 @dataclass
@@ -67,6 +71,7 @@ class ReconMatchPair:
     difference_tax: Decimal = ZERO
     is_amended_post_acceptance: bool = False
     amendment_delta: dict[str, str] | None = None
+    normalized_invoice_key: str = ""
 
 
 @dataclass
@@ -83,6 +88,10 @@ class ReconSummary:
     total_itc_available_2b: Decimal
     total_itc_at_risk: Decimal
     ims_pending_actions_count: int
+    impg_count: int = 0
+    isd_count: int = 0
+    total_impg_itc: Decimal = ZERO
+    total_isd_itc: Decimal = ZERO
 
 
 def normalize_fy_tokens(input_str: str) -> str:
@@ -145,8 +154,27 @@ class GstReconciliationEngine:
         portal_2b_records: list[Gstr2BInvoice],
     ) -> tuple[list[ReconMatchPair], ReconSummary]:
         pairs: list[ReconMatchPair] = []
-        unmatched_pr = list(purchase_invoices)
-        unmatched_2b = list(portal_2b_records)
+        impg_records: list[Gstr2BInvoice] = []
+        isd_records: list[Gstr2BInvoice] = []
+        unmatched_pr: list[PurchaseInvoice] = []
+        for pr in purchase_invoices:
+            if not pr.normalized_invoice_key:
+                pr.normalized_invoice_key = normalize_invoice_number(pr.invoice_num)
+            if pr.credit_category in ("IMPG", "ISD"):
+                continue
+            unmatched_pr.append(pr)
+
+        unmatched_2b: list[Gstr2BInvoice] = []
+        for r2b in portal_2b_records:
+            if not r2b.normalized_invoice_key:
+                r2b.normalized_invoice_key = normalize_invoice_number(r2b.doc_num)
+            if r2b.doc_type == "IMPG" or r2b.credit_category == "IMPG":
+                impg_records.append(r2b)
+                continue
+            if r2b.doc_type == "ISD" or r2b.credit_category == "ISD":
+                isd_records.append(r2b)
+                continue
+            unmatched_2b.append(r2b)
 
         # -------------------------------------------------------------
         # PASS 1: Exact Match (GSTIN + Invoice Num + Date + Tax)
@@ -314,6 +342,14 @@ class GstReconciliationEngine:
         at_risk = sum((p.purchase_invoice.total_tax for p in pairs if p.status == "PURCHASE_NOT_IN_2B" and p.purchase_invoice), ZERO)
         pending_ims = sum(1 for p in pairs if p.portal_2b_record and p.portal_2b_record.ims_action_status == "P")
 
+        impg_total = sum((r.total_tax for r in impg_records if r.itc_available), ZERO)
+        isd_total = sum((r.total_tax for r in isd_records if r.itc_available), ZERO)
+
+        for p in pairs:
+            if not p.normalized_invoice_key:
+                src = p.purchase_invoice.invoice_num if p.purchase_invoice else (p.portal_2b_record.doc_num if p.portal_2b_record else "")
+                p.normalized_invoice_key = normalize_invoice_number(src)
+
         summary = ReconSummary(
             total_purchase_count=len(purchase_invoices),
             total_2b_count=len(portal_2b_records),
@@ -327,6 +363,10 @@ class GstReconciliationEngine:
             total_itc_available_2b=quantize_money(avail_2b),
             total_itc_at_risk=quantize_money(at_risk),
             ims_pending_actions_count=pending_ims,
+            impg_count=len(impg_records),
+            isd_count=len(isd_records),
+            total_impg_itc=quantize_money(impg_total),
+            total_isd_itc=quantize_money(isd_total),
         )
 
         return pairs, summary

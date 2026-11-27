@@ -137,15 +137,21 @@ def run_reconciliation(req: ReconRequest) -> dict[str, Any]:
             "total_itc_available_2b": str(summary.total_itc_available_2b),
             "total_itc_at_risk": str(summary.total_itc_at_risk),
             "ims_pending_actions_count": summary.ims_pending_actions_count,
+            "impg_count": summary.impg_count,
+            "isd_count": summary.isd_count,
+            "total_impg_itc": str(summary.total_impg_itc),
+            "total_isd_itc": str(summary.total_isd_itc),
         },
         "pairs": [
             {
                 "status": p.status,
                 "confidence_score": p.confidence_score,
+                "normalized_invoice_key": p.normalized_invoice_key,
                 "purchase_invoice": {
                     "id": p.purchase_invoice.id,
                     "vendor_gstin": p.purchase_invoice.vendor_gstin,
                     "invoice_num": p.purchase_invoice.invoice_num,
+                    "normalized_invoice_key": p.purchase_invoice.normalized_invoice_key,
                     "invoice_date": p.purchase_invoice.invoice_date,
                     "total_tax": str(p.purchase_invoice.total_tax),
                 }
@@ -155,6 +161,7 @@ def run_reconciliation(req: ReconRequest) -> dict[str, Any]:
                     "id": p.portal_2b_record.id,
                     "supplier_gstin": p.portal_2b_record.supplier_gstin,
                     "doc_num": p.portal_2b_record.doc_num,
+                    "normalized_invoice_key": p.portal_2b_record.normalized_invoice_key,
                     "doc_date": p.portal_2b_record.doc_date,
                     "total_tax": str(p.portal_2b_record.total_tax),
                     "ims_action_status": p.portal_2b_record.ims_action_status,

@@ -69,7 +69,7 @@ export function CutoverDemo() {
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
           {/* Mobile stacked 2-column comparison so detail labels never collide */}
-          <div className="divide-y divide-hairline px-3.5 py-2 sm:hidden">
+          <div aria-hidden="true" className="divide-y divide-hairline px-3.5 py-2 sm:hidden">
             <div className="grid grid-cols-2 gap-3 pb-2 pt-1 text-[11px] font-medium text-ink-soft">
               <span>Paid 28 Mar 2026</span>
               <span>Paid 6 Apr 2026</span>

@@ -81,6 +81,7 @@ const TILE_ICON: Record<RadarTile['id'], React.ComponentType<{ className?: strin
   token: KeyRound,
   dsc: Usb,
   tds: FileWarning,
+  rcm: BadgeIndianRupee,
 };
 
 const OBLIGATION_HREF: Record<Obligation, string> = {
@@ -393,7 +394,7 @@ export default function ControlTowerPage() {
         <AnimatePresence initial={false}>
           {radarOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="-m-2 overflow-hidden p-2">
-              <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-5">
+              <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {tiles.map((t) => {
                   const Icon = TILE_ICON[t.id];
                   const sev = SEVERITY_STYLE[t.severity];

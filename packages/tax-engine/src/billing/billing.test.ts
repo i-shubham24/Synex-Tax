@@ -17,8 +17,15 @@ import {
   type BillingDocInput,
   type BillingStoredDoc,
 } from './billing.js';
-import { buildEinvoiceJson, type EinvParty } from './einvoice.js';
-import { buildEwayBillEntry, buildEwayBillJson, ewayBillRequired } from './ewaybill.js';
+import { buildEinvoiceJson, validateRcmIrnEligibility, type EinvParty } from './einvoice.js';
+import {
+  EWAY_TRANSPORT_MODES,
+  buildEwayBillEntry,
+  buildEwayBillJson,
+  ewayBillRequired,
+  normalizeEwayTransportMode,
+  validateEwayBillNumber,
+} from './ewaybill.js';
 
 const schemaPath = (f: string) => join(__dirname, '..', '..', 'schemas', 'gst', f);
 
@@ -325,4 +332,21 @@ test('stock register: opening plus purchases less sales plus returns, valued at 
   assert.equal(rows[0].averageCost, '70.0000');
   assert.equal(rows[0].closingValue, '28000.00');
   assert.equal(rows[0].short, false);
+});
+
+test('Metro Rail mode 5, dual 12/14-digit EWB validator, and RCMDOM/RCMIMP production date guard', () => {
+  assert.equal(EWAY_TRANSPORT_MODES.METRO_RAIL, 5);
+  assert.equal(normalizeEwayTransportMode('METRO'), 5);
+  assert.equal(normalizeEwayTransportMode('METRO_RAIL'), 5);
+  assert.equal(normalizeEwayTransportMode(2), 2);
+
+  assert.equal(validateEwayBillNumber('181000000234'), true);
+  assert.equal(validateEwayBillNumber('18100000023456'), true);
+  assert.equal(validateEwayBillNumber('18100000023'), false);
+  assert.equal(validateEwayBillNumber('EWB26AB123456', { allowVariableAdv687: true }), true);
+
+  const blockedProd = validateRcmIrnEligibility({ docDate: '2026-12-10', rcmType: 'RCMDOM', environment: 'PRODUCTION' });
+  assert.equal(blockedProd.allowed, false);
+  assert.equal(validateRcmIrnEligibility({ docDate: '2026-12-10', rcmType: 'RCMDOM', environment: 'SANDBOX' }).allowed, true);
+  assert.equal(validateRcmIrnEligibility({ docDate: '2026-12-15', rcmType: 'RCMIMP', environment: 'PRODUCTION' }).allowed, true);
 });

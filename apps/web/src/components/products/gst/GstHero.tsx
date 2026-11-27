@@ -159,8 +159,8 @@ function MonthStrip() {
 }
 
 export function GstHero() {
-  const [deadline, setDeadline] = useState<ReturnType<typeof nextDeadline>>(null);
-  // Worked out in the browser so it reads the visitor's today, not the build's.
+  const [deadline, setDeadline] = useState<ReturnType<typeof nextDeadline>>(() => nextDeadline(new Date()));
+  // Recomputed on the client so cached pages track the visitor's clock.
   useEffect(() => setDeadline(nextDeadline(new Date())), []);
 
   return (
@@ -178,7 +178,7 @@ export function GstHero() {
       price="GST + Sign is ₹5,999 a year"
       visual={<MonthStrip />}
       footer={
-        <p aria-live="polite" className="min-h-[20px]">
+        <p aria-live="polite" className="min-h-[20px]" suppressHydrationWarning>
           {deadline && (
             <>
               Next up: <span className="text-ink">{deadline.what} for {deadline.period}</span>, due {deadline.due}

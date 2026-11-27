@@ -56,7 +56,7 @@ export function SignDemo() {
         </div>
       </div>
 
-      <ol className="space-y-2.5 px-4 py-4 sm:px-5">
+      <ol className="list-none space-y-2.5 px-4 py-4 sm:px-5">
         {STEPS.map((s, i) => {
           const st = stepState(stage, i);
           return (

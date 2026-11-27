@@ -60,6 +60,8 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
         const gstRes = await client.query(
           `SELECT id, entity_id, gstin, state_code, legal_name_on_portal, trade_name_on_portal,
                   registration_type, filing_category, portal_registration_status, api_access_status,
+                  lut_arn, lut_valid_from::text, lut_valid_to::text,
+                  cancellation_status, cancellation_arn, cancellation_applied_at, auto_approval_due_at, cancellation_reason,
                   created_at, updated_at
            FROM public.gst_registrations
            WHERE firm_id = app.current_firm_id()`,
@@ -104,6 +106,14 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
                   filingCategory: gst.filing_category,
                   portalStatus: gst.portal_registration_status,
                   apiStatus: gst.api_access_status,
+                  lutArn: gst.lut_arn ?? null,
+                  lutValidFrom: gst.lut_valid_from ?? null,
+                  lutValidTo: gst.lut_valid_to ?? null,
+                  cancellationStatus: gst.cancellation_status ?? 'NONE',
+                  cancellationArn: gst.cancellation_arn ?? null,
+                  cancellationAppliedAt: gst.cancellation_applied_at ?? null,
+                  autoApprovalDueAt: gst.auto_approval_due_at ?? null,
+                  cancellationReason: gst.cancellation_reason ?? null,
                 })),
               tanRegistrations: tanRes.rows
                 .filter((tan) => tan.entity_id === e.id)
@@ -262,6 +272,8 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
         const res = await client.query(
           `SELECT id, entity_id, gstin, state_code, legal_name_on_portal, trade_name_on_portal,
                   registration_type, filing_category, portal_registration_status, api_access_status,
+                  lut_arn, lut_valid_from::text, lut_valid_to::text,
+                  cancellation_status, cancellation_arn, cancellation_applied_at, auto_approval_due_at, cancellation_reason,
                   created_at, updated_at
            FROM public.gst_registrations
            WHERE firm_id = app.current_firm_id()`,
@@ -328,6 +340,87 @@ export async function clientMasterRoutes(fastify: FastifyInstance, _opts: Fastif
       return reply.status(201).send(created);
     } catch (err: any) {
       return reply.status(err.statusCode || 500).send({ error: 'Creation Error', message: publicMessage(err) });
+    }
+  });
+
+  // Update Nov 5, 2026 GST registration cancellation tracking & auto-approval window
+  fastify.patch('/gst-registrations/:id/cancellation', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const user = request.user as { firmId: string; userId: string; role: string };
+    if (user.role === 'STAFF') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Only partners or managers can update GSTIN cancellation tracking.' });
+    }
+    const body = (request.body ?? {}) as {
+      cancellationStatus?: 'NONE' | 'APPLIED' | 'QUERY_RAISED' | 'AUTO_APPROVED' | 'APPROVED' | 'REJECTED';
+      cancellationArn?: string;
+      cancellationReason?: string;
+    };
+    const status = body.cancellationStatus ?? 'APPLIED';
+    if (!['NONE', 'APPLIED', 'QUERY_RAISED', 'AUTO_APPROVED', 'APPROVED', 'REJECTED'].includes(status)) {
+      return reply.status(400).send({ error: 'Validation Error', message: 'Invalid cancellation status.' });
+    }
+
+    try {
+      const updated = await db.withTenantTransaction(getCtx(request), async (client) => {
+        const portalStatus =
+          status === 'APPROVED' || status === 'AUTO_APPROVED'
+            ? 'CANCELLED'
+            : status === 'APPLIED' || status === 'QUERY_RAISED'
+              ? 'CANCELLATION_PENDING'
+              : 'ACTIVE';
+        const res = await client.query(
+          `UPDATE public.gst_registrations
+           SET cancellation_status = $2,
+               cancellation_arn = COALESCE($3, cancellation_arn),
+               cancellation_reason = COALESCE($4, cancellation_reason),
+               cancellation_applied_at = CASE WHEN $2 = 'APPLIED' AND cancellation_applied_at IS NULL THEN now() ELSE cancellation_applied_at END,
+               auto_approval_due_at = CASE WHEN $2 = 'APPLIED' THEN now() + INTERVAL '3 days' ELSE auto_approval_due_at END,
+               portal_registration_status = $5,
+               updated_at = now()
+           WHERE id = $1 AND firm_id = app.current_firm_id()
+           RETURNING id, gstin, portal_registration_status, cancellation_status, cancellation_arn, cancellation_applied_at, auto_approval_due_at, cancellation_reason`,
+          [request.params.id, status, body.cancellationArn ?? null, body.cancellationReason ?? null, portalStatus],
+        );
+        return res.rows[0] ?? null;
+      });
+      if (!updated) return reply.status(404).send({ error: 'Not Found', message: 'GSTIN registration not found.' });
+      return reply.send({ success: true, registration: updated });
+    } catch (err: any) {
+      return reply.status(500).send({ error: 'Update Error', message: publicMessage(err) });
+    }
+  });
+
+  // Update LUT (Form RFD-11) ARN & renewal dates
+  fastify.patch('/gst-registrations/:id/lut', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const user = request.user as { firmId: string; userId: string; role: string };
+    if (user.role === 'STAFF') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Only partners or managers can update LUT details.' });
+    }
+    const body = (request.body ?? {}) as { lutArn?: string; lutValidFrom?: string; lutValidTo?: string };
+    if (!body.lutArn || !body.lutValidTo) {
+      return reply.status(400).send({ error: 'Validation Error', message: 'Pass lutArn and lutValidTo (YYYY-MM-DD).' });
+    }
+    const lutArn = body.lutArn.trim();
+    const lutValidFrom = body.lutValidFrom ?? null;
+    const lutValidTo = body.lutValidTo;
+
+    try {
+      const updated = await db.withTenantTransaction(getCtx(request), async (client) => {
+        const res = await client.query(
+          `UPDATE public.gst_registrations
+           SET lut_arn = $2,
+               lut_valid_from = COALESCE($3::date, lut_valid_from),
+               lut_valid_to = $4::date,
+               updated_at = now()
+           WHERE id = $1 AND firm_id = app.current_firm_id()
+           RETURNING id, gstin, lut_arn, lut_valid_from::text, lut_valid_to::text`,
+          [request.params.id, lutArn, lutValidFrom, lutValidTo],
+        );
+        return res.rows[0] ?? null;
+      });
+      if (!updated) return reply.status(404).send({ error: 'Not Found', message: 'GSTIN registration not found.' });
+      return reply.send({ success: true, registration: updated });
+    } catch (err: any) {
+      return reply.status(500).send({ error: 'Update Error', message: publicMessage(err) });
     }
   });
 

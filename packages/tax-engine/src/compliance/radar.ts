@@ -113,3 +113,51 @@ export function isdRadar(entities: EntityRegistrations[]) {
     })
     .filter((e) => e.activeGstins >= 2 && e.states >= 2 && !e.hasIsd);
 }
+
+/* ------------------------------------------- RCMDOM & RCMIMP e-Invoice */
+
+export interface RcmExposureRecord {
+  entityId: string;
+  entityName: string;
+  gstin: string;
+  aatoAbove5Cr: boolean;
+  rcmDomCount: number;
+  rcmImpCount: number;
+  totalRcmTaxable: number;
+  recurringCategories: string[]; // e.g. ['GTA freight', 'Rent', 'Scrap', 'Foreign SaaS']
+}
+
+export interface RcmEinvoiceRadarItem extends RcmExposureRecord {
+  voluntaryStartDate: '2026-12-15';
+  mandatoryDate: '2027-01-01';
+  daysToVoluntary: number;
+  daysToMandatory: number;
+  readinessStatus: 'MANDATORY_ACTIVE' | 'VOLUNTARY_OPEN' | 'PREP_REQUIRED';
+}
+
+/**
+ * Notifications 04/2026-CT & 05/2026-CT + GSTN Nov 17, 2026 advisory:
+ * Scans > Rs 5 Cr entities with recurring Table 3.1(d) unregistered domestic RCM (RCMDOM)
+ * or import of services (RCMIMP) self-invoice exposure ahead of Dec 15 voluntary / Jan 1, 2027 mandatory cutover.
+ */
+export function rcmEinvoiceRadar(records: RcmExposureRecord[], today: IsoDate): RcmEinvoiceRadarItem[] {
+  const voluntaryDate = '2026-12-15' as const;
+  const mandatoryDate = '2027-01-01' as const;
+  return records
+    .filter((r) => r.aatoAbove5Cr && (r.rcmDomCount > 0 || r.rcmImpCount > 0 || r.totalRcmTaxable > 0))
+    .map((r) => {
+      const daysToVoluntary = daysBetween(today, voluntaryDate);
+      const daysToMandatory = daysBetween(today, mandatoryDate);
+      const readinessStatus: RcmEinvoiceRadarItem['readinessStatus'] =
+        today >= mandatoryDate ? 'MANDATORY_ACTIVE' : today >= voluntaryDate ? 'VOLUNTARY_OPEN' : 'PREP_REQUIRED';
+      return {
+        ...r,
+        voluntaryStartDate: voluntaryDate,
+        mandatoryDate,
+        daysToVoluntary,
+        daysToMandatory,
+        readinessStatus,
+      };
+    })
+    .sort((a, b) => b.totalRcmTaxable - a.totalRcmTaxable);
+}

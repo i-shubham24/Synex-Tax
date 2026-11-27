@@ -28,10 +28,10 @@ const DOT = { claim: 'bg-mint', check: 'bg-sky', hold: 'bg-ink' } as const;
 const RULES = [
   { rule: 'Rule 88A', what: 'IGST credit is used first, then CGST and SGST. CGST credit never pays SGST, or the other way round.' },
   { rule: 'Rule 86B', what: 'When taxable supplies cross ₹50 lakh in a month, at least 1% of the output tax is paid in cash, unless the client is exempt.' },
-  { rule: 'Section 17(5)', what: 'Purchases that look like motor vehicles, food or catering are marked as blocked credit when the register comes in.' },
-  { rule: 'Rules 42 and 43', what: 'Common credit is split between taxable and exempt supplies for inputs and capital goods, with the reversal worked out.' },
-  { rule: 'Filed months', what: 'Once a month’s return is saved on the portal or filed, its purchase register can no longer be changed.' },
-  { rule: 'TDS hand-off', what: 'Contractor, rent and professional bills above the TDS limits are flagged for the TDS desk.' },
+  { rule: 'Rule 37A reversal & reclaim', what: 'Tracks unpaid or supplier non-filed ITC reversals in Table 4(B)(2) and links subsequent Table 4(D)(1) reclaims to the original reversal entry.' },
+  { rule: 'Sec 34(2) Credit Note protection', what: 'Blocks PENDING on downward amendments after original GSTR-3B filing, flags supplier pre-filing resets, and warns suppliers immediately when buyers reject Credit Notes.' },
+  { rule: 'Section 17(5) & Rules 42/43', what: 'Flags blocked credits (motor vehicles, food, catering) and computes common-credit taxable/exempt reversals for inputs and capital goods.' },
+  { rule: '1-click IMS Working Paper', what: 'Exports a period-locked Excel/CSV and printable PDF working paper of every IMS action, 2B delta, IMPG/ISD split, and 3B flow.', badge: undefined },
 ];
 
 const MONTH = [
@@ -156,7 +156,7 @@ export default function GstProductPage() {
           titleId="rules-title"
           title="The rules your 3B draft already follows."
           rules={RULES}
-          footnote="Also in SynTax GST: GSTR-9 and 9C annual workings, ITC-04 for job work, and CMP-08 and GSTR-4 for composition clients."
+          footnote="Built on GSP-direct GSTN API architecture with CERT-In VAPT controls and India data residency (AWS Mumbai primary with AWS Hyderabad encrypted standby). Also in SynTax GST: Yearly GSTR-3B matrix, Rate-Wise GSTR-1 summary, Filed Cases Register, Challan & Cash/Credit Ledger reports, GSTR-9/9C workings, ITC-04, and CMP-08/GSTR-4."
         />
 
         <PriceClose

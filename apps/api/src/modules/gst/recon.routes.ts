@@ -7,8 +7,8 @@ import { getTenantContext, resolveGstRegistration, isPeriodLocked } from './gstH
 import { parseInvoiceCsv, parseGstr2bJson, type Gstr2bParseResult } from '@synextax/ingestion';
 import { validateUploadedFile } from '../../security/fileUploadValidator.js';
 import { escapeCsvCell } from '../../security/inputSanitization.js';
-import { validateGstin } from '@synextax/tax-engine';
-import { GstReconciliationEngine, type PurchaseRegisterInvoice } from '@synextax/queue-worker';
+import { validateGstin, classifyInputType } from '@synextax/tax-engine';
+import { GstReconciliationEngine, normalizeInvoiceNumber, type PurchaseRegisterInvoice } from '@synextax/queue-worker';
 
 const ImportPreviewSchema = z.object({
   invoices: z.array(
@@ -26,6 +26,9 @@ const ImportPreviewSchema = z.object({
       cessAmount: z.string().default('0.00'),
       totalInvoiceValue: z.string().optional(),
       itcEligibility: z.enum(['ELIGIBLE', 'INELIGIBLE_17_5', 'INELIGIBLE_RULE_42_43', 'INELIGIBLE_OTHER']).default('ELIGIBLE'),
+      hsnSacCode: z.string().max(16).optional(),
+      inputType: z.enum(['INPUT_GOODS', 'INPUT_SERVICES', 'CAPITAL_GOODS']).optional(),
+      rcmCategory: z.enum(['NONE', 'RCMDOM', 'RCMIMP']).optional(),
       description: z.string().optional(),
     })
   ).min(1, 'Invoices array cannot be empty.'),
@@ -259,8 +262,11 @@ export async function reconRoutes(fastify: FastifyInstance) {
 
       let saved = 0;
       const rejected: Array<{ id: string; reason: string }> = [];
+      let supplierResetCount = 0;
+      let downwardAmendmentCount = 0;
+
       for (const d of twoB.documents) {
-        if (!/^[0-9]{2}[0-9A-Z]{13}$/.test(d.supplierGstin)) {
+        if (d.creditCategory !== 'IMPG' && !/^[0-9]{2}[0-9A-Z]{13}$/.test(d.supplierGstin)) {
           rejected.push({ id: d.id, reason: `Supplier GSTIN '${d.supplierGstin}' is malformed` });
           continue;
         }
@@ -268,27 +274,134 @@ export async function reconRoutes(fastify: FastifyInstance) {
           rejected.push({ id: d.id, reason: 'Document number longer than 32 characters' });
           continue;
         }
+
+        const normKey = normalizeInvoiceNumber(d.docNum);
+
+        // Detect existing record so supplier modification / reset or downward amendment can be tracked cleanly.
+        const existingRes = await client.query<{
+          id: string;
+          taxable_value: string;
+          igst_amount: string;
+          cgst_amount: string;
+          sgst_amount: string;
+          ims_action_status: string;
+        }>(
+          `SELECT id, taxable_value::text, igst_amount::text, cgst_amount::text, sgst_amount::text, ims_action_status::text
+           FROM public.gst_2b_records
+           WHERE firm_id = app.current_firm_id()
+             AND gst_registration_id = $1
+             AND return_period = $2
+             AND doc_type = $3
+             AND supplier_gstin = $4
+             AND doc_num = $5`,
+          [reg.id, twoB.period, d.docType, d.supplierGstin, d.docNum],
+        );
+
+        const existing = existingRes.rows[0];
+        let resetDetected = false;
+        let previousStatus = 'NONE';
+        if (existing && existing.ims_action_status !== 'NONE') {
+          const prevTax = new Decimal(existing.igst_amount).plus(existing.cgst_amount).plus(existing.sgst_amount);
+          const nextTax = new Decimal(d.igstAmount).plus(d.cgstAmount).plus(d.sgstAmount);
+          if (!prevTax.eq(nextTax) || !new Decimal(existing.taxable_value).eq(d.taxableValue)) {
+            resetDetected = true;
+            previousStatus = existing.ims_action_status;
+            supplierResetCount++;
+          }
+        }
+
+        let isDownwardAmendment = false;
+        let originalFilingLocked = false;
+        let originalDocDate: string | null = null;
+        let originalTaxAmount: string | null = null;
+
+        if ((d.section === 'b2ba' || d.section === 'cdnra') && d.originalInvoiceRef) {
+          const origRes = await client.query<{
+            return_period: string;
+            doc_date: string;
+            igst_amount: string;
+            cgst_amount: string;
+            sgst_amount: string;
+            ims_action_status: string;
+          }>(
+            `SELECT return_period, doc_date::text, igst_amount::text, cgst_amount::text, sgst_amount::text, ims_action_status::text
+             FROM public.gst_2b_records
+             WHERE gst_registration_id = $1
+               AND supplier_gstin = $2
+               AND doc_num = $3
+             ORDER BY return_period DESC
+             LIMIT 1`,
+            [reg.id, d.supplierGstin, d.originalInvoiceRef],
+          );
+          const orig = origRes.rows[0];
+          const newTotalTax = new Decimal(d.igstAmount).plus(d.cgstAmount).plus(d.sgstAmount);
+          const origTotalTax = orig
+            ? new Decimal(orig.igst_amount).plus(orig.cgst_amount).plus(orig.sgst_amount)
+            : d.originalTotalTax
+              ? new Decimal(d.originalTotalTax)
+              : null;
+
+          if (origTotalTax && newTotalTax.lessThan(origTotalTax)) {
+            isDownwardAmendment = true;
+            originalTaxAmount = origTotalTax.toFixed(2);
+            originalDocDate = orig?.doc_date ?? null;
+            if (orig && orig.ims_action_status === 'A') {
+              const filedOrig = await client.query(
+                `SELECT 1 FROM public.gst_filings
+                 WHERE gst_registration_id = $1 AND return_period = $2 AND return_type = 'GSTR3B'
+                   AND workflow_status IN ('PORTAL_SAVED', 'FILED', 'CLOSED')`,
+                [reg.id, orig.return_period],
+              );
+              if (filedOrig.rows.length > 0) {
+                originalFilingLocked = true;
+                downwardAmendmentCount++;
+              }
+            }
+          }
+        }
+
         await client.query(
           `INSERT INTO public.gst_2b_records (
              firm_id, entity_id, gst_registration_id, return_period, supplier_gstin, supplier_trade_name,
-             doc_type, doc_num, doc_date, taxable_value, igst_amount, cgst_amount, sgst_amount, cess_amount,
-             itc_available, itc_ineligibility_reason, gstr1_filing_date, raw_payload
+             doc_type, doc_num, normalized_invoice_key, credit_category, boe_port_code,
+             doc_date, taxable_value, igst_amount, cgst_amount, sgst_amount, cess_amount,
+             itc_available, itc_ineligibility_reason, gstr1_filing_date, raw_payload,
+             ims_action_status, ims_previous_status, ims_reset_detected,
+             is_downward_amendment, original_doc_num, original_doc_date, original_filing_locked, original_tax_amount
            ) VALUES (
              app.current_firm_id(), $1, $2, $3, $4, $5,
-             $6, $7, $8, $9, $10, $11, $12, $13,
-             $14, $15, $16, $17
+             $6, $7, $8, $9, $10,
+             $11, $12, $13, $14, $15, $16,
+             $17, $18, $19, $20,
+             'NONE', $21, $22,
+             $23, $24, $25, $26, $27
            )
            ON CONFLICT (firm_id, gst_registration_id, return_period, doc_type, supplier_gstin, doc_num)
            DO UPDATE SET supplier_trade_name = EXCLUDED.supplier_trade_name, doc_date = EXCLUDED.doc_date,
+             normalized_invoice_key = EXCLUDED.normalized_invoice_key,
+             credit_category = EXCLUDED.credit_category,
+             boe_port_code = EXCLUDED.boe_port_code,
              taxable_value = EXCLUDED.taxable_value, igst_amount = EXCLUDED.igst_amount, cgst_amount = EXCLUDED.cgst_amount,
              sgst_amount = EXCLUDED.sgst_amount, cess_amount = EXCLUDED.cess_amount, itc_available = EXCLUDED.itc_available,
              itc_ineligibility_reason = EXCLUDED.itc_ineligibility_reason, gstr1_filing_date = EXCLUDED.gstr1_filing_date,
-             raw_payload = EXCLUDED.raw_payload, updated_at = now()`,
+             raw_payload = EXCLUDED.raw_payload,
+             ims_action_status = CASE WHEN $22 THEN 'NONE'::public.ims_action ELSE gst_2b_records.ims_action_status END,
+             ims_previous_status = CASE WHEN $22 THEN $21::public.ims_action ELSE gst_2b_records.ims_previous_status END,
+             ims_reset_detected = ($22 OR gst_2b_records.ims_reset_detected),
+             is_downward_amendment = ($23 OR gst_2b_records.is_downward_amendment),
+             original_doc_num = COALESCE(EXCLUDED.original_doc_num, gst_2b_records.original_doc_num),
+             original_doc_date = COALESCE(EXCLUDED.original_doc_date, gst_2b_records.original_doc_date),
+             original_filing_locked = ($26 OR gst_2b_records.original_filing_locked),
+             original_tax_amount = COALESCE(EXCLUDED.original_tax_amount, gst_2b_records.original_tax_amount),
+             updated_at = now()`,
           [
             reg.entity_id, reg.id, twoB.period, d.supplierGstin, d.supplierName?.slice(0, 200) ?? null,
-            d.docType, d.docNum, d.docDate, d.taxableValue, d.igstAmount, d.cgstAmount, d.sgstAmount, d.cessAmount,
+            d.docType, d.docNum, normKey, d.creditCategory, d.portCode ?? null,
+            d.docDate, d.taxableValue, d.igstAmount, d.cgstAmount, d.sgstAmount, d.cessAmount,
             d.itcAvailable, d.itcReason?.slice(0, 32) ?? null, d.gstr1FilingDate ?? null,
             JSON.stringify({ section: d.section, supplierPeriod: d.supplierPeriod ?? null, originalInvoiceRef: d.originalInvoiceRef ?? null }),
+            previousStatus, resetDetected,
+            isDownwardAmendment, d.originalInvoiceRef ?? null, originalDocDate, originalFilingLocked, originalTaxAmount,
           ],
         );
         saved++;
@@ -302,6 +415,10 @@ export async function reconRoutes(fastify: FastifyInstance) {
         documentsInFile: twoB.documents.length,
         saved,
         rejected,
+        supplierResetCount,
+        downwardAmendmentCount,
+        impgCount: twoB.documents.filter((d) => d.creditCategory === 'IMPG').length,
+        isdCount: twoB.documents.filter((d) => d.creditCategory === 'ISD').length,
         itcNotAvailable: twoB.documents.filter((d) => !d.itcAvailable).length,
         unreadSections: twoB.unreadSections,
       });
@@ -358,14 +475,17 @@ export async function reconRoutes(fastify: FastifyInstance) {
         sgst_amount: string;
         itc_eligibility: string;
         doc_type: 'INV' | 'CRN' | 'DBN';
+        credit_category: 'B2B' | 'IMPG' | 'ISD';
+        normalized_invoice_key: string | null;
       }>(
-        `SELECT id, vendor_gstin, invoice_num, invoice_date, taxable_value, igst_amount, cgst_amount, sgst_amount, itc_eligibility, doc_type
+        `SELECT id, vendor_gstin, invoice_num, invoice_date, taxable_value, igst_amount, cgst_amount, sgst_amount,
+                itc_eligibility, doc_type, COALESCE(credit_category, 'B2B') AS credit_category, normalized_invoice_key
          FROM public.gst_invoices_purchase
          WHERE gst_registration_id = $1 AND return_period = $2`,
         [reg.id, period],
       );
 
-      // Fetch 2B records
+      // Fetch ALL 2B records for the period; the shared matcher segregates IMPG & ISD out of domestic B2B matching.
       const g2bRes = await client.query<{
         id: string;
         supplier_gstin: string;
@@ -377,11 +497,15 @@ export async function reconRoutes(fastify: FastifyInstance) {
         sgst_amount: string;
         ims_action_status: string;
         doc_type: string;
+        credit_category: 'B2B' | 'IMPG' | 'ISD';
+        normalized_invoice_key: string | null;
         itc_available: boolean;
       }>(
-        `SELECT id, supplier_gstin, doc_num, doc_date, taxable_value, igst_amount, cgst_amount, sgst_amount, ims_action_status, doc_type, itc_available
+        `SELECT id, supplier_gstin, doc_num, doc_date, taxable_value, igst_amount, cgst_amount, sgst_amount,
+                ims_action_status, doc_type, COALESCE(credit_category, CASE WHEN doc_type IN ('IMPG','ISD') THEN doc_type ELSE 'B2B' END) AS credit_category,
+                normalized_invoice_key, itc_available
          FROM public.gst_2b_records
-         WHERE gst_registration_id = $1 AND return_period = $2 AND doc_type <> 'ISD'`,
+         WHERE gst_registration_id = $1 AND return_period = $2`,
         [reg.id, period],
       );
 
@@ -397,8 +521,10 @@ export async function reconRoutes(fastify: FastifyInstance) {
           id: r.id,
           vendorGstin: r.vendor_gstin,
           invoiceNum: r.invoice_num,
+          normalizedInvoiceKey: r.normalized_invoice_key ?? normalizeInvoiceNumber(r.invoice_num),
           invoiceDate: r.invoice_date,
           docType: r.doc_type,
+          creditCategory: r.credit_category,
           taxableValue: r.taxable_value,
           igstAmount: r.igst_amount,
           cgstAmount: r.cgst_amount,
@@ -410,8 +536,10 @@ export async function reconRoutes(fastify: FastifyInstance) {
           id: r.id,
           supplierGstin: r.supplier_gstin,
           docNum: r.doc_num,
+          normalizedInvoiceKey: r.normalized_invoice_key ?? normalizeInvoiceNumber(r.doc_num),
           docDate: r.doc_date,
-          docType: r.doc_type as 'INV' | 'CRN' | 'DBN',
+          docType: r.doc_type as 'INV' | 'CRN' | 'DBN' | 'IMPG' | 'ISD',
+          creditCategory: r.credit_category,
           taxableValue: r.taxable_value,
           igstAmount: r.igst_amount,
           cgstAmount: r.cgst_amount,
@@ -468,11 +596,17 @@ export async function reconRoutes(fastify: FastifyInstance) {
           totalItcAtRisk: report.totalAtRiskItc,
           totalUnclaimedItc: report.totalUnclaimedItc,
           totalDeferredItc: report.totalDeferredItc,
+          impgCount: report.impgRecords?.length ?? 0,
+          isdCount: report.isdRecords?.length ?? 0,
+          totalImpgItc: report.totalImpgItc ?? '0.00',
+          totalIsdItc: report.totalIsdItc ?? '0.00',
         },
         pairs: report.matchedPairs,
         unmatchedPurchase: report.unmatchedPurchase,
         unmatchedPortal2b: report.unmatchedPortal2b,
         outOfPeriodPurchase: report.outOfPeriodPurchase,
+        impgRecords: report.impgRecords ?? [],
+        isdRecords: report.isdRecords ?? [],
       });
     });
   });
@@ -622,23 +756,30 @@ async function insertPurchases(
     const insertQuery = `
       INSERT INTO public.gst_invoices_purchase (
         firm_id, entity_id, gst_registration_id, vendor_gstin, vendor_trade_name,
-        invoice_num, invoice_date, doc_type, pos_state_code, reverse_charge,
+        invoice_num, normalized_invoice_key, invoice_date, doc_type, pos_state_code, reverse_charge,
+        hsn_sac_code, input_type, rcm_category,
         taxable_value, igst_amount, cgst_amount, sgst_amount, cess_amount, total_invoice_value,
         itc_eligibility, return_period, created_by
       ) VALUES (
         app.current_firm_id(), $1, $2, $3, $4,
-        $5, $6, $7, $8, false,
-        $9, $10, $11, $12, $13, $14,
-        $15, $16, app.current_user_id()
+        $5, $6, $7, $8, $9, false,
+        $10, $11, $12,
+        $13, $14, $15, $16, $17, $18,
+        $19, $20, app.current_user_id()
       )
       ON CONFLICT (firm_id, gst_registration_id, return_period, doc_type, vendor_gstin, invoice_num, revision_no)
       DO NOTHING
       RETURNING id;
     `;
 
+    const inferredInputType =
+      inv.inputType ?? classifyInputType({ hsnOrSac: inv.hsnSacCode, description: inv.description });
+    const inferredRcmCategory = inv.rcmCategory ?? 'NONE';
+
     const res = await client.query(insertQuery, [
       reg.entity_id, reg.id, inv.vendorGstin, inv.vendorName ?? null,
-      inv.invoiceNum, inv.invoiceDate, inv.docType, inv.posStateCode,
+      inv.invoiceNum, normalizeInvoiceNumber(inv.invoiceNum), inv.invoiceDate, inv.docType, inv.posStateCode,
+      inv.hsnSacCode ?? null, inferredInputType, inferredRcmCategory,
       taxableDec.toFixed(2), igstDec.toFixed(2), cgstDec.toFixed(2), sgstDec.toFixed(2), cessDec.toFixed(2), totalVal.toFixed(2),
       inv.itcEligibility, period,
     ]);

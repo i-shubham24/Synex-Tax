@@ -121,7 +121,66 @@ export interface StatementInput {
   quarter: 1 | 2 | 3 | 4;
   earlierRegularFiled: boolean;
   previousToken?: string;
+  /** Feature-flag gate for Form 138 Q4 schema v1.0 once Protean FVU 1.2 specification is active. */
+  allowForm138Q4V10?: boolean;
   challans: StatementChallanInput[];
+}
+
+export interface StatementSchemaResolution {
+  fvuVersion: '1.2' | '9.5';
+  schemaVersion: string;
+  supported: boolean;
+  note?: string;
+}
+
+const FVU_2025_SCHEMA: Record<'138' | '140' | '143' | '144', string> = {
+  '138': 'v1.2',
+  '140': 'v1.2',
+  '143': 'v1.2',
+  '144': 'v1.2',
+};
+
+const FVU_1961_SCHEMA: Record<'24Q' | '26Q' | '27Q' | '27EQ', string> = {
+  '24Q': 'v7.3',
+  '26Q': 'v8.0',
+  '27Q': 'v7.8',
+  '27EQ': 'v7.5',
+};
+
+/** Exact Protean FVU schema version matrix across Income-tax Act 2025 (v1.2) and 1961 Act (v9.5). */
+export function resolveStatementSchemaVersion(params: {
+  regime: 'IT_ACT_2025' | 'IT_ACT_1961';
+  form: string;
+  quarter: number;
+  allowForm138Q4V10?: boolean;
+}): StatementSchemaResolution {
+  const form = params.form.toUpperCase();
+  const q = Number(params.quarter);
+  if (params.regime === 'IT_ACT_2025') {
+    if (form === '138' && q === 4) {
+      return {
+        fvuVersion: '1.2',
+        schemaVersion: 'v1.0',
+        supported: Boolean(params.allowForm138Q4V10),
+        ...(params.allowForm138Q4V10
+          ? {}
+          : { note: 'Form 138 Q4 file format (v1.0) is feature-flag gated until the annual salary Q4 annexure layout is enabled.' }),
+      };
+    }
+    return {
+      fvuVersion: '1.2',
+      schemaVersion: FVU_2025_SCHEMA[form as keyof typeof FVU_2025_SCHEMA] ?? 'v1.2',
+      supported: form in FVU_2025_SCHEMA,
+    };
+  }
+  if (form === '24Q' && q === 4) {
+    return { fvuVersion: '9.5', schemaVersion: 'v7.6', supported: true };
+  }
+  return {
+    fvuVersion: '9.5',
+    schemaVersion: FVU_1961_SCHEMA[form as keyof typeof FVU_1961_SCHEMA] ?? 'v7.3',
+    supported: form in FVU_1961_SCHEMA,
+  };
 }
 
 export interface WriteIssue {
@@ -199,7 +258,15 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
   if (bookEntry && !isGov) err('Challans', 'Only government deductors pay by book adjustment (transfer voucher).');
   if (bookEntry && (type === 'A' || type === 'S') && !/^[A-Z0-9]{7}$/.test(ain)) err('AIN', 'Tax paid by book adjustment needs the 7-character AIN of the PAO, TO or CDDO.');
   if (ain && !isGov) err('AIN', 'Only government deductors give an AIN.');
-  if (form === '138' && input.quarter === 4) err('Quarter', 'Protean has not yet published the Form 138 Q4 file format, which carries the annual salary details. Q4 files can be written once it is released.');
+  const schemaRes = resolveStatementSchemaVersion({
+    regime: 'IT_ACT_2025',
+    form,
+    quarter: input.quarter,
+    allowForm138Q4V10: input.allowForm138Q4V10,
+  });
+  if (!schemaRes.supported) {
+    err('Quarter', schemaRes.note ?? 'Protean has not yet published the Form 138 Q4 file format, which carries the annual salary details. Q4 files can be written once it is enabled.');
+  }
   if (input.earlierRegularFiled && !/^\d{15}$/.test(clean(input.previousToken))) err('Previous token', `Give the 15-digit token of the previous regular ${FORM_LABEL[form]} statement.`);
   if (input.deductor.gstin && !/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(clean(input.deductor.gstin).toUpperCase())) err('Deductor GSTIN', 'GSTIN is not valid.');
 
@@ -266,7 +333,11 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
       if (inKind && PAN_LITERALS.has(pan)) err(w, `Section ${code} needs the payee's actual PAN.`);
       if (!clean(d.name) || clean(d.name).length > 75) err(w, 'Name is required, at most 75 characters.');
       if (!sectionKnown(form, code)) err(w, `Code ${code || '(blank)'} is not in Annexure 2 of ${FORM_LABEL[form]}.`);
-      if (!isIso(d.paidOn) || d.paidOn < qStart || d.paidOn > qEnd) err(w, `Date ${form === '143' ? 'received or debited' : 'paid or credited'} must fall within Q${input.quarter} (${qStart} to ${qEnd}).`);
+      const tyStart = `${input.taxYear}-04-01`;
+      const tyEnd = `${input.taxYear + 1}-03-31`;
+      if (!isIso(d.paidOn) || d.paidOn < tyStart || d.paidOn > tyEnd || d.paidOn < qStart || d.paidOn > qEnd) {
+        err(w, `Date ${form === '143' ? 'received or debited' : 'paid or credited'} must fall within Q${input.quarter} (${qStart} to ${qEnd}) of active Tax Year ${input.taxYear}-${String((input.taxYear + 1) % 100).padStart(2, '0')}.`);
+      }
       const paid = new Decimal(d.amountPaid || 0);
       const ded = new Decimal(d.taxDeducted || 0);
       const dep = new Decimal(d.taxDeposited || 0);
@@ -274,7 +345,7 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
       if (inKind && (!ded.isZero() || !dep.isZero())) err(w, `For section ${code}, tax deducted and deposited are 0.00.`);
       if (form === '143' && !ded.eq(dep)) err(w, 'Tax collected must equal tax deposited.');
       if (form === '138' && !ded.eq(dep)) err(w, 'Tax deducted must equal tax deposited.');
-      if (ded.gt(0) && (!isIso(d.deductedOn) || d.deductedOn < qStart)) err(w, `Date of ${form === '143' ? 'collection' : 'deduction'} is required and cannot be before ${qStart}.`);
+      if (ded.gt(0) && (!isIso(d.deductedOn) || d.deductedOn < qStart || d.deductedOn > qEnd)) err(w, `Date of ${form === '143' ? 'collection' : 'deduction'} is required and must fall within ${qStart} to ${qEnd}.`);
       const flag = clean(d.reasonFlag).toUpperCase();
       if (flag) {
         const rule = reasonRule(form, flag);
@@ -282,7 +353,9 @@ export function writeTdsStatement(input: StatementInput): { text: string; issues
         else if (!rule.sections.has(code)) err(w, `Reason flag ${flag} cannot be used with code ${code}.`);
         if (rule?.panRequired && !PAN_RE.test(pan)) err(w, `Reason flag ${flag} needs the employee's PAN.`);
         if (form === '138' && flag === 'C' && ded.lt(paid.mul(0.2))) err(w, 'Flag C (no PAN) needs tax of at least 20% of the amount paid.');
-        if (flag === 'A' && !/^[A-Z0-9]{10}([A-Z0-9]{5})?$/.test(clean(d.certificateNo).toUpperCase())) err(w, 'Flag A needs the 10 or 15 character section 395 certificate number.');
+        if (flag === 'A' && !/^[A-Z0-9]{10}([A-Z0-9]{5})?$/.test(clean(d.certificateNo).toUpperCase())) {
+          err(w, `Flag A needs the 10 or 15 character ${input.taxYear >= 2026 ? 'Section 395 / 395(1) / 395(2)' : 'Section 197'} certificate number.`);
+        }
         if (flag === 'T' && !PAN_RE.test(pan)) err(w, 'Flag T (transporter) needs the payee PAN.');
       }
       const rate = ded.isZero() || inKind ? '0.0000' : new Decimal(d.ratePercent || 0).toFixed(4);

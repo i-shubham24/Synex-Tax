@@ -25,12 +25,14 @@ const ONBOARD = [
   {
     when: 'Every month',
     title: 'Ask for papers',
-    body: 'Send a checklist from a template as a link. The client uploads photos or PDFs without a login, each one lands on its checklist item, and reminders go out on WhatsApp.',
+    body: 'Send a checklist from a template as a link. The client uploads photos or PDFs without a login and each lands on its checklist item. Automated scheduled WhatsApp Cloud API delivery runs once firm WABA templates are enabled; click-to-send WhatsApp links work today.',
+    badge: 'Early Access' as const,
   },
   {
     when: 'When the work is done',
     title: 'Bill for it',
-    body: 'Raise the fee invoice, record the receipt when it is paid, and see each client’s ledger. Unpaid fees show on the client’s record.',
+    body: 'Raise fee invoices, record receipts and inspect unpaid fee ageing across the firm ledger.',
+    badge: 'Early Access' as const,
   },
 ];
 
@@ -45,8 +47,22 @@ const ACCESS: Array<{ action: string; partner: Can; manager: Can; staff: Can; cl
 ];
 
 function Cell({ v }: { v: Can }) {
-  if (v === 'yes') return <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-mint" aria-label="Yes" />;
-  if (v === 'no') return <span className="text-ink-faint" aria-label="No">&ndash;</span>;
+  if (v === 'yes') {
+    return (
+      <span className="inline-flex items-center">
+        <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-mint" aria-hidden="true" />
+        <span className="sr-only">Allowed</span>
+      </span>
+    );
+  }
+  if (v === 'no') {
+    return (
+      <span className="text-ink-faint">
+        <span aria-hidden="true">&ndash;</span>
+        <span className="sr-only">Not allowed</span>
+      </span>
+    );
+  }
   return <span className="text-[12.5px] text-ink">{v}</span>;
 }
 
@@ -159,7 +175,19 @@ export default function DeskProductPage() {
           titleId="records-title"
           title="Records that will stand up to an audit."
           rules={RECORDS}
-          footnote="Also in SynTax Desk: a practice calendar that creates each client’s tasks once, bank statement matching, client messages, and an assistant for quick tax questions."
+          footnote={
+            <span className="space-y-2 block">
+              <span className="block">
+                No-login client document checklists and practice compliance calendars run live inside every workspace today.
+              </span>
+              <span className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="rounded-full border border-ink/15 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink/70">
+                  Early Access
+                </span>
+                <span>Automated WhatsApp Business reminders, client fee ledger ageing, bank statement matching, and AI tax assistant (when a model key is connected).</span>
+              </span>
+            </span>
+          }
         />
 
         <PriceClose

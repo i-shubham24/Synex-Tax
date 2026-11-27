@@ -155,3 +155,74 @@ test('GstReconciliationEngine: 4-Pass Full Reconciliation Workflow', () => {
   const amendedRecord = report.unmatchedPortal2b[0];
   assert.equal(amendedRecord.isAmendedPostAcceptance, true);
 });
+
+test('GstReconciliationEngine: preserves verbatim invoice numbers and segregates IMPG & ISD', () => {
+  const prs: PurchaseRegisterInvoice[] = [
+    {
+      id: 'p-1',
+      vendorGstin: '03AABCA1234F1ZJ',
+      invoiceNum: 'INV/26-27/0042',
+      invoiceDate: '2026-11-05',
+      docType: 'INV',
+      taxableValue: '10000.00',
+      igstAmount: '1800.00',
+      cgstAmount: '0.00',
+      sgstAmount: '0.00',
+      totalTax: '1800.00',
+      itcEligibility: 'ELIGIBLE',
+    },
+  ];
+  const twoB: Gstr2BRecord[] = [
+    {
+      id: 'b-1',
+      supplierGstin: '03AABCA1234F1ZJ',
+      docNum: 'INV262742',
+      docDate: '2026-11-05',
+      docType: 'INV',
+      taxableValue: '10000.00',
+      igstAmount: '1800.00',
+      cgstAmount: '0.00',
+      sgstAmount: '0.00',
+      totalTax: '1800.00',
+      itcAvailable: true,
+    },
+    {
+      id: 'b-impg',
+      supplierGstin: 'INBOM4',
+      docNum: 'BOE-9921004',
+      docDate: '2026-11-09',
+      docType: 'IMPG',
+      creditCategory: 'IMPG',
+      taxableValue: '50000.00',
+      igstAmount: '9000.00',
+      cgstAmount: '0.00',
+      sgstAmount: '0.00',
+      totalTax: '9000.00',
+      itcAvailable: true,
+    },
+    {
+      id: 'b-isd',
+      supplierGstin: '07AABCA1234F1Z2',
+      docNum: 'ISD-009',
+      docDate: '2026-11-10',
+      docType: 'ISD',
+      creditCategory: 'ISD',
+      taxableValue: '0.00',
+      igstAmount: '2500.00',
+      cgstAmount: '0.00',
+      sgstAmount: '0.00',
+      totalTax: '2500.00',
+      itcAvailable: true,
+    },
+  ];
+
+  const r = GstReconciliationEngine.reconcile('2026-11', prs, twoB);
+  assert.equal(r.fuzzyMatchesCount, 1);
+  assert.equal(r.vendorNotInPrCount, 0, 'IMPG and ISD must be segregated from domestic B2B unmatched count');
+  assert.equal(r.impgRecords?.length, 1);
+  assert.equal(r.isdRecords?.length, 1);
+  assert.equal(r.totalImpgItc, '9000.00');
+  assert.equal(r.totalIsdItc, '2500.00');
+  assert.equal(r.matchedPairs[0].purchaseInvoice?.invoiceNum, 'INV/26-27/0042');
+  assert.equal(r.matchedPairs[0].purchaseInvoice?.normalizedInvoiceKey, 'INV262742');
+});

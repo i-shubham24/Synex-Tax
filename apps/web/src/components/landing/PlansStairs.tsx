@@ -174,7 +174,7 @@ export function PlansStairs({ standaloneDefault = false }: { standaloneDefault?:
                 <div>
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[17px] sm:text-[18px] font-semibold text-white tracking-tight">{plan.name}</h3>
-                    <div className="flex items-baseline gap-0.5 md:hidden">
+                    <div aria-hidden="true" className="flex items-baseline gap-0.5 md:hidden">
                       <span className="text-[14px] text-white/80">&#8377;</span>
                       <span className="text-[22px] font-semibold text-white tabular-nums">{plan.price}</span>
                       <span className="text-[11px] text-white/60">{plan.period}</span>

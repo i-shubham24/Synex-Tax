@@ -31,7 +31,7 @@ interface Detail extends PrintableDoc {
   version: string;
 }
 interface Transport {
-  mode: 1 | 2 | 3 | 4;
+  mode: 1 | 2 | 3 | 4 | 5;
   distanceKm: number;
   vehicleNo?: string | null;
   vehicleType?: 'R' | 'O' | null;
@@ -101,6 +101,8 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
   const [seller, setSeller] = useState<PrintableSeller | null>(null);
   const [msg, setMsg] = useState<{ tone: 'error' | 'ok' | 'info'; text: string } | null>(null);
   const [irn, setIrn] = useState({ irn: '', ackNo: '', ackDate: '' });
+  const [rcmType, setRcmType] = useState<'' | 'RCMDOM' | 'RCMIMP'>('');
+  const [irpEnv, setIrpEnv] = useState<'PRODUCTION' | 'SANDBOX'>('PRODUCTION');
   const [ewb, setEwb] = useState({ ewbNo: '', ewbDate: '' });
   const [transport, setTransport] = useState<Transport>({ mode: 1, distanceKm: 0, vehicleType: 'R' });
   const [reason, setReason] = useState('');
@@ -168,11 +170,39 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
         </table>
       </div>
 
-      {active && doc.buyer?.gstin && (
+      {active && (doc.buyer?.gstin || doc.reverseCharge) && (
         <div className="space-y-2 rounded-[10px] border border-pos-line p-3">
           <h4 className="text-[14px] font-semibold text-pos-ink">E-invoice</h4>
           <p className="text-[12px] text-pos-ink/70">The JSON follows the e-invoice schema INV-01 version 1.1. Upload it on the IRP (bulk upload); SynTax does not call the IRP. Then record the IRN and acknowledgement here.</p>
-          <button type="button" className={btnCls} onClick={() => download(`/api/v1/billing/documents/${doc.id}/einvoice`, undefined, `einvoice-${fileSafe}.json`)}>Download JSON for the IRP</button>
+          <div className="flex flex-wrap items-end gap-2">
+            {doc.reverseCharge && (
+              <>
+                <Field label="RCM IRN category">
+                  <select value={rcmType} onChange={(e) => setRcmType(e.target.value as '' | 'RCMDOM' | 'RCMIMP')} className={inputCls}>
+                    <option value="">Standard IRN</option>
+                    <option value="RCMDOM">RCMDOM (Domestic Unregistered RCM)</option>
+                    <option value="RCMIMP">RCMIMP (Import of Services RCM)</option>
+                  </select>
+                </Field>
+                <Field label="IRP Environment">
+                  <select value={irpEnv} onChange={(e) => setIrpEnv(e.target.value as 'PRODUCTION' | 'SANDBOX')} className={inputCls}>
+                    <option value="PRODUCTION">Production (Docs &gt;= 15 Dec 2026)</option>
+                    <option value="SANDBOX">IRP Sandbox Testing</option>
+                  </select>
+                </Field>
+              </>
+            )}
+            <button
+              type="button"
+              className={btnCls}
+              onClick={() => {
+                const qs = rcmType ? `?rcmType=${rcmType}&env=${irpEnv}` : '';
+                void download(`/api/v1/billing/documents/${doc.id}/einvoice${qs}`, undefined, `einvoice-${fileSafe}.json`);
+              }}
+            >
+              Download JSON for the IRP
+            </button>
+          </div>
           {doc.irn ? (
             <p className="text-[13px] text-pos-ink/80">IRN <span className="break-all font-mono text-[12px]">{doc.irn}</span>, ack no. <span className="font-mono">{doc.ackNo}</span></p>
           ) : (
@@ -195,7 +225,11 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
           <div className="grid gap-2 sm:grid-cols-4">
             <Field label="Mode">
               <select value={transport.mode} onChange={(e) => setTransport({ ...transport, mode: Number(e.target.value) as Transport['mode'] })} className={inputCls}>
-                <option value={1}>Road</option><option value={2}>Rail</option><option value={3}>Air</option><option value={4}>Ship or road cum ship</option>
+                <option value={1}>Road</option>
+                <option value={2}>Rail</option>
+                <option value={3}>Air</option>
+                <option value={4}>Ship or road cum ship</option>
+                <option value={5}>Metro Rail</option>
               </select>
             </Field>
             <Field label="Distance (km)"><input type="number" min={1} max={4000} value={transport.distanceKm || ''} onChange={(e) => setTransport({ ...transport, distanceKm: Number(e.target.value) })} className={inputCls} /></Field>
@@ -218,7 +252,7 @@ function DocumentView({ id, onClose, onChanged }: { id: string; onClose: () => v
             <p className="text-[13px] text-pos-ink/80">E-way bill no. <span className="font-mono">{doc.ewbNo}</span></p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-4">
-              <Field label="E-way bill no."><input value={ewb.ewbNo} onChange={(e) => setEwb({ ...ewb, ewbNo: e.target.value.trim() })} className={`${inputCls} font-mono`} /></Field>
+              <Field label="E-way bill no. (12 or 14 digits)"><input value={ewb.ewbNo} onChange={(e) => setEwb({ ...ewb, ewbNo: e.target.value.trim() })} className={`${inputCls} font-mono`} /></Field>
               <Field label="Generated on"><input type="datetime-local" value={ewb.ewbDate} onChange={(e) => setEwb({ ...ewb, ewbDate: e.target.value })} className={inputCls} /></Field>
               <div className="flex items-end"><button type="button" className={ghostCls} onClick={() => send(`/api/v1/billing/documents/${doc.id}/ewb`, 'PUT', ewb, 'E-way bill number recorded.')}>Record e-way bill</button></div>
             </div>

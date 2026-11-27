@@ -710,3 +710,25 @@ test('Change log: whole consolidated files are not copied into it, their SHA-256
   const def = (await db.query(`SELECT pg_get_functiondef('app.capture_audit_event'::regproc) AS d`)).rows[0].d;
   assert.match(def, /key <> 'conso_text'/);
 });
+
+/* *************************************************************************** */
+// 0043: late-Nov 2026 statutory upgrades (input_type, LUT, cancellation tracking)
+test('0043 statutory columns exist and persist on gst_registrations & gst_invoices_purchase', async () => {
+  const regCols = (
+    await db.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'gst_registrations'
+         AND column_name IN ('lut_arn', 'lut_valid_from', 'lut_valid_to', 'cancellation_status', 'cancellation_arn', 'auto_approval_due_at')`,
+    )
+  ).rows.map((r) => r.column_name);
+  assert.equal(regCols.length, 6);
+
+  const purCols = (
+    await db.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'gst_invoices_purchase'
+         AND column_name IN ('hsn_sac_code', 'input_type', 'is_post_nov_2026_service', 'rcm_category')`,
+    )
+  ).rows.map((r) => r.column_name);
+  assert.equal(purCols.length, 4);
+});
